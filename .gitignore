@@ -1,0 +1,9 @@
+/.venv
+/apicache
+/throttle.ctrl
+/user-passwords.py
+/scripts
+*.lwp
+sandbox.py
+/logs
+/.idea
