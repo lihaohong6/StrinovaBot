@@ -7,3 +7,5 @@
 sandbox.py
 /logs
 /.idea
+/json
+/__pycache__

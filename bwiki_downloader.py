@@ -1,32 +1,13 @@
 from pathlib import Path
 
 import requests
-from pywikibot import Site, Page, FilePage
+from pywikibot import Site, FilePage
 from pywikibot.pagegenerators import GeneratorFactory
+
+from utils import name_to_en
 
 bwiki = Site(code="bwiki")
 s = Site()
-
-char_mapper: dict[str, str] = {
-    "米雪儿·李": "Michele",
-    "米雪儿": "Michele",
-    "信": "Nobunaga",
-    "心夏": "Kokona",
-    "伊薇特": "Yvette",
-    "芙拉薇娅": "Flavia",
-    "明": "Ming",
-    "拉薇": "Lawine",
-    "梅瑞狄斯": "Meredith",
-    "令": "Reiichi",
-    "香奈美": "Kanami",
-    "艾卡": "Aika",
-    "加拉蒂亚": "Galatea",
-    "奥黛丽": "Audrey",
-    "玛德蕾娜": "Maddelena",
-    "绯莎": "Fuchsia",
-    "星绘": "Celestia",
-    "白墨": "Bai Mo"
-}
 
 
 def download_file(url, local_filename: Path):
@@ -51,7 +32,7 @@ def main():
             continue
         url = file_page.get_file_url()
         print(url)
-        title = char_mapper[title]
+        title = name_to_en[title]
         target_page = FilePage(s, f'File:{title} Profile.png')
         if not target_page.exists():
             s.upload(target_page, source_url=url, comment="upload from bwiki")
