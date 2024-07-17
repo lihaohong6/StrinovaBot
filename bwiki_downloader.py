@@ -31,7 +31,6 @@ def main():
             print(f"{file_page.title()} does not exist")
             continue
         url = file_page.get_file_url()
-        print(url)
         title = name_to_en[title]
         target_page = FilePage(s, f'File:{title} Profile.png')
         if not target_page.exists():

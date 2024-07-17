@@ -1,6 +1,12 @@
 import re
 
+from pywikibot import Site
+
 import json
+
+
+def bwiki():
+    return Site(code="bwiki")
 
 
 def load_json(file: str):
@@ -39,7 +45,6 @@ def get_game_json_ja():
 
 name_to_en: dict[str, str] = {
     "米雪儿·李": "Michele",
-    "米雪儿": "Michele",
     "信": "Nobunaga",
     "心夏": "Kokona",
     "伊薇特": "Yvette",
@@ -58,6 +63,8 @@ name_to_en: dict[str, str] = {
     "白墨": "Bai Mo"
 }
 
+en_name_to_zh: dict[str, str] = dict((v, k) for k, v in name_to_en.items())
+
 char_id_mapper: dict[int, str] = {}
 
 
@@ -75,7 +82,6 @@ camp_id_to_string = {
     2: "The Scissors",
     3: "Urbino",
 }
-
 
 role_id_to_string = {
     1: "Duelist",
@@ -122,3 +128,10 @@ def get_skill_table() -> dict:
         get_skill_table.table = dict((int(k), v) for k, v in load_json("json/CSV/Skill.json")[0]['Rows'].items())
 
     return get_skill_table.table
+
+
+def get_goods_table() -> dict:
+    if not hasattr(get_goods_table, "table"):
+        get_goods_table.table = dict((int(k), v) for k, v in load_json("json/CSV/Goods.json")[0]['Rows'].items())
+
+    return get_goods_table.table

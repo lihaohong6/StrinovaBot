@@ -1,11 +1,12 @@
 import re
+from dataclasses import dataclass
 from typing import Callable
 
-from pywikibot import Page, Site
+from pywikibot import Page, Site, FilePage
 
 from utils import get_game_json, get_char_by_id, char_id_mapper, get_game_json_cn, get_game_json_ja, get_role_profile, \
     get_default_weapon_id, camp_id_to_string, role_id_to_string, get_weapon_name, get_weapon_table, get_skill_table, \
-    load_json
+    load_json, get_goods_table, name_to_en, bwiki, en_name_to_zh
 import wikitextparser as wtp
 
 s = Site()
@@ -250,11 +251,121 @@ def generate_return_letter():
         p.save(summary="generate return letter", minor=False)
 
 
+def generate_emotes():
+    goods_table = get_goods_table()
+    i18n = get_game_json()['Goods']
+    items: dict[str, list[int]] = {}
+    for k, v in goods_table.items():
+        if v['ItemType'] != 6:
+            continue
+        name_chs = v['Name']['SourceString'].split("-")[0]
+        if name_chs not in name_to_en:
+            continue
+        name_en = name_to_en[name_chs]
+        lst = items.get(name_en, [])
+        lst.append(k)
+        items[name_en] = lst
+
+    for name, item_list in items.items():
+        gallery = ['<gallery mode="packed">']
+        for item in item_list:
+            emote_name = i18n[f'{item}_Name']
+            emote_name = re.search(f"^{name} ?- ?(.*)", emote_name).group(1)
+            description = i18n[f'{item}_Desc']
+            gallery.append(f"Emote_{item}.png|'''{emote_name}'''<br/>{description}")
+        gallery.append("</gallery>")
+        p = Page(s, name)
+        parsed = wtp.parse(p.text)
+        for section in parsed.sections:
+            if section.title is not None and section.title.strip() == "Emotes":
+                section.contents = "\n".join(gallery) + "\n\n"
+                break
+        else:
+            continue
+        if p.text.strip() == str(parsed).strip():
+            continue
+        p.text = str(parsed)
+        p.save(summary="generate emotes", minor=False)
+
+
+def generate_skins():
+    @dataclass
+    class SkinInfo:
+        id: int
+        quality: int
+        name_cn: str
+
+    skins_table = load_json("json/CSV/RoleSkin.json")[0]['Rows']
+    i18n = get_game_json()['RoleSkin']
+    skins: dict[int, list[SkinInfo]] = {}
+    for k, v in skins_table.items():
+        skin_id = k
+        name_cn = v['NameCn']['SourceString']
+        quality = v['Quality']
+        char_id = v['RoleId']
+        lst = skins.get(char_id, [])
+        lst.append(SkinInfo(skin_id, quality, name_cn))
+        skins[char_id] = lst
+
+    for char_id, skin_list in skins.items():
+        char_name = get_char_by_id(char_id)
+        for skin in skin_list:
+            if skin.quality == 0:
+                skin.quality = 10
+        skin_list.sort(key=lambda x: x.quality, reverse=True)
+        t = wtp.Template("{{CharacterSkins\n}}")
+        skin_counter = 1
+
+        def add_arg(name, value):
+            if (t.has_arg(name) and value.strip() == "") or value.strip() == "!NoTextFound!":
+                return
+            t.set_arg(name, value + "\n")
+
+        for skin in skin_list:
+            k = f'{skin.id}_NameShort'
+            if k not in i18n:
+                continue
+            name_en = i18n[k]
+            description = i18n[f'{skin.id}_Description']
+            if char_name not in en_name_to_zh:
+                continue
+            name_zh = en_name_to_zh[char_name]
+            source_file = FilePage(bwiki(), f"{name_zh}时装-{skin.name_cn}.png")
+            if not source_file.exists():
+                continue
+            target_file = FilePage(s, f"{char_name} Skin {name_en}.png")
+            if not target_file.exists():
+                s.upload(target_file, source_url=source_file.get_file_url(), comment="upload file from bwiki",
+                         text=f"Taken from [https://wiki.biligame.com/klbq/{source_file.title(with_ns=True, underscore=True)} bwiki], "
+                              f"this image is licensed under CC BY-NC-SA 4.0."
+                              f"[[Category:Skin screenshots]]")
+
+            add_arg(f"Name{skin_counter}", name_en)
+            add_arg(f"Quality{skin_counter}", str(skin.quality))
+            add_arg(f"Description{skin_counter}", description)
+            skin_counter += 1
+
+        p = Page(s, char_name)
+        parsed = wtp.parse(p.text)
+        for section in parsed.sections:
+            if section.title is not None and section.title.strip() == "Skins":
+                section.contents = str(t) + "\n\n"
+                break
+        else:
+            continue
+        if p.text.strip() == str(parsed).strip():
+            continue
+        p.text = str(parsed)
+        p.save(summary="generate skins", minor=False)
+
+
 def main():
-    generate_weapons()
-    generate_skills()
-    generate_biography()
-    generate_return_letter()
+    # generate_weapons()
+    # generate_skills()
+    # generate_biography()
+    # generate_return_letter()
+    # generate_emotes()
+    generate_skins()
 
 
 if __name__ == "__main__":
