@@ -1,5 +1,7 @@
 import re
+from pathlib import Path
 
+import requests
 from pywikibot import Site
 
 import json
@@ -54,7 +56,7 @@ name_to_en: dict[str, str] = {
     "梅瑞狄斯": "Meredith",
     "令": "Reiichi",
     "香奈美": "Kanami",
-    "艾卡": "Aika",
+    "艾卡": "Eika",
     "加拉蒂亚": "Galatea",
     "奥黛丽": "Audrey",
     "玛德蕾娜": "Maddelena",
@@ -62,6 +64,16 @@ name_to_en: dict[str, str] = {
     "星绘": "Celestia",
     "白墨": "Bai Mo"
 }
+
+
+def zh_name_to_en(o: str) -> str:
+    if o in name_to_en:
+        return name_to_en[o]
+    first = o.split("·")[0]
+    if first in name_to_en:
+        return name_to_en[first]
+    return None
+
 
 en_name_to_zh: dict[str, str] = dict((v, k) for k, v in name_to_en.items())
 
@@ -135,3 +147,12 @@ def get_goods_table() -> dict:
         get_goods_table.table = dict((int(k), v) for k, v in load_json("json/CSV/Goods.json")[0]['Rows'].items())
 
     return get_goods_table.table
+
+
+def download_file(url, target: Path):
+    r = requests.get(url)
+    f = open(target, 'wb')
+    for chunk in r.iter_content(chunk_size=512 * 1024):
+        if chunk: # filter out keep-alive new chunks
+            f.write(chunk)
+    f.close()

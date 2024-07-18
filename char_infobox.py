@@ -6,7 +6,7 @@ from pywikibot import Page, Site, FilePage
 
 from utils import get_game_json, get_char_by_id, char_id_mapper, get_game_json_cn, get_game_json_ja, get_role_profile, \
     get_default_weapon_id, camp_id_to_string, role_id_to_string, get_weapon_name, get_weapon_table, get_skill_table, \
-    load_json, get_goods_table, name_to_en, bwiki, en_name_to_zh
+    load_json, get_goods_table, name_to_en, bwiki, en_name_to_zh, zh_name_to_en
 import wikitextparser as wtp
 
 s = Site()
@@ -137,19 +137,20 @@ def generate_skills():
         char_name = get_char_by_id(char_id)
         templates = []
         valid = True
+        t = wtp.Template("{{Skill\n}}")
+
+        def add_arg(name, value):
+            if t.has_arg(name) and value.strip() == "":
+                return
+            t.set_arg(name, value + "\n")
+
         for skill_num in range(1, 4):
             key = char_id * 10 + skill_num
-            t = wtp.Template("{{Skill\n}}")
-            def add_arg(name, value):
-                if t.has_arg(name) and value.strip() == "":
-                    return
-                t.set_arg(name, value + "\n")
 
             try:
-                add_arg("Name", skill_texts[f"{key}_Name"])
-                add_arg("Number", str(skill_num))
-                add_arg("DisplayName", skill_texts[f"{key}_DisplayName"])
-                add_arg("Description", skill_texts[f"{key}_Intro"])
+                add_arg(f"Name{skill_num}", skill_texts[f"{key}_Name"])
+                add_arg(f"DisplayName{skill_num}", skill_texts[f"{key}_DisplayName"])
+                add_arg(f"Description{skill_num}", skill_texts[f"{key}_Intro"])
             except Exception:
                 valid = False
                 break
@@ -161,11 +162,11 @@ def generate_skills():
         parsed = wtp.parse(p.text)
         for section in parsed.sections:
             if section.title is not None and section.title.strip() == "Skills":
-                section.string += "\n".join(templates) + "\n\n"
+                section.contents = str(t) + "\n\n"
                 break
         else:
             continue
-        if p.text.strip() != str(parsed):
+        if p.text.strip() == str(parsed).strip():
             continue
         p.text = str(parsed)
         p.save(summary="generate skills", minor=False)
@@ -259,9 +260,9 @@ def generate_emotes():
         if v['ItemType'] != 6:
             continue
         name_chs = v['Name']['SourceString'].split("-")[0]
-        if name_chs not in name_to_en:
+        name_en = zh_name_to_en(name_chs)
+        if name_en is None:
             continue
-        name_en = name_to_en[name_chs]
         lst = items.get(name_en, [])
         lst.append(k)
         items[name_en] = lst
@@ -361,11 +362,11 @@ def generate_skins():
 
 def main():
     # generate_weapons()
-    # generate_skills()
+    generate_skills()
     # generate_biography()
     # generate_return_letter()
     # generate_emotes()
-    generate_skins()
+    # generate_skins()
 
 
 if __name__ == "__main__":
