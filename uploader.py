@@ -38,7 +38,7 @@ def upload_skill_demo():
         for name in names:
             for number in range(1, 4):
                 target_name = name_map.get(name, name)
-                target_file = FilePage(s, f"File:{target_name} Skill{number}.webm")
+                target_file = FilePage(s, f"File:{target_name} Skill{number}.mp4")
                 if target_file.exists():
                     continue
 
@@ -46,12 +46,13 @@ def upload_skill_demo():
                 if name == "Michele":
                     number_mapper = {1: "-Q", 2: "-2", 3: "-X"}
                     source = url.format(faction, name, name, number_mapper[number])
-                download_file(source, temp_path)
-                converted_file = Path("o.webm")
-                subprocess.run([shutil.which("ffmpeg"), "-i", temp_path, converted_file, "-y"], shell=True, check=True)
-                Uploader(s, target_file, source_filename=str(converted_file),
+                # download_file(source, temp_path)
+                # converted_file = Path("o.webm")
+                # subprocess.run([shutil.which("ffmpeg"), "-i", temp_path, converted_file, "-y"], shell=True, check=True)
+                Uploader(s, target_file, source_url=str(source),
                          comment="batch upload skill videos",
-                         text="Video from official site converted to save space\n\n[[Category:Skill demos]]").upload()
+                         text="Video from official site\n\n[[Category:Skill demos]]",
+                         ignore_warnings=True).upload()
 
 
 def main():

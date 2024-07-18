@@ -4,6 +4,7 @@ from typing import Callable
 
 from pywikibot import Page, Site, FilePage
 
+from asset_utils import upload_weapon
 from utils import get_game_json, get_char_by_id, char_id_mapper, get_game_json_cn, get_game_json_ja, get_role_profile, \
     get_default_weapon_id, camp_id_to_string, role_id_to_string, get_weapon_name, get_weapon_table, get_skill_table, \
     load_json, get_goods_table, name_to_en, bwiki, en_name_to_zh, zh_name_to_en
@@ -96,17 +97,24 @@ def generate_weapons():
     for char_id, char_profile in get_role_profile.dict.items():
         char_name = get_char_by_id(char_id)
         p = Page(s, char_name)
-
-        if "{{PrimaryWeapon" in p.text:
+        parsed = wtp.parse(p.text)
+        t = None
+        for template in parsed.templates:
+            if template.name.strip() == "PrimaryWeapon":
+                t = template
+                break
+        else:
+            print(f"No template found on {char_name}")
             continue
 
         weapon_id = get_default_weapon_id(char_id)
         if weapon_id == -1:
             continue
+        upload_weapon(char_name, weapon_id)
+
         weapon_name = get_weapon_name(weapon_id)
         weapon_description = weapons[f"{weapon_id}_Tips"]
         weapon_type = weapon_table[weapon_id]['Type'].split("::")[1]
-        t = wtp.Template("{{PrimaryWeapon\n}}")
 
         def add_arg(name, value):
             if t.has_arg(name) and value.strip() == "":
@@ -116,17 +124,11 @@ def generate_weapons():
         add_arg("Name", weapon_name)
         add_arg("Description", weapon_description)
         add_arg("Type", weapon_type)
-        parsed = wtp.parse(p.text)
-        for section in parsed.sections:
-            if section.title is not None and section.title.strip() == "Weapon":
-                section.string = section.string.replace("==\n", "==\n" + str(t))
-                break
-        else:
-            continue
-        if p.text.strip() != str(parsed):
+
+        if p.text.strip() != str(parsed).strip():
             continue
         p.text = str(parsed)
-        p.save(summary="generate weapon", minor=False)
+        p.save(summary="generate weapon", minor=True)
 
 
 def generate_skills():
@@ -361,8 +363,8 @@ def generate_skins():
 
 
 def main():
-    # generate_weapons()
-    generate_skills()
+    generate_weapons()
+    # generate_skills()
     # generate_biography()
     # generate_return_letter()
     # generate_emotes()
