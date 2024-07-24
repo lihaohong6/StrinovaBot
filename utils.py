@@ -1,8 +1,9 @@
+import pdb
 import re
 from pathlib import Path
 
 import requests
-from pywikibot import Site
+from pywikibot import Site, Page
 
 import json
 
@@ -86,7 +87,8 @@ def get_char_by_id(char_id: int) -> str:
             if "_NameCn" not in k:
                 continue
             char_id_mapper[int(re.search(r'^\d+', k).group(0))] = v
-    return char_id_mapper[char_id]
+        char_id_mapper[205] = "Galatea"
+    return char_id_mapper.get(char_id, None)
 
 
 camp_id_to_string = {
@@ -156,3 +158,9 @@ def download_file(url, target: Path):
         if chunk: # filter out keep-alive new chunks
             f.write(chunk)
     f.close()
+
+
+def get_cn_wiki_skins():
+    p = Page(bwiki(), "模块:皮肤/RoleSkinData")
+    matches = re.findall(r'\["([^"]+)"][^"]+Role = "([^"]+)"', p.text)
+    return dict((match[0], match[1]) for match in matches)
