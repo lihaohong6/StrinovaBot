@@ -1,8 +1,10 @@
+from pathlib import Path
+
 from pywikibot import Site, FilePage
 from pywikibot.pagegenerators import GeneratorFactory
 from pywikibot.site._upload import Uploader
 
-from utils import zh_name_to_en
+from utils import zh_name_to_en, download_file, get_id_by_char
 
 bwiki = Site(code="bwiki")
 s = Site()
@@ -59,5 +61,30 @@ def skills():
                 s.upload(target_page, source_url=url, comment="upload from bwiki; own work as User:16635128")
 
 
+file_dir = Path("files")
+file_dir.mkdir(exist_ok=True)
+
+def download_category(cat: str):
+    gen = GeneratorFactory(bwiki)
+    gen.handle_args([f"-cat:{cat}"])
+    gen = gen.getCombinedGenerator(preload=False)
+    for page in gen:
+        title = page.title(with_ns=True, underscore=True)
+        file_page = FilePage(bwiki, title)
+        url = file_page.get_file_url()
+        download_file(url, file_dir / page.title(underscore=True, with_ns=False))
+
+
+def upload():
+    for f in file_dir.glob("*.*"):
+        file_page = FilePage(bwiki, "File:" + f.name)
+        if file_page.exists():
+            continue
+        Uploader(s, file_page, source_filename=str(f),
+                 comment="batch upload",
+                 text="[[Category:Skill icons]]",
+                 ignore_warnings=True).upload()
+
+
 if __name__ == "__main__":
-    default()
+    upload()

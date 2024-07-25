@@ -91,6 +91,14 @@ def get_char_by_id(char_id: int) -> str:
     return char_id_mapper.get(char_id, None)
 
 
+def get_id_by_char(char_name: str) -> int | None:
+    get_char_by_id(0)
+    for k, v in char_id_mapper.items():
+        if v == char_name:
+            return k
+    return None
+
+
 camp_id_to_string = {
     1: "Painting Utopia Society",
     2: "The Scissors",
@@ -117,11 +125,17 @@ def get_role_profile(char_id: int) -> dict:
     return get_role_profile.dict[char_id]
 
 
+def get_role_json() -> dict[int, dict]:
+    if not hasattr(get_role_json, "dict"):
+        get_role_json.dict = dict((int(k), v) for k, v in load_json("json/CSV/Role.json")[0]['Rows'].items())
+    return get_role_json.dict
+
+
 def get_default_weapon_id(char_id: int) -> int:
     if not hasattr(get_default_weapon_id, "dict"):
         get_default_weapon_id.dict = {}
         table = get_default_weapon_id.dict
-        for k, v in load_json("json/CSV/Role.json")[0]['Rows'].items():
+        for k, v in get_role_json().items():
             table[int(k)] = v['DefaultWeapon1']
     return get_default_weapon_id.dict.get(char_id, -1)
 

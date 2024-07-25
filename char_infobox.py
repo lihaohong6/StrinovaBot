@@ -3,11 +3,12 @@ from dataclasses import dataclass
 from typing import Callable
 
 from pywikibot import Page, Site, FilePage
-from pywikibot.pagegenerators import PreloadingGenerator
+from pywikibot.pagegenerators import PreloadingGenerator, GeneratorFactory
 
 from utils import get_game_json, get_char_by_id, char_id_mapper, get_game_json_cn, get_game_json_ja, get_role_profile, \
     get_default_weapon_id, camp_id_to_string, role_id_to_string, get_weapon_name, get_weapon_table, get_skill_table, \
-    load_json, get_goods_table, name_to_en, bwiki, en_name_to_zh, zh_name_to_en, get_cn_wiki_skins
+    load_json, get_goods_table, name_to_en, bwiki, en_name_to_zh, zh_name_to_en, get_cn_wiki_skins, get_id_by_char, \
+    get_role_json
 import wikitextparser as wtp
 
 s = Site()
@@ -402,14 +403,131 @@ def generate_skins():
     print("Skins done")
 
 
+def generate_string_energy_network():
+    """
+Growth_Bomb
+
+    Regular group name: 112_PartName_Index0-3
+        112_Part1Desc_Index0-1
+        112_Part2Desc_Index0-1
+        112_Part4Desc_Index0-1
+        112_Part5Desc_Index0-1
+
+    Skill group name: skill id from Role.json, "{skill id}_Name"
+        Q upgrade details: 112_QDesc_Index0-1
+        Passive: 112_PassiveDesc_Index0-1
+
+    Armor group name: 112_PartName_Index4-5
+        112_ShieldDesc_Index0-1
+        107_SurviveDesc_Index0-1
+
+Growth_Escort
+
+Growth_Team
+    :return:
+    """
+    i18n = get_game_json()['Growth_Bomb']
+    i18n_skill = get_game_json()['Skill']
+    role_json = get_role_json()
+    skill_json = get_skill_table()
+    gen = GeneratorFactory(s)
+    gen.handle_args(['-cat:Characters', '-ns:0'])
+    gen = gen.getCombinedGenerator(preload=True)
+    for p in gen:
+        char_name = p.title()
+        bwiki_base_page = Page(bwiki(), en_name_to_zh[char_name])
+        if bwiki_base_page.isRedirectPage():
+            bwiki_base_page = bwiki_base_page.getRedirectTarget()
+        bwiki_page = Page(bwiki(), bwiki_base_page.title() + "/弦能增幅网络")
+        assert bwiki_page.exists(), char_name
+        char_id = get_id_by_char(char_name)
+        assert char_id is not None
+        weapon_name = get_weapon_name(get_default_weapon_id(char_id))
+        parsed = wtp.parse(p.text)
+        for template in parsed.templates:
+            if template.name.strip() == "StringEnergyNetwork":
+                t = template
+                break
+        else:
+            print("Template StringEnergyNetwork not found on " + char_name)
+            return
+
+        part: wtp.Template | None = None
+
+        def add_arg(name, value):
+            nonlocal part
+            value = str(value)
+            if part.has_arg(name) and (value.strip() == "" or value.strip() == "!NoTextFound!"):
+                return
+            part.set_arg(" " + name, value + " ")
+
+        t.set_arg("char", char_name + "\n")
+
+        arg_index = 1
+        for part_index, part_num in enumerate([1, 2, 4, 5]):
+            part = wtp.Template("{{StringEnergyNetwork/group}}")
+            add_arg("type", 1)
+            add_arg("name", i18n[f"{char_id}_PartName_Index{part_index}"])
+            add_arg("icon", re.search(rf"icon{part_index + 1}=(\d)+", bwiki_page.text).group(1))
+            add_arg("text1", i18n[f"{char_id}_Part{part_num}Desc_Index0"])
+            add_arg("cost1", 150)
+            add_arg("text2", i18n[f"{char_id}_Part{part_num}Desc_Index1"])
+            add_arg("cost2", 150)
+            t.set_arg(f"group{arg_index}", str(part) + "\n")
+            arg_index += 1
+
+        skills = [role_json[char_id]['SkillActive'][0], role_json[char_id]['SkillPassive'][0]]
+        localization_keys = ["QDesc", "PassiveDesc"]
+        for skill_index in range(0, len(skills)):
+            skill_id = skills[skill_index]
+            localization_key = localization_keys[skill_index]
+            skill_info = skill_json[skill_id]
+            part = wtp.Template("{{StringEnergyNetwork/group}}")
+            add_arg("type", 2)
+            add_arg("name", i18n_skill[f"{skill_id}_Name"])
+            add_arg("icon", re.search(r"\d+$", skill_info['IconSkill']['AssetPathName']).group(0))
+
+            for index in range(0, 2):
+                text_key = f"{char_id}_{localization_key}_Index{index}"
+                if text_key not in i18n:
+                    break
+                text = i18n[text_key]
+                add_arg(f"text{index + 1}", text)
+                add_arg(f"cost{index + 1}", 250)
+            t.set_arg(f"group{arg_index}", str(part) + "\n")
+            arg_index += 1
+
+        localization_keys = ["ShieldDesc", "SurviveDesc"]
+        for i, part_index in enumerate([4, 5]):
+            part = wtp.Template("{{StringEnergyNetwork/group}}")
+            add_arg("type", 3)
+            add_arg("name", i18n[f"{char_id}_PartName_Index{part_index}"])
+
+            localization_key = localization_keys[i]
+            for index in range(0, 2):
+                add_arg(f"text{index + 1}", i18n[f"{char_id}_{localization_key}_Index{index}"])
+                add_arg(f"cost{index + 1}", 250)
+            t.set_arg(f"group{arg_index}", str(part) + "\n")
+            arg_index += 1
+
+        if p.text.strip() == str(parsed).strip():
+            continue
+
+        if p.text.strip() == str(parsed).strip():
+            continue
+        p.text = str(parsed)
+        p.save(summary="generate string energy network", minor=True)
+
+
 def main():
     # generate_infobox()
-    # generate_weapons()
+    generate_weapons()
     # generate_skills()
     # generate_biography()
     # generate_return_letter()
     # generate_emotes()
-    generate_skins()
+    # generate_skins()
+    # generate_string_energy_network()
 
 
 if __name__ == "__main__":
