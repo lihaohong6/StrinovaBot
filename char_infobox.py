@@ -510,8 +510,20 @@ Growth_Team
             t.set_arg(f"group{arg_index}", str(part) + "\n")
             arg_index += 1
 
-        if p.text.strip() == str(parsed).strip():
-            continue
+        # process awakenings
+        wake_ids = role_json[char_id]["SkillWake"]
+        for wake_index, wake_id in enumerate(wake_ids, 1):
+            part = wtp.Template("{{StringEnergyNetwork/awakening}}")
+            wake_info = skill_json[wake_id]
+            assert wake_info["SkillType"] == 4, wake_id
+            active_cond = skill_json[wake_id]["ActiveCond"]
+            for cond_index, cond in enumerate(active_cond, 1):
+                add_arg(f"icon{cond_index}", cond)
+            name = i18n_skill[f'{wake_id}_Name']
+            text = i18n_skill[f'{wake_id}_Intro']
+            add_arg("name", name)
+            add_arg("text", text)
+            t.set_arg(f"wake{wake_index}", str(part) + "\n")
 
         if p.text.strip() == str(parsed).strip():
             continue
@@ -521,13 +533,13 @@ Growth_Team
 
 def main():
     # generate_infobox()
-    generate_weapons()
+    # generate_weapons()
     # generate_skills()
     # generate_biography()
     # generate_return_letter()
     # generate_emotes()
     # generate_skins()
-    # generate_string_energy_network()
+    generate_string_energy_network()
 
 
 if __name__ == "__main__":

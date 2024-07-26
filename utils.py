@@ -100,7 +100,7 @@ def get_id_by_char(char_name: str) -> int | None:
 
 
 camp_id_to_string = {
-    1: "Painting Utopia Society",
+    1: "Painting Utopia Security",
     2: "The Scissors",
     3: "Urbino",
 }
