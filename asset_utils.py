@@ -17,3 +17,15 @@ def upload_weapon(char_name: str, weapon_id: int):
         print(f"File for weapon {weapon_id} of {char_name} does not exist")
     Uploader(s, p, source_filename=str(weapon_path),
              text="[[Category:Weapon growth images]]", comment="upload from game assets").upload()
+
+
+def upload_item(item_id: int | str):
+    path = resource_root / f"Item/ItemIcon/T_Dynamic_Item_{item_id}.png"
+    assert path.exists()
+    p = FilePage(s, f"File:Item Icon {item_id}.png")
+    if p.exists():
+        return
+    Uploader(s, p,
+             source_filename=str(path),
+             text="[[Category:Item icons]]",
+             comment="upload from game assets").upload()

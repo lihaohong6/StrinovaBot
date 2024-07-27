@@ -7,12 +7,14 @@ from pywikibot import Site, Page
 
 import json
 
+csv_root = Path("json/CSV")
+
 
 def bwiki():
     return Site(code="bwiki")
 
 
-def load_json(file: str):
+def load_json(file: str | Path):
     return json.load(open(file, "r", encoding="utf-8"))
 
 
@@ -113,29 +115,26 @@ role_id_to_string = {
     5: "Controller"
 }
 
+table_cache: dict[str, dict] = {}
+
+
+def get_table(file_name: str) -> dict:
+    if file_name in table_cache:
+        return table_cache[file_name]
+    table = dict((int(k), v) for k, v in load_json(csv_root / f"{file_name}.json")[0]['Rows'].items())
+    table_cache[file_name] = table
+    return table
+
 
 def get_role_profile(char_id: int) -> dict:
-    if not hasattr(get_role_profile, "dict"):
-        get_role_profile.dict = {}
-        d = get_role_profile.dict
-
-        for k, v in load_json(f"json/CSV/RoleProfile.json")[0]['Rows'].items():
-            d[int(k)] = v
-
-    return get_role_profile.dict[char_id]
-
-
-def get_role_json() -> dict[int, dict]:
-    if not hasattr(get_role_json, "dict"):
-        get_role_json.dict = dict((int(k), v) for k, v in load_json("json/CSV/Role.json")[0]['Rows'].items())
-    return get_role_json.dict
+    return get_table("RoleProfile")[char_id]
 
 
 def get_default_weapon_id(char_id: int) -> int:
     if not hasattr(get_default_weapon_id, "dict"):
         get_default_weapon_id.dict = {}
         table = get_default_weapon_id.dict
-        for k, v in get_role_json().items():
+        for k, v in get_table("Role").items():
             table[int(k)] = v['DefaultWeapon1']
     return get_default_weapon_id.dict.get(char_id, -1)
 
@@ -144,32 +143,25 @@ def get_weapon_name(weapon_id: int) -> str:
     return get_game_json()['Weapon'].get(f"{weapon_id}_Name", "")
 
 
-def get_weapon_table() -> dict:
-    if not hasattr(get_weapon_table, "table"):
-        get_weapon_table.table = dict((int(k), v) for k, v in load_json("json/CSV/Weapon.json")[0]['Rows'].items())
+def get_quality_table() -> dict[int, str]:
+    if not hasattr(get_quality_table, "table"):
+        t = {}
+        get_quality_table.table = t
+        for k, v in get_game_json()['ItemQualityRes'].items():
+            quality = re.search(r"(\d)_Desc$", k)
+            if quality is None:
+                continue
+            quality = int(quality.group(1))
+            t[quality] = v
 
-    return get_weapon_table.table
-
-
-def get_skill_table() -> dict:
-    if not hasattr(get_skill_table, "table"):
-        get_skill_table.table = dict((int(k), v) for k, v in load_json("json/CSV/Skill.json")[0]['Rows'].items())
-
-    return get_skill_table.table
-
-
-def get_goods_table() -> dict:
-    if not hasattr(get_goods_table, "table"):
-        get_goods_table.table = dict((int(k), v) for k, v in load_json("json/CSV/Goods.json")[0]['Rows'].items())
-
-    return get_goods_table.table
+    return get_quality_table.table
 
 
 def download_file(url, target: Path):
     r = requests.get(url)
     f = open(target, 'wb')
     for chunk in r.iter_content(chunk_size=512 * 1024):
-        if chunk: # filter out keep-alive new chunks
+        if chunk:  # filter out keep-alive new chunks
             f.write(chunk)
     f.close()
 

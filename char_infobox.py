@@ -1,14 +1,18 @@
+import dataclasses
+
+import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable
 
 from pywikibot import Page, Site, FilePage
 from pywikibot.pagegenerators import PreloadingGenerator, GeneratorFactory
 
-from utils import get_game_json, get_char_by_id, char_id_mapper, get_game_json_cn, get_game_json_ja, get_role_profile, \
-    get_default_weapon_id, camp_id_to_string, role_id_to_string, get_weapon_name, get_weapon_table, get_skill_table, \
-    load_json, get_goods_table, name_to_en, bwiki, en_name_to_zh, zh_name_to_en, get_cn_wiki_skins, get_id_by_char, \
-    get_role_json
+from asset_utils import upload_item
+from utils import get_game_json, get_char_by_id, get_game_json_cn, get_game_json_ja, get_role_profile, \
+    get_default_weapon_id, camp_id_to_string, role_id_to_string, get_weapon_name, \
+    load_json, name_to_en, bwiki, en_name_to_zh, zh_name_to_en, get_cn_wiki_skins, get_id_by_char, \
+    get_table, get_quality_table
 import wikitextparser as wtp
 
 s = Site()
@@ -83,7 +87,6 @@ def make_infobox(char_id, char_name, char_profile, profile) -> str | None:
     p.save(summary="generate infobox")
 
 
-
 def generate_infobox():
     profile = get_game_json()['RoleProfile']
     get_role_profile(101)
@@ -98,7 +101,7 @@ def generate_infobox():
 def generate_weapons():
     from asset_utils import upload_weapon
     weapons = get_game_json()['Weapon']
-    weapon_table = get_weapon_table()
+    weapon_table = get_table("Weapon")
     get_role_profile(101)
     for char_id, char_profile in get_role_profile.dict.items():
         char_name = get_char_by_id(char_id)
@@ -139,7 +142,7 @@ def generate_weapons():
 
 def generate_skills():
     skill_texts = get_game_json()['Skill']
-    skill_table = get_skill_table()
+    skill_table = get_table("Skill")
     get_role_profile(101)
     for char_id, char_profile in get_role_profile.dict.items():
         char_name = get_char_by_id(char_id)
@@ -428,8 +431,8 @@ Growth_Team
     """
     i18n = get_game_json()['Growth_Bomb']
     i18n_skill = get_game_json()['Skill']
-    role_json = get_role_json()
-    skill_json = get_skill_table()
+    role_json = get_table("Role")
+    skill_json = get_table("Skill")
     gen = GeneratorFactory(s)
     gen.handle_args(['-cat:Characters', '-ns:0'])
     gen = gen.getCombinedGenerator(preload=True)
@@ -529,6 +532,92 @@ Growth_Team
             continue
         p.text = str(parsed)
         p.save(summary="generate string energy network", minor=True)
+# def generate_quality_table():
+#     quality_table = get_quality_table()
+#     text = json.dumps(quality_table)
+#     p = Page(s, "Module:CharacterGifts/rarity.json")
+#     if p.text.strip() == text:
+#         return
+#     p.text = text
+#     p.save(summary="update rarity data")
+
+
+def generate_gifts():
+    @dataclass
+    class Gift:
+        id: int
+        name: str = ""
+        quality: int | str = -1
+        file: str = ""
+        description: str = ""
+        characters: dict[str, tuple[int, int]] = field(default_factory=dict)
+        best_characters: list[str] = field(default_factory=list)
+
+    i18n = get_game_json()['Item']
+    gift_json = get_table("RoleFavorabilityGiftPresent")
+    gift_dict: dict[int, Gift] = {}
+    for gift in gift_json.values():
+        gift_id = gift['Gift']
+        char_id = gift['RoleId']
+        char_name = get_char_by_id(char_id)
+        favorability = gift['Favorability']
+        like_level = gift['LikeLevel']
+        if gift_id not in gift_dict:
+            gift_dict[gift_id] = Gift(gift_id)
+        gift_dict[gift_id].characters[char_name] = (favorability, like_level)
+    item_table = get_table("Item")
+    gifts = list(gift_dict.values())
+    for gift in gifts:
+        g = item_table[gift.id]
+        gift.file = re.search(r"_(\d+)$", g['IconItem']['AssetPathName']).group(1)
+        gift.quality = g['Quality']
+        gift.name = i18n[f"{gift.id}_Name"]
+        gift.description = i18n[f"{gift.id}_Desc"]
+
+    gifts = [g
+             for g in sorted(gifts, key=lambda t: t.quality, reverse=True)
+             if g.file != "10001"]
+    all_recipients = set(gifts[0].characters.keys())
+    for g in gifts:
+        all_recipients.intersection_update(set(g.characters.keys()))
+        # upload_item(g.file)
+    for gift in gifts:
+        max_favorability = max(map(lambda t: t[0], gift.characters.values()))
+        gift.best_characters = list(
+            map(lambda t: t[0], filter(lambda t: t[1][0] == max_favorability and t[0] in all_recipients, gift.characters.items())))
+        if len(gift.best_characters) == len(all_recipients):
+            gift.best_characters = ["Everyone"]
+
+    # quality_table = get_quality_table()
+    # for g in gifts.values():
+    #     g.quality = quality_table[int(g.quality)]
+
+    class EnhancedJSONEncoder(json.JSONEncoder):
+        def default(self, o):
+            if dataclasses.is_dataclass(o):
+                return dataclasses.asdict(o)
+            return super().default(o)
+
+    p = Page(s, "Module:CharacterGifts/data.json")
+    text = json.dumps(gifts, cls=EnhancedJSONEncoder)
+    if p.text.strip() == text:
+        return
+    p.text = text
+    p.save(summary="update gift data")
+
+    for char_name in all_recipients:
+        p = Page(s, char_name)
+        parsed = wtp.parse(p.text)
+        for t in parsed.templates:
+            if t.name.strip() == "CharacterGifts":
+                break
+        else:
+            raise RuntimeError("Template not found on " + char_name)
+        if t.has_arg("1"):
+            continue
+        t.set_arg("1", char_name, positional=True)
+        p.text = str(parsed)
+        p.save("enable character gift")
 
 
 def main():
@@ -539,7 +628,9 @@ def main():
     # generate_return_letter()
     # generate_emotes()
     # generate_skins()
-    generate_string_energy_network()
+    # generate_string_energy_network()
+    generate_gifts()
+    pass
 
 
 if __name__ == "__main__":

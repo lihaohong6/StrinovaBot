@@ -64,6 +64,7 @@ def skills():
 file_dir = Path("files")
 file_dir.mkdir(exist_ok=True)
 
+
 def download_category(cat: str):
     gen = GeneratorFactory(bwiki)
     gen.handle_args([f"-cat:{cat}"])
