@@ -178,3 +178,6 @@ def get_cn_wiki_skins():
 def get_weapon_type(weapon_id: int | str) -> str:
     weapon_id = int(weapon_id)
     return get_table("Weapon")[weapon_id]['Type'].split("::")[1]
+
+
+s = Site()
