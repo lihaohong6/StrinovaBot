@@ -12,7 +12,7 @@ from asset_utils import upload_item
 from utils import get_game_json, get_char_by_id, get_game_json_cn, get_game_json_ja, get_role_profile, \
     get_default_weapon_id, camp_id_to_string, role_id_to_string, get_weapon_name, \
     load_json, name_to_en, bwiki, en_name_to_zh, zh_name_to_en, get_cn_wiki_skins, get_id_by_char, \
-    get_table, get_quality_table
+    get_table, get_quality_table, get_weapon_type, char_id_mapper
 import wikitextparser as wtp
 
 s = Site()
@@ -44,23 +44,29 @@ infobox_args: list[tuple[list[str] | str, str, Callable[[list[str] | str], str]]
 ]
 
 
-def make_infobox(char_id, char_name, char_profile, profile) -> str | None:
-    p = Page(s, char_name)
-    parsed = wtp.parse(p.text)
-    t = None
-    for template in parsed.templates:
-        if template.name.strip() == "CharacterInfobox":
-            t = template
-            break
+def make_infobox(char_id, char_name, char_profile, profile, save=True) -> dict:
+    data: dict[str, str] = {}
+    if save:
+        p = Page(s, char_name)
+        parsed = wtp.parse(p.text)
+        for template in parsed.templates:
+            if template.name.strip() == "CharacterInfobox":
+                t = template
+                break
+        else:
+            print("Template not found on " + char_name)
+            return data
     else:
-        print("Template not found on " + char_name)
-        return
+        t = wtp.Template("{{CharacterInfobox}}")
 
     def add_arg(name, value):
+        value = str(value)
         if t.has_arg(name) and value.strip() == "":
             return
         t.set_arg(name, value + "\n")
+        data[name] = value
 
+    add_arg("Id", char_id)
     add_arg("Name", char_name)
     add_arg("NameEN", char_name)
     add_arg("NameCN", get_game_json_cn()['RoleProfile'][f'{char_id}_NameCn'])
@@ -81,16 +87,18 @@ def make_infobox(char_id, char_name, char_profile, profile) -> str | None:
         add_arg("Weapon", get_weapon_name(get_default_weapon_id(char_id)))
     except Exception:
         print("Insufficient info for " + char_name)
-        return
+        return data
+    if not save:
+        return data
     if p.text.strip() == str(parsed).strip():
-        return
+        return data
     p.save(summary="generate infobox")
 
 
 def generate_infobox():
     profile = get_game_json()['RoleProfile']
-    get_role_profile(101)
-    for char_id, char_profile in get_role_profile.dict.items():
+    get_char_by_id(101)
+    for char_id, char_profile in char_id_mapper.items():
         key = f'{char_id}_NameCn'
         if key not in profile:
             continue
@@ -98,10 +106,39 @@ def generate_infobox():
         make_infobox(char_id, char_name, char_profile, profile)
 
 
+def generate_character_selector():
+    i18n = get_game_json()['RoleProfile']
+    char_list = []
+    get_char_by_id(101)
+    for char_id in char_id_mapper.keys():
+        key = f'{char_id}_NameCn'
+        role_profile = get_role_profile(char_id)
+        if key not in i18n:
+            continue
+        char_name = i18n[key]
+        char_list.append(make_infobox(char_id, char_name, role_profile, i18n, save=False))
+    result = []
+
+    def make_tr(lst: list[str]):
+        return "<tr>" + "".join(f"<td>{e}</td>" for e in lst) + "</tr>"
+
+    for r in sorted(char_list, key=lambda d: d['Camp']):
+        name = r['Name']
+        camp = r['Camp']
+        weapon = get_weapon_type(get_default_weapon_id(r['Id']))
+        result.append(make_tr([
+            "{{ProfileImage|" + name + "}}",
+            f"[[{name}]]",
+            camp,
+            r['Role'],
+            weapon
+        ]))
+
+    print("\n".join(result))
+
 def generate_weapons():
     from asset_utils import upload_weapon
     weapons = get_game_json()['Weapon']
-    weapon_table = get_table("Weapon")
     get_role_profile(101)
     for char_id, char_profile in get_role_profile.dict.items():
         char_name = get_char_by_id(char_id)
@@ -123,7 +160,7 @@ def generate_weapons():
 
         weapon_name = get_weapon_name(weapon_id)
         weapon_description = weapons[f"{weapon_id}_Tips"]
-        weapon_type = weapon_table[weapon_id]['Type'].split("::")[1]
+        weapon_type = get_weapon_type(weapon_id)
 
         def add_arg(name, value):
             if t.has_arg(name) and value.strip() == "":
@@ -627,10 +664,10 @@ def main():
     # generate_biography()
     # generate_return_letter()
     # generate_emotes()
-    # generate_skins()
+    generate_skins()
     # generate_string_energy_network()
-    generate_gifts()
-    pass
+    # generate_gifts()
+    # generate_character_selector()
 
 
 if __name__ == "__main__":

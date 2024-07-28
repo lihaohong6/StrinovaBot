@@ -90,6 +90,8 @@ def get_char_by_id(char_id: int) -> str:
                 continue
             char_id_mapper[int(re.search(r'^\d+', k).group(0))] = v
         char_id_mapper[205] = "Galatea"
+        # Sentinel Bot
+        char_id_mapper.pop(220)
     return char_id_mapper.get(char_id, None)
 
 
@@ -130,7 +132,8 @@ def get_role_profile(char_id: int) -> dict:
     return get_table("RoleProfile")[char_id]
 
 
-def get_default_weapon_id(char_id: int) -> int:
+def get_default_weapon_id(char_id: int | str) -> int:
+    char_id = int(char_id)
     if not hasattr(get_default_weapon_id, "dict"):
         get_default_weapon_id.dict = {}
         table = get_default_weapon_id.dict
@@ -170,3 +173,8 @@ def get_cn_wiki_skins():
     p = Page(bwiki(), "模块:皮肤/RoleSkinData")
     matches = re.findall(r'\["([^"]+)"][^"]+Role = "([^"]+)"', p.text)
     return dict((match[0], match[1]) for match in matches)
+
+
+def get_weapon_type(weapon_id: int | str) -> str:
+    weapon_id = int(weapon_id)
+    return get_table("Weapon")[weapon_id]['Type'].split("::")[1]
