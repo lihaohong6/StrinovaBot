@@ -15,7 +15,6 @@ num = -1
 @dataclasses.dataclass
 class Node:
     node_id: str
-    option_count: int
     value: dict
     in_degree: int = 0
 
@@ -48,6 +47,7 @@ def get_i18n():
 
 def process_file(p: Path) -> str:
     global group_counter
+    i18n = get_i18n()
     obj = json.load(open(p, "r", encoding="utf-8"))[0]['Rows']
     choice_flag = False
     choice_counter = 1
@@ -55,23 +55,33 @@ def process_file(p: Path) -> str:
     result = ["{{StrinovaComms"]
 
     nodes: dict[str, Node] = {}
+    prev: Node | None = None
     for key in obj:
         value = obj[key]
         options_count = len(value['TextContentList']) // 2 + 1
         nodes[key] = Node(key,
-                          options_count,
                           value)
+        if prev is not None:
+            prev.next_id = key
+        prev = nodes[key]
 
     for key, value in obj.items():
         jump_row = value["NormalJumpRowName"]
         jump_row_array = value["OptionalJumpRowNameArray"]
         if jump_row != "":
-            nodes[jump_row].in_degree += 1
+            if jump_row in nodes:
+                nodes[jump_row].in_degree += 1
+            else:
+                print(f"Invalid jump target of {jump_row} in {p.name}")
         elif len(jump_row_array) >= 2:
             for target in jump_row_array:
                 nodes[target].in_degree += 1
         elif len(jump_row_array) == 1:
-            nodes[jump_row_array[0]].in_degree += 2
+            target = jump_row_array[0]
+            if target in nodes:
+                nodes[target].in_degree += 2
+            else:
+                print(f"Invalid jump target of {target} in {p.name}")
         elif key == "End":
             # sometimes there are mysterious rows after End
             break
@@ -95,30 +105,42 @@ def process_file(p: Path) -> str:
         if choice_flag:
             choice_string = f"\n|group{line_counter}={group_counter}\n" \
                             f"|option{line_counter}={choice_counter}"
+        if len(text) == 0:
+            text = [value['TextContent']]
+        new_text = []
+        for t in text:
+            new_text.append(i18n.get(t.get('Key', ""), t.get('SourceString', "")))
+        text = new_text
 
         if len(text) > 1:
             group_counter += 1
             line = f"|{line_counter}=reply\n" \
                    f"|group{line_counter}={group_counter}\n" + \
-                   "\n".join(f"|option{line_counter}_{index + 1}={t['SourceString']}" for index, t in enumerate(text))
+                   "\n".join(f"|option{line_counter}_{index + 1}={t}" for index, t in enumerate(text))
             result.append(line)
             choice_flag = True
             choice_counter = 1
             line_counter += 1
-        elif len(text) == 1:
-            value['TextContent']['SourceString'] = text[0]['SourceString']
-            text = []
         # no text in content list, either emoji or single line response
-        if "Texture" in value['ContentType']:
+        elif "Voice" in value['ContentType']:
+            # FIXME: support me in template
+            line = (f"|{line_counter}=voice\n"
+                    f"|file{line_counter}={value['AkOnEvent']['AssetPathName'].split('.')[-1]}"
+                    f"{profile_str}{choice_string}")
+            result.append(line)
+            line_counter += 1
+        elif "Texture" in value['ContentType']:
             line = (f"|{line_counter}=emote\n"
                     f"|file{line_counter}={value['TextureContent']['AssetPathName'].split('_')[-1]}"
                     f"{profile_str}{choice_string}")
             result.append(line)
             line_counter += 1
-        elif 'SourceString' not in value['TextContent']:
+        elif "GreetingCard" in value['ContentType']:
+            # FIXME: finish this
             pass
         else:
-            text = value['TextContent']['SourceString']
+            assert len(text) == 1
+            text = text[0]
             if is_player:
                 line = f"|{line_counter}=navigator\n|text{line_counter}={text}"
             else:
@@ -128,10 +150,11 @@ def process_file(p: Path) -> str:
             line_counter += 1
             result.append(line)
 
-        next_node = value["NormalJumpRowName"]
-        if next_node == "":
+        if len(value['OptionalJumpRowNameArray']) > 0:
             next_node = value['OptionalJumpRowNameArray'][0]
-        if node.node_id != "Start" and str(int(node.node_id) + 1) != next_node:
+        else:
+            next_node = value["NormalJumpRowName"]
+        if node.next_id != next_node:
             # skipping ahead: transitioning from option 1 to option 2
             choice_counter += 1
         elif node.in_degree >= 2 or nodes[next_node].in_degree >= 2:
@@ -147,13 +170,16 @@ def main():
     name_mapper = {
         'HuiXing': 'Celestia'
     }
+    skip = {
+        "Fuchsia"
+    }
 
     for parent in ka_phone_root.iterdir():
         if parent.is_file():
             continue
         conversation_name = parent.name.capitalize()
         conversation_name = name_mapper.get(conversation_name, conversation_name)
-        if conversation_name not in char_id_mapper.values():
+        if conversation_name not in char_id_mapper.values() or conversation_name in skip:
             continue
         tabs = []
         contents = []
@@ -163,9 +189,9 @@ def main():
             last_segment = name.split("_")[-1].split(".")[0]
             if name.startswith(conversation_name):
                 tab = "Friendship Lv. " + last_segment
-            elif name.startswith("PlayerBirthday"):
+            elif name.lower().startswith("playerbirthday"):
                 tab = "Player birthday " + last_segment
-            elif name.startswith("Birthday"):
+            elif name.lower().startswith("birthday"):
                 tab = f"{conversation_name} birthday " + last_segment
             tabs.append(tab)
             contents.append(process_file(file))
@@ -176,7 +202,8 @@ def main():
         p = Page(s, conversation_name + "/Strinova Comms")
         p.text = result
         p.save(summary="generate strinova comms")
-        break
+        global group_counter
+        group_counter = 1
 
 
 main()
