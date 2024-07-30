@@ -55,8 +55,16 @@ def upload_skill_demo():
                          ignore_warnings=True).upload()
 
 
+def upload_local():
+    p = Path("files")
+    for f in p.glob("*.*"):
+        target_file = FilePage(s, "File:" + f.name)
+        Uploader(s, target_file, source_filename=str(f), comment="batch upload",
+                 text="[[Category:Currency images]]").upload()
+
+
 def main():
-    upload_skill_demo()
+    upload_local()
 
 
 if __name__ == '__main__':

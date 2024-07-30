@@ -7,7 +7,8 @@ from pywikibot import Site, Page
 
 import json
 
-csv_root = Path("json/CSV")
+csv_root = Path(r"D:\ProgramFiles\FModel\output\Exports\PM\Content\PaperMan\CSV")
+localization_root = Path(r"D:\ProgramFiles\FModel\output\Exports\PM\Content\Localization\Game")
 
 
 def bwiki():
@@ -24,7 +25,7 @@ game_json = None
 def get_game_json():
     global game_json
     if game_json is None:
-        game_json = load_json("json/Game.json")
+        game_json = load_json(localization_root / "en/Game.json")
     return game_json
 
 
@@ -34,7 +35,7 @@ game_cn_json = None
 def get_game_json_cn():
     global game_cn_json
     if game_cn_json is None:
-        game_cn_json = load_json("json/GameCn.json")
+        game_cn_json = load_json(localization_root / "zh-Hans/Game.json")
     return game_cn_json
 
 
@@ -83,15 +84,20 @@ en_name_to_zh: dict[str, str] = dict((v, k) for k, v in name_to_en.items())
 char_id_mapper: dict[int, str] = {}
 
 
+def init_char_id_mapper():
+    for k, v in get_game_json()['RoleProfile'].items():
+        if "_NameCn" not in k:
+            continue
+        char_id_mapper[int(re.search(r'^\d+', k).group(0))] = v
+    char_id_mapper[205] = "Galatea"
+    # Sentinel Bot
+    char_id_mapper.pop(220)
+
+
+init_char_id_mapper()
+
+
 def get_char_by_id(char_id: int) -> str:
-    if len(char_id_mapper) == 0:
-        for k, v in get_game_json()['RoleProfile'].items():
-            if "_NameCn" not in k:
-                continue
-            char_id_mapper[int(re.search(r'^\d+', k).group(0))] = v
-        char_id_mapper[205] = "Galatea"
-        # Sentinel Bot
-        char_id_mapper.pop(220)
     return char_id_mapper.get(char_id, None)
 
 

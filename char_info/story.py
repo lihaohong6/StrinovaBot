@@ -1,12 +1,12 @@
 import wikitextparser as wtp
 from pywikibot import Page
 
-from utils import load_json, get_game_json, get_char_by_id, s
+from utils import load_json, get_game_json, get_char_by_id, s, get_table
 
 
 def generate_biography():
     char_stories = {}
-    for k, v in load_json("json/CSV/RoleBiography.json")[0]['Rows'].items():
+    for k, v in get_table("RoleBiography").items():
         char_id = v['RoleId']
         lst = char_stories.get(char_id, [])
         lst.append(k)
@@ -47,7 +47,7 @@ def generate_biography():
 
 def generate_return_letter():
     char_stories = {}
-    for k, v in load_json("json/CSV/ReturnLetterCfg.json")[0]['Rows'].items():
+    for k, v in get_table("ReturnLetterCfg").items():
         char_id = v['RoleId']
         lst = char_stories.get(char_id, [])
         lst.append(k)

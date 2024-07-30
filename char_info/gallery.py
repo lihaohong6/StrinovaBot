@@ -52,12 +52,12 @@ def generate_emotes():
 def generate_skins():
     @dataclass
     class SkinInfo:
-        id: int
+        id: list[int]
         quality: int
         name_cn: str
 
-    skins_table = load_json("json/CSV/RoleSkin.json")[0]['Rows']
-    store_skins_table = load_json("json/CSV/Goods.json")[0]['Rows']
+    skins_table = get_table("RoleSkin")
+    store_skins_table = get_table("Goods")
     i18n_skin = get_game_json()['RoleSkin']
     i18n_store = get_game_json()['Goods']
     skins: dict[str, list[SkinInfo]] = {}
@@ -65,9 +65,16 @@ def generate_skins():
     def add_skin(char_name, skin_id, quality, name_cn):
         lst = skins.get(char_name, [])
         # avoid dups
-        if any(s.name_cn == name_cn for s in lst):
+        duplicates = [s for s in lst if s.name_cn == name_cn]
+        if len(duplicates) > 0:
+            assert len(duplicates) == 1
+            d = duplicates[0]
+            d.id.append(skin_id)
+            if d.quality != quality:
+                print("Quality mismatch for " + char_name + " and " + str(skin_id))
+                d.quality = 0 if min(quality, d.quality) == 0 else max(quality, d.quality)
             return
-        lst.append(SkinInfo(skin_id, quality, name_cn))
+        lst.append(SkinInfo([skin_id], quality, name_cn))
         skins[char_name] = lst
 
     for k, v in skins_table.items():
@@ -80,7 +87,8 @@ def generate_skins():
         add_skin(char_name, skin_id, quality, name_cn)
     cn_skin_name_to_char_name = get_cn_wiki_skins()
     for k, v in store_skins_table.items():
-        if v['ItemType'] != 8:
+        # 4: skin; 8: IDCard
+        if v['ItemType'] not in {4, 8}:
             continue
         skin_id = v['Id']
         name_cn = v['Name']['SourceString']
@@ -91,10 +99,10 @@ def generate_skins():
         add_skin(char_name, skin_id, quality, name_cn)
 
     for char_name, skin_list in skins.items():
-        for skin in skin_list:
-            if skin.quality == 0:
-                skin.quality = 10
-        skin_list.sort(key=lambda x: x.quality, reverse=True)
+        if char_name not in en_name_to_zh:
+            print("Skipping character " + char_name)
+            continue
+        skin_list.sort(key=lambda x: x.quality if x.quality != 0 else 100, reverse=True)
 
         p = Page(s, char_name)
         parsed = wtp.parse(p.text)
@@ -115,17 +123,19 @@ def generate_skins():
             t.set_arg(name, value + "\n")
 
         for skin in skin_list:
-            k1 = f'{skin.id}_NameCn'
-            k2 = f'{skin.id}_Name'
-            if k1 in i18n_skin:
-                name_en = i18n_skin[k1]
-                description = i18n_skin[f'{skin.id}_Description']
-            elif k2 in i18n_store:
-                name_en = i18n_store[k2]
-                description = i18n_store.get(f'{skin.id}_Desc', "")
+            for skin_id in skin.id:
+                k1 = f'{skin_id}_NameCn'
+                k2 = f'{skin_id}_Name'
+                if k1 in i18n_skin:
+                    name_en = i18n_skin[k1]
+                    description = i18n_skin[f'{skin_id}_Description']
+                    break
+                elif k2 in i18n_store:
+                    name_en = i18n_store[k2]
+                    description = i18n_store.get(f'{skin_id}_Desc', "")
+                    break
             else:
-                continue
-            if char_name not in en_name_to_zh:
+                print(f"{skin.name_cn} for {char_name} not found")
                 continue
             name_zh = en_name_to_zh[char_name]
             target_file = FilePage(s, f"{char_name} Skin {name_en}.png")

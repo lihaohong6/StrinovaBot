@@ -1,15 +1,14 @@
 import wikitextparser as wtp
 from pywikibot import Page
 
-from utils import get_game_json, get_role_profile, get_char_by_id, s, get_default_weapon_id, get_weapon_name, \
-    get_weapon_type
+from utils import get_game_json, get_char_by_id, s, get_default_weapon_id, get_weapon_name, \
+    get_weapon_type, char_id_mapper
 
 
 def generate_weapons():
     from asset_utils import upload_weapon
     weapons = get_game_json()['Weapon']
-    get_role_profile(101)
-    for char_id, char_profile in get_role_profile.dict.items():
+    for char_id in char_id_mapper.keys():
         char_name = get_char_by_id(char_id)
         p = Page(s, char_name)
         parsed = wtp.parse(p.text)
