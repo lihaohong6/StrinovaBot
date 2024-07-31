@@ -1,6 +1,6 @@
 from char_info.char_infobox import generate_infobox, generate_character_selector
 from char_info.gallery import generate_emotes, generate_skins
-from char_info.dorm import generate_gifts
+from char_info.dorm import generate_gifts, generate_bond_items
 from char_info.skills import generate_skills, generate_string_energy_network
 from char_info.story import generate_biography, generate_return_letter
 
@@ -27,6 +27,7 @@ def main():
         "emotes": generate_emotes,
         "skins": generate_skins,
         "string_energy_network": generate_string_energy_network,
+        "bond_items": generate_bond_items,
         "gifts": generate_gifts,
         "character_selector": generate_character_selector,
     }

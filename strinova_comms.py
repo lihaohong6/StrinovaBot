@@ -84,6 +84,9 @@ def process_file(p: Path) -> str:
         value = obj[key]
         next_nodes = [t for t in value['OptionalJumpRowNameArray'] if t != ""]
         normal_jump_row_name = value['NormalJumpRowName']
+        if len(value['TextContentList']) > 1 and len(next_nodes) == 1:
+            next_nodes = [next_nodes[0], next_nodes[0]]
+
         if len(next_nodes) == 1 and normal_jump_row_name != "":
             print(f"Ambiguous jump in {key} of {p.name}. Guessing between {next_nodes[0]} and {normal_jump_row_name}")
             if normal_jump_row_name == "End" or int(normal_jump_row_name) > int(next_nodes[0]):

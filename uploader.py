@@ -19,7 +19,20 @@ def upload_emotes():
         if f.name.startswith("T_Dynamic_Emote_"):
             file_num = re.search(r"\d+", f.name).group(0)
             target = FilePage(s, f"File:Emote_{file_num}.png")
-            s.upload(target, source_filename=str(f.absolute()), text='[[Category:Emotes]]', comment='Batch upload emotes')
+            s.upload(target,
+                     source_filename=str(f.absolute()),
+                     text='[[Category:Emotes]]', comment='Batch upload emotes')
+
+
+def upload_achievement_icons():
+    path = resource_root / "Achievement"
+    for f in path.glob("*.png"):
+        if f.name.startswith("T_Dynamic_Achievement_"):
+            file_num = re.search(r"\d+", f.name).group(0)
+            target = FilePage(s, f"File:Achievement_{file_num}.png")
+            Uploader(s, target,
+                     source_filename=str(f.absolute()),
+                     text='[[Category:Achievement icons]]', comment="Batch upload achievement icons").upload()
 
 
 def upload_skill_demo():
@@ -64,7 +77,7 @@ def upload_local():
 
 
 def main():
-    upload_local()
+    upload_achievement_icons()
 
 
 if __name__ == '__main__':

@@ -19,7 +19,7 @@ def upload_weapon(char_name: str, weapon_id: int):
              text="[[Category:Weapon growth images]]", comment="upload from game assets").upload()
 
 
-def upload_item(item_id: int | str):
+def upload_item(item_id: int | str, cat: str):
     path = resource_root / f"Item/ItemIcon/T_Dynamic_Item_{item_id}.png"
     assert path.exists()
     p = FilePage(s, f"File:Item Icon {item_id}.png")
@@ -27,5 +27,5 @@ def upload_item(item_id: int | str):
         return
     Uploader(s, p,
              source_filename=str(path),
-             text="[[Category:Item icons]]",
+             text=f"[[Category:{cat}]]",
              comment="upload from game assets").upload()

@@ -6,7 +6,8 @@ from dataclasses import dataclass, field
 import wikitextparser as wtp
 from pywikibot import Page
 
-from utils import get_game_json, get_table, get_char_by_id, s
+from asset_utils import upload_item
+from utils import get_game_json, get_table, get_char_by_id, s, char_id_mapper
 
 
 def generate_gifts():
@@ -86,3 +87,55 @@ def generate_gifts():
         t.set_arg("1", char_name, positional=True)
         p.text = str(parsed)
         p.save("enable character gift")
+
+
+def generate_bond_items():
+    @dataclass
+    class Item:
+        id: int
+        file: str
+        name: str
+        description: str
+        story: str
+
+        def to_template(self):
+            return f"{{{{ BondItem | file={self.file} " \
+                   f"| description={self.description} | story={self.story} }}}}"
+
+    i18n = get_game_json()['PledgeItem']
+    items_table = get_table("PledgeItem")
+    id_to_items: dict[int, list[Item]] = {}
+    for k, v in items_table.items():
+        role_id = v['OwnerRoleId']
+        try:
+            item = Item(v['Id'], v['ItemIcon']['AssetPathName'].split("_")[-1],
+                        i18n[f"{k}_Name"], i18n[f"{k}_Desc"], i18n[f"{k}_ItemStory"])
+            if "NoTextFound" in item.name:
+                continue
+            if role_id not in id_to_items:
+                id_to_items[role_id] = []
+            id_to_items[role_id].append(item)
+        except KeyError:
+            continue
+    for role_id, items in id_to_items.items():
+        char_name = char_id_mapper[role_id]
+        p = Page(s, char_name)
+        parsed = wtp.parse(p.text)
+        for t in parsed.templates:
+            if t.name.strip() == "BondItems":
+                break
+        else:
+            raise RuntimeError("Template not found on " + char_name)
+        tabs = wtp.Template("{{Tab/tabs}}")
+        contents = wtp.Template("{{Tab/content}}")
+        group_name = f"BondItems{char_name}"
+        tabs.set_arg("group", group_name)
+        contents.set_arg("group", group_name)
+        for item in items:
+            tabs.set_arg("", item.name, positional=True)
+            contents.set_arg("", item.to_template() + "\n", positional=True)
+            upload_item(item.file, cat="Bond item icons")
+        t.set_arg("1", "\n" + str(tabs) + "\n" + str(contents) + "\n", positional=True)
+        if p.text.strip() != str(parsed).strip():
+            p.text = str(parsed)
+            p.save("generate bond items")
