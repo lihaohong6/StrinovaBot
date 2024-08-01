@@ -23,7 +23,8 @@ class Achievement:
         return f"File:Achievement {self.id}.png|" + \
             '<span style="font-size: larger">' + f"'''{self.name}'''</span><br/>" + \
             f"'''Unlock''': {self.unlock}<br/>" + \
-            f"<small>{self.description}</small>"
+            f"<small>{self.description}</small>" + \
+            f"|alt=Icon of achievement {self.name}"
 
 
 def achievements_to_gallery(achievements: list[Achievement]) -> str:
