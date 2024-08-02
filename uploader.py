@@ -3,6 +3,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import pywikibot
 from pywikibot import Site, FilePage
 from pywikibot.site._apisite import APISite
 from pywikibot.site._upload import Uploader
@@ -74,6 +75,22 @@ def upload_local():
         target_file = FilePage(s, "File:" + f.name)
         Uploader(s, target_file, source_filename=str(f), comment="batch upload",
                  text="[[Category:Currency images]]").upload()
+
+
+def upload_file(url: str, target: FilePage, text: str, summary: str = "batch upload file"):
+    while True:
+        if target.exists():
+            return
+        try:
+            Uploader(s, target, source_url=url, text=text, comment=summary).upload()
+        except Exception as e:
+            search = re.search(r"duplicate of \['([^']+)'", str(e))
+            if 'already exists' in str(e):
+                return
+            if "http-timed-out" in str(e):
+                continue
+            assert search is not None
+            target.set_redirect_target(FilePage(s, f"File:{search.group(1)}"), create=True)
 
 
 def main():
