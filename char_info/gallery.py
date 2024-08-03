@@ -6,6 +6,7 @@ import wikitextparser as wtp
 from pywikibot import Page, FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
 
+from asset_utils import portrait_root
 from uploader import upload_file
 from utils import get_table, get_game_json, zh_name_to_en, load_json, get_char_by_id, get_cn_wiki_skins, \
     en_name_to_zh
@@ -61,6 +62,7 @@ class SkinInfo:
     description_cn: str
     name_en: str = ""
     description_en: str = ""
+    portrait: str = ""
 
 
 def parse_skin_tables():
@@ -106,6 +108,7 @@ def parse_skin_tables():
         if name_cn not in cn_skin_name_to_char_name:
             continue
         char_name = zh_name_to_en(cn_skin_name_to_char_name[name_cn])
+        assert char_name is not None
         add_skin(char_name, skin_id, quality, name_cn, v['Desc']['SourceString'])
     return skins
 
@@ -120,27 +123,48 @@ def upload_skins(char_name: str, skin_list: list[SkinInfo]) -> list[SkinInfo]:
     name_zh = en_name_to_zh[char_name]
     skins = [Skin(FilePage(bwiki(), f"File:{name_zh}时装-{skin.name_cn}.png"),
                   FilePage(s, f"File:{char_name} Skin {skin.name_en}.png"),
-                  skin) for skin in skin_list]
+                  skin)
+             for skin in skin_list]
 
     existing_source = set(p.title()
                           for p in PreloadingGenerator(skin.source for skin in skins)
                           if p.exists())
-    existing_target = set(p.title()
-                          for p in PreloadingGenerator(skin.target for skin in skins)
-                          if p.exists())
+    existing_targets = set(p.title()
+                           for p in PreloadingGenerator(skin.target for skin in skins)
+                           if p.exists())
 
     skin_list: list[SkinInfo] = []
     for skin in skins:
-        if skin.target.title() not in existing_target:
+        if skin.target.title() not in existing_targets:
             if skin.source.title() not in existing_source:
                 continue
-            upload_file(skin.source.get_file_url(), skin.target,
-                        text=f"Taken from [https://wiki.biligame.com/klbq/"
+            upload_file(text=f"Taken from [https://wiki.biligame.com/klbq/"
                              f"{skin.source.title(with_ns=True, underscore=True)} bwiki], "
                              f"this image is licensed under CC BY-NC-SA 4.0."
                              f"[[Category:Skin screenshots]]",
-                        summary="upload file from bwiki")
+                        target=skin.target,
+                        summary="upload file from bwiki",
+                        url=skin.source.get_file_url())
         skin_list.append(skin.skin)
+
+    targets = [FilePage(s, f"File:{char_name} Skin Portrait {skin.name_en}.png") for skin in skin_list]
+    existing_targets = set(p.title()
+                           for p in PreloadingGenerator(targets)
+                           if p.exists())
+    for index, skin in enumerate(skin_list):
+        target = targets[index]
+        if target.title() not in existing_targets:
+            source = portrait_root / f"{name_zh}时装立绘-{skin.name_cn}.png"
+            if not source.exists():
+                source = portrait_root / f"{name_zh.split('·')[0]}时装立绘-{skin.name_cn}.png"
+                if not source.exists():
+                    continue
+            upload_file(text="[[Category:Skin portraits]]",
+                        target=target,
+                        summary="upload portrait file",
+                        file=source)
+        skin.portrait = skin.name_en
+
     return skin_list
 
 
@@ -175,10 +199,10 @@ def make_skin_template(t: wtp.Template, char_name: str, skin_list: list[SkinInfo
 
     skin_counter = 1
 
-    def add_arg(name, value):
-        if (t.has_arg(name) and value.strip() == "") or value.strip() == "!NoTextFound!":
-            return
-        t.set_arg(name, value + "\n")
+    def add_arg(name, value, after: str = None):
+        # if (t.has_arg(name) and value.strip() == "") or value.strip() == "!NoTextFound!":
+        #     return
+        t.set_arg(name, value + "\n", after=after)
 
     for skin in skin_list:
         name_en = skin.name_en
@@ -186,6 +210,7 @@ def make_skin_template(t: wtp.Template, char_name: str, skin_list: list[SkinInfo
         add_arg(f"Name{skin_counter}", name_en)
         add_arg(f"Quality{skin_counter}", str(skin.quality))
         add_arg(f"Description{skin_counter}", description)
+        add_arg(f"Portrait{skin_counter}", skin.portrait, after=f"Description{skin_counter}")
         skin_counter += 1
 
 

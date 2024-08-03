@@ -98,12 +98,16 @@ def upload_local():
                  text="[[Category:Currency images]]").upload()
 
 
-def upload_file(url: str, target: FilePage, text: str, summary: str = "batch upload file"):
+def upload_file(text: str, target: FilePage, summary: str = "batch upload file",
+                file: str | Path = None, url: str = None):
     while True:
         if target.exists():
             return
         try:
-            Uploader(s, target, source_url=url, text=text, comment=summary).upload()
+            if url is not None:
+                Uploader(s, target, source_url=url, text=text, comment=summary).upload()
+            if file is not None:
+                Uploader(s, target, source_filename=str(file), text=text, comment=summary).upload()
         except Exception as e:
             search = re.search(r"duplicate of \['([^']+)'", str(e))
             if 'already exists' in str(e):

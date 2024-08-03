@@ -12,7 +12,7 @@ name_to_en: dict[str, str] = {
     "香奈美": "Kanami",
     "艾卡": "Eika",
     "加拉蒂亚·利里": "Galatea",
-    "奥黛丽·格罗夫·": "Audrey",
+    "奥黛丽·格罗夫": "Audrey",
     "玛德蕾娜·利里": "Maddelena",
     "绯莎": "Fuchsia",
     "星绘": "Celestia",

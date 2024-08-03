@@ -5,7 +5,7 @@ from pywikibot.site._upload import Uploader
 
 s = Site()
 resource_root = Path(r"D:\ProgramFiles\FModel\output\Exports\PM\Content\PaperMan\UI\Atlas\DynamicResource")
-
+portrait_root = Path(r"D:\Strinova\Portrait\result")
 
 def upload_weapon(char_name: str, weapon_id: int):
     weapons_root = resource_root / r"Weapon\InGameGrowth"
