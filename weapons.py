@@ -5,7 +5,9 @@ import wikitextparser as wtp
 from pywikibot.site._upload import Uploader
 from wikitextparser import Template
 
-from utils import get_game_json, get_table, get_game_json_cn, s, char_id_mapper, get_default_weapon_id, bwiki
+from utils import get_game_json, get_table, get_game_json_cn, get_default_weapon_id
+from wiki_utils import bwiki, s
+from global_config import char_id_mapper
 
 
 @dataclass

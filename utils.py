@@ -1,18 +1,14 @@
-import pdb
 import re
 from pathlib import Path
 
 import requests
-from pywikibot import Site, Page
 
 import json
+from global_config import name_to_en, char_id_mapper
+from wiki_utils import bwiki
 
 csv_root = Path(r"D:\ProgramFiles\FModel\output\Exports\PM\Content\PaperMan\CSV")
 localization_root = Path(r"D:\ProgramFiles\FModel\output\Exports\PM\Content\Localization\Game")
-
-
-def bwiki():
-    return Site(code="bwiki")
 
 
 def load_json(file: str | Path):
@@ -49,27 +45,6 @@ def get_game_json_ja():
     return game_ja_json
 
 
-name_to_en: dict[str, str] = {
-    "米雪儿·李": "Michele",
-    "信": "Nobunaga",
-    "心夏": "Kokona",
-    "伊薇特": "Yvette",
-    "芙拉薇娅": "Flavia",
-    "明": "Ming",
-    "拉薇": "Lawine",
-    "梅瑞狄斯": "Meredith",
-    "令": "Reiichi",
-    "香奈美": "Kanami",
-    "艾卡": "Eika",
-    "加拉蒂亚": "Galatea",
-    "奥黛丽": "Audrey",
-    "玛德蕾娜": "Maddelena",
-    "绯莎": "Fuchsia",
-    "星绘": "Celestia",
-    "白墨": "Bai Mo"
-}
-
-
 def zh_name_to_en(o: str) -> str:
     if o in name_to_en:
         return name_to_en[o]
@@ -81,28 +56,12 @@ def zh_name_to_en(o: str) -> str:
 
 en_name_to_zh: dict[str, str] = dict((v, k) for k, v in name_to_en.items())
 
-char_id_mapper: dict[int, str] = {}
-
-
-def init_char_id_mapper():
-    for k, v in get_game_json()['RoleProfile'].items():
-        if "_NameCn" not in k:
-            continue
-        char_id_mapper[int(re.search(r'^\d+', k).group(0))] = v
-    char_id_mapper[205] = "Galatea"
-    # Sentinel Bot
-    char_id_mapper.pop(220)
-
-
-init_char_id_mapper()
-
 
 def get_char_by_id(char_id: int) -> str:
     return char_id_mapper.get(char_id, None)
 
 
 def get_id_by_char(char_name: str) -> int | None:
-    get_char_by_id(0)
     for k, v in char_id_mapper.items():
         if v == char_name:
             return k
@@ -176,6 +135,7 @@ def download_file(url, target: Path):
 
 
 def get_cn_wiki_skins():
+    from pywikibot import Page
     p = Page(bwiki(), "模块:皮肤/RoleSkinData")
     matches = re.findall(r'\["([^"]+)"][^"]+Role = "([^"]+)"', p.text)
     return dict((match[0], match[1]) for match in matches)
@@ -186,4 +146,3 @@ def get_weapon_type(weapon_id: int | str) -> str:
     return get_table("Weapon")[weapon_id]['Type'].split("::")[1]
 
 
-s = Site()

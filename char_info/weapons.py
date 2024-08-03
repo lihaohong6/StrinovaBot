@@ -1,8 +1,10 @@
 import wikitextparser as wtp
 from pywikibot import Page
 
-from utils import get_game_json, get_char_by_id, s, get_default_weapon_id, get_weapon_name, \
-    get_weapon_type, char_id_mapper
+from utils import get_game_json, get_char_by_id, get_default_weapon_id, get_weapon_name, \
+    get_weapon_type
+from wiki_utils import s
+from global_config import char_id_mapper
 
 
 def generate_weapons():

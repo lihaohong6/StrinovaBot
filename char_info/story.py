@@ -1,7 +1,8 @@
 import wikitextparser as wtp
 from pywikibot import Page
 
-from utils import load_json, get_game_json, get_char_by_id, s, get_table
+from utils import load_json, get_game_json, get_char_by_id, get_table
+from wiki_utils import s
 
 
 def generate_biography():

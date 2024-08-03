@@ -3,7 +3,8 @@ from dataclasses import dataclass
 
 from pywikibot import Page
 
-from utils import get_table, get_game_json, s
+from utils import get_table, get_game_json
+from wiki_utils import s
 
 import wikitextparser as wtp
 

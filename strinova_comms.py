@@ -7,7 +7,9 @@ import json
 from pathlib import Path
 import re
 
-from utils import csv_root, get_table, char_id_mapper, get_game_json, s
+from utils import csv_root, get_table, get_game_json
+from wiki_utils import s
+from global_config import char_id_mapper
 
 group_counter = 1
 num = -1

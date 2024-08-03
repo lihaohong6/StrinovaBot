@@ -5,57 +5,72 @@ from dataclasses import dataclass, field
 
 import wikitextparser as wtp
 from pywikibot import Page
+from pywikibot.pagegenerators import PreloadingGenerator
 
 from asset_utils import upload_item
-from utils import get_game_json, get_table, get_char_by_id, s, char_id_mapper
+from global_config import characters_with_dorms, char_id_mapper
+from uploader import upload_item_icons
+from utils import get_game_json, get_table, get_char_by_id
+from wiki_utils import s
 
 
-def generate_gifts():
-    @dataclass
-    class Gift:
-        id: int
-        name: str = ""
-        quality: int | str = -1
-        file: str = ""
-        description: str = ""
-        characters: dict[str, tuple[int, int]] = field(default_factory=dict)
-        best_characters: list[str] = field(default_factory=list)
+@dataclass
+class Gift:
+    id: int
+    name: str = ""
+    quality: int | str = -1
+    file: str = ""
+    description: str = ""
+    characters: dict[str, tuple[int, int]] = field(default_factory=dict)
+    best_characters: list[str] = field(default_factory=list)
 
-    i18n = get_game_json()['Item']
+
+def get_gifts() -> dict[int, Gift]:
     gift_json = get_table("RoleFavorabilityGiftPresent")
     gift_dict: dict[int, Gift] = {}
     for gift in gift_json.values():
         gift_id = gift['Gift']
         char_id = gift['RoleId']
         char_name = get_char_by_id(char_id)
+        if char_name not in characters_with_dorms:
+            continue
         favorability = gift['Favorability']
         like_level = gift['LikeLevel']
         if gift_id not in gift_dict:
             gift_dict[gift_id] = Gift(gift_id)
         gift_dict[gift_id].characters[char_name] = (favorability, like_level)
+    return gift_dict
+
+
+def generate_gifts():
+
+    i18n = get_game_json()['Item']
+    gift_dict: dict[int, Gift] = get_gifts()
     item_table = get_table("Item")
     gifts = list(gift_dict.values())
     for gift in gifts:
         g = item_table[gift.id]
         gift.file = re.search(r"_(\d+)$", g['IconItem']['AssetPathName']).group(1)
         gift.quality = g['Quality']
-        gift.name = i18n[f"{gift.id}_Name"]
-        gift.description = i18n[f"{gift.id}_Desc"]
+        gift.name = g['Name']['SourceString']
+        gift.description = g['Desc']['SourceString']
+        key = f"{gift.id}_Name"
+        if key in i18n:
+            gift.name = i18n[key]
+            gift.description = i18n[f"{gift.id}_Desc"]
 
     gifts = [g
              for g in sorted(gifts, key=lambda t: t.quality, reverse=True)
              if g.file != "10001"]
-    all_recipients = set(gifts[0].characters.keys())
-    for g in gifts:
-        all_recipients.intersection_update(set(g.characters.keys()))
-        # upload_item(g.file)
     for gift in gifts:
         max_favorability = max(map(lambda t: t[0], gift.characters.values()))
         gift.best_characters = list(
             map(lambda t: t[0],
-                filter(lambda t: t[1][0] == max_favorability and t[0] in all_recipients, gift.characters.items())))
-        if len(gift.best_characters) == len(all_recipients):
+                filter(lambda t: t[1][0] == max_favorability and t[0] in characters_with_dorms, gift.characters.items())))
+        if len(gift.best_characters) == len(characters_with_dorms):
             gift.best_characters = ["Everyone"]
+
+    upload_item_icons([g.file for g in gifts], cat="Gift icons")
 
     # quality_table = get_quality_table()
     # for g in gifts.values():
@@ -74,8 +89,9 @@ def generate_gifts():
     p.text = text
     p.save(summary="update gift data")
 
-    for char_name in all_recipients:
-        p = Page(s, char_name)
+    all_recipients = PreloadingGenerator(Page(s, char) for char in characters_with_dorms)
+    for p in all_recipients:
+        char_name = p.title()
         parsed = wtp.parse(p.text)
         for t in parsed.templates:
             if t.name.strip() == "CharacterGifts":
@@ -139,3 +155,8 @@ def generate_bond_items():
         if p.text.strip() != str(parsed).strip():
             p.text = str(parsed)
             p.save("generate bond items")
+
+
+if __name__ == "__main__":
+    generate_gifts()
+    # generate_bond_items()

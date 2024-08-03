@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pywikibot
 from pywikibot import Site, FilePage
+from pywikibot.pagegenerators import PreloadingGenerator
 from pywikibot.site._apisite import APISite
 from pywikibot.site._upload import Uploader
 
@@ -67,6 +68,26 @@ def upload_skill_demo():
                          comment="batch upload skill videos",
                          text="Video from official site\n\n[[Category:Skill demos]]",
                          ignore_warnings=True).upload()
+
+
+def upload_item_icons(items: list[int | str], cat: str):
+    targets = []
+    paths = []
+    for item in items:
+        path = resource_root / f"Item/ItemIcon/T_Dynamic_Item_{item}.png"
+        assert path.exists()
+        paths.append(path)
+        targets.append(FilePage(s, f"File:Item Icon {item}.png"))
+    existing = set(p.title() for p in PreloadingGenerator(targets) if p.exists())
+    for index, item in enumerate(items):
+        target = targets[index]
+        if target.title() in existing:
+            continue
+        Uploader(s, target, source_filename=str(paths[index]),
+                 comment="batch upload items",
+                 text=f"[[Category:{cat}]]",
+                 ignore_warnings=False).upload()
+
 
 
 def upload_local():

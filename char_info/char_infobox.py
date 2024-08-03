@@ -4,8 +4,10 @@ from typing import Callable
 import wikitextparser as wtp
 from pywikibot import Page
 
-from utils import s, get_game_json_cn, get_game_json_ja, camp_id_to_string, role_id_to_string, get_weapon_name, \
-    get_default_weapon_id, get_game_json, get_char_by_id, char_id_mapper, get_role_profile, get_weapon_type
+from utils import get_game_json_cn, get_game_json_ja, camp_id_to_string, role_id_to_string, get_weapon_name, \
+    get_default_weapon_id, get_game_json, get_char_by_id, get_role_profile, get_weapon_type
+from wiki_utils import s
+from global_config import char_id_mapper
 
 
 def nop(x: str | list[str]):

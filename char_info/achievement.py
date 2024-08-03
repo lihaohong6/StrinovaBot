@@ -1,7 +1,8 @@
 from pywikibot import Page
 
 from achievements import get_achievements, achievements_to_tabs
-from utils import char_id_mapper, s
+from wiki_utils import s
+from global_config import char_id_mapper
 
 import wikitextparser as wtp
 

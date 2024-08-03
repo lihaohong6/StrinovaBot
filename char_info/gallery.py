@@ -7,8 +7,9 @@ from pywikibot import Page, FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from uploader import upload_file
-from utils import get_table, get_game_json, zh_name_to_en, s, load_json, get_char_by_id, get_cn_wiki_skins, \
-    en_name_to_zh, bwiki
+from utils import get_table, get_game_json, zh_name_to_en, load_json, get_char_by_id, get_cn_wiki_skins, \
+    en_name_to_zh
+from wiki_utils import bwiki, s
 
 
 def generate_emotes():

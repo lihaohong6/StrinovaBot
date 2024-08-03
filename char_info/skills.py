@@ -4,8 +4,9 @@ import wikitextparser as wtp
 from pywikibot import Page
 from pywikibot.pagegenerators import GeneratorFactory
 
-from utils import get_game_json, get_table, get_role_profile, get_char_by_id, s, bwiki, en_name_to_zh, get_id_by_char, \
+from utils import get_game_json, get_table, get_role_profile, get_char_by_id, en_name_to_zh, get_id_by_char, \
     get_weapon_name, get_default_weapon_id
+from wiki_utils import bwiki, s
 
 
 def generate_skills():
