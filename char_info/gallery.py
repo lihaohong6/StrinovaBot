@@ -6,7 +6,7 @@ import wikitextparser as wtp
 from pywikibot import Page, FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
 
-from asset_utils import portrait_root
+from asset_utils import portrait_root, skin_back_root
 from uploader import upload_file
 from utils import get_table, get_game_json, zh_name_to_en, load_json, get_char_by_id, get_cn_wiki_skins, \
     en_name_to_zh
@@ -63,6 +63,7 @@ class SkinInfo:
     name_en: str = ""
     description_en: str = ""
     portrait: str = ""
+    back: str = ""
 
 
 def parse_skin_tables():
@@ -147,6 +148,14 @@ def upload_skins(char_name: str, skin_list: list[SkinInfo]) -> list[SkinInfo]:
                         url=skin.source.get_file_url())
         skin_list.append(skin.skin)
 
+    process_portraits(char_name, name_zh, skin_list)
+    process_back_images(char_name, name_zh, skin_list)
+
+    return skin_list
+
+
+def process_portraits(char_name, name_zh, skin_list):
+    # process portraits
     targets = [FilePage(s, f"File:{char_name} Skin Portrait {skin.name_en}.png") for skin in skin_list]
     existing_targets = set(p.title()
                            for p in PreloadingGenerator(targets)
@@ -165,7 +174,27 @@ def upload_skins(char_name: str, skin_list: list[SkinInfo]) -> list[SkinInfo]:
                         file=source)
         skin.portrait = skin.name_en
 
-    return skin_list
+
+def process_back_images(char_name, name_zh, skin_list):
+    # process portraits
+    targets = [FilePage(s, f"File:{char_name} Skin Back {skin.name_en}.png") for skin in skin_list]
+    existing_targets = set(p.title()
+                           for p in PreloadingGenerator(targets)
+                           if p.exists())
+    for index, skin in enumerate(skin_list):
+        target = targets[index]
+        if target.title() not in existing_targets:
+            source = skin_back_root / f"{name_zh}时装背面-{skin.name_cn}.png"
+            if not source.exists():
+                source = skin_back_root / f"{name_zh.split('·')[0]}时装背面-{skin.name_cn}.png"
+                if not source.exists():
+                    print(source.name + " not found!!!")
+                    continue
+            upload_file(text="[[Category:Skin back screenshots]]",
+                        target=target,
+                        summary="upload skin screenshot",
+                        file=source)
+        skin.back = skin.name_en
 
 
 def localize_skins(skin_list):
@@ -210,6 +239,7 @@ def make_skin_template(t: wtp.Template, char_name: str, skin_list: list[SkinInfo
         add_arg(f"Name{skin_counter}", name_en)
         add_arg(f"Quality{skin_counter}", str(skin.quality))
         add_arg(f"Description{skin_counter}", description)
+        add_arg(f"Back{skin_counter}", skin.back, after=f"Description{skin_counter}")
         add_arg(f"Portrait{skin_counter}", skin.portrait, after=f"Description{skin_counter}")
         skin_counter += 1
 

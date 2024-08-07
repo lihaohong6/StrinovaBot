@@ -89,7 +89,6 @@ def upload_item_icons(items: list[int | str], cat: str):
                  ignore_warnings=False).upload()
 
 
-
 def upload_local():
     p = Path("files")
     for f in p.glob("*.*"):
