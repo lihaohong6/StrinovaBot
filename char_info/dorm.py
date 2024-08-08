@@ -10,7 +10,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 from asset_utils import upload_item
 from global_config import characters_with_dorms, char_id_mapper
 from uploader import upload_item_icons
-from utils import get_game_json, get_table, get_char_by_id
+from utils import get_game_json, get_table, get_char_by_id, make_tab_group
 from wiki_utils import s
 
 
@@ -144,7 +144,7 @@ def generate_bond_items():
             raise RuntimeError("Template not found on " + char_name)
         tabs = wtp.Template("{{Tab/tabs}}")
         contents = wtp.Template("{{Tab/content}}")
-        group_name = f"BondItems{char_name}"
+        group_name = make_tab_group(f"BondItems{char_name}")
         tabs.set_arg("group", group_name)
         contents.set_arg("group", group_name)
         for item in items:
@@ -158,5 +158,5 @@ def generate_bond_items():
 
 
 if __name__ == "__main__":
-    generate_gifts()
-    # generate_bond_items()
+    # generate_gifts()
+    generate_bond_items()

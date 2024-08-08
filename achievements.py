@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from pywikibot import Page
 
-from utils import get_table, get_game_json
+from utils import get_table, get_game_json, make_tab_group
 from wiki_utils import s
 
 import wikitextparser as wtp
@@ -76,6 +76,7 @@ def get_achievements_by_level(a_list: list[Achievement]) -> dict[int, list[Achie
 
 def achievements_to_tabs(achievements: list[Achievement], group: str) -> str:
     levels = get_achievements_by_level(achievements)
+    group = make_tab_group(group)
     tabs = "{{Tab/tabs | " + f"group={group} | " + " | ".join(f"Level {k}" for k in levels.keys()) + " }}"
     contents = []
     for a_list in levels.values():

@@ -146,3 +146,5 @@ def get_weapon_type(weapon_id: int | str) -> str:
     return get_table("Weapon")[weapon_id]['Type'].split("::")[1]
 
 
+def make_tab_group(original: str) -> str:
+    return original.replace(" ", "").replace("-", "")

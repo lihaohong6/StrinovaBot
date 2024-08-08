@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 import re
 
-from utils import csv_root, get_table, get_game_json
+from utils import csv_root, get_table, get_game_json, make_tab_group
 from wiki_utils import s
 from global_config import char_id_mapper
 
@@ -207,7 +207,7 @@ def main():
             processed = process_file(file)
             if processed != "":
                 x.append((tab[0], processed, tab[1]))
-        group_string = f" group=strinova_comms_{conversation_name} | "
+        group_string = f" group=strinova_comms_{make_tab_group(conversation_name)} | "
         tabs, contents = zip(*[(t[0], t[1]) for t in sorted(x, key=lambda t: t[2])])
         result = "{{Tab/tabs| " + group_string + " | ".join(tabs) + " }}\n" + \
                  "{{Tab/content| " + group_string + "\n\n" + "\n\n|\n\n".join(contents) + "\n\n}}" + \

@@ -32,7 +32,7 @@ def main():
         "character_selector": generate_character_selector,
     }
     from sys import argv
-    assert len(argv) == 2
+    assert len(argv) == 2, ", ".join(f.keys())
     arg = argv[1]
     if arg in f:
         f[arg]()
