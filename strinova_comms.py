@@ -7,7 +7,8 @@ import json
 from pathlib import Path
 import re
 
-from utils import csv_root, get_table, get_game_json, make_tab_group
+from utils import get_table, get_game_json, make_tab_group
+from asset_utils import csv_root
 from wiki_utils import s
 from global_config import char_id_mapper
 
@@ -221,4 +222,5 @@ def main():
         group_counter = 1
 
 
-main()
+if __name__ == "__name__":
+    main()

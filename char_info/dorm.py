@@ -7,9 +7,8 @@ import wikitextparser as wtp
 from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
-from asset_utils import upload_item
 from global_config import characters_with_dorms, char_id_mapper
-from uploader import upload_item_icons
+from uploader import upload_item_icons, upload_item
 from utils import get_game_json, get_table, get_char_by_id, make_tab_group
 from wiki_utils import s
 

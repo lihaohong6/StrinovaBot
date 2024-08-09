@@ -4,11 +4,9 @@ from pathlib import Path
 import requests
 
 import json
+from asset_utils import csv_root, localization_root
 from global_config import name_to_en, char_id_mapper
 from wiki_utils import bwiki
-
-csv_root = Path(r"D:\Strinova\CNExport\Exports\PM\Content\PaperMan\CSV")
-localization_root = Path(r"D:\ProgramFiles\FModel\output\Exports\PM\Content\Localization\Game")
 
 
 def load_json(file: str | Path):

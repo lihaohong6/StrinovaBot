@@ -6,7 +6,7 @@ import wikitextparser as wtp
 from pywikibot import Page, FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
 
-from asset_utils import portrait_root, skin_back_root
+from asset_utils import portrait_root, skin_back_root, local_asset_root
 from uploader import upload_file
 from utils import get_table, get_game_json, zh_name_to_en, load_json, get_char_by_id, get_cn_wiki_skins, \
     en_name_to_zh
@@ -163,11 +163,16 @@ def process_portraits(char_name, name_zh, skin_list):
     for index, skin in enumerate(skin_list):
         target = targets[index]
         if target.title() not in existing_targets:
-            source = portrait_root / f"{name_zh}时装立绘-{skin.name_cn}.png"
-            if not source.exists():
-                source = portrait_root / f"{name_zh.split('·')[0]}时装立绘-{skin.name_cn}.png"
-                if not source.exists():
-                    continue
+            possible_sources = [
+                portrait_root / f"{name_zh}时装立绘-{skin.name_cn}.png",
+                portrait_root / f"{name_zh.split('·')[0]}时装立绘-{skin.name_cn}.png",
+                local_asset_root / f"{char_name} Skin Portrait {skin.name_cn}.png",
+            ]
+            for source in possible_sources:
+                if source.exists():
+                    break
+            else:
+                continue
             upload_file(text="[[Category:Skin portraits]]",
                         target=target,
                         summary="upload portrait file",

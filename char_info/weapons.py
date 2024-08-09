@@ -8,7 +8,7 @@ from global_config import char_id_mapper
 
 
 def generate_weapons():
-    from asset_utils import upload_weapon
+    from uploader import upload_weapon
     weapons = get_game_json()['Weapon']
     for char_id in char_id_mapper.keys():
         char_name = get_char_by_id(char_id)
