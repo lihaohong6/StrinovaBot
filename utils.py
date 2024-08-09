@@ -83,7 +83,7 @@ role_id_to_string = {
 table_cache: dict[str, dict] = {}
 
 
-def get_table(file_name: str) -> dict:
+def get_table(file_name: str) -> dict[int, dict]:
     if file_name in table_cache:
         return table_cache[file_name]
     table = dict((int(k), v) for k, v in load_json(csv_root / f"{file_name}.json")[0]['Rows'].items())

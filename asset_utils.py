@@ -5,6 +5,7 @@ cn_export_root = Path(r"D:\Strinova\CNExport\Exports\PM\Content")
 csv_root = cn_export_root / r"PaperMan\CSV"
 resource_root = cn_export_root / r"PaperMan\UI\Atlas\DynamicResource"
 audio_root = cn_export_root / r"WwiseAudio\Windows"
+audio_event_root = cn_export_root / r"WwiseAssets\AkEvent"
 
 # global export
 en_export_root = Path(r"D:\Strinova\GlobalExport\Exports\PM\Content")
