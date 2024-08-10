@@ -1,3 +1,4 @@
+from char_info.achievement import generate_achievements
 from char_info.char_infobox import generate_infobox, generate_character_selector
 from char_info.gallery import generate_emotes, generate_skins
 from char_info.dorm import generate_gifts, generate_bond_items
@@ -30,6 +31,7 @@ def main():
         "bond_items": generate_bond_items,
         "gifts": generate_gifts,
         "character_selector": generate_character_selector,
+        "achievements": generate_achievements
     }
     from sys import argv
     assert len(argv) == 2, ", ".join(f.keys())

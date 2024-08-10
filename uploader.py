@@ -1,16 +1,12 @@
 import re
-import shutil
-import subprocess
 from pathlib import Path
 
-import pywikibot
 from pywikibot import Site, FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
 from pywikibot.site._apisite import APISite
 from pywikibot.site._upload import Uploader
 
-from asset_utils import resource_root, s
-from utils import download_file
+from asset_utils import resource_root
 
 s: APISite = Site()
 

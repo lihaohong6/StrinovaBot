@@ -11,7 +11,7 @@ import wikitextparser as wtp
 
 @dataclass
 class Achievement:
-    id: str
+    id: int
     level: int
     type: int
     quality: int
@@ -50,12 +50,12 @@ def get_achievements() -> list[Achievement]:
     achievements = []
     for key, value in achievement_table.items():
         try:
-            name = i18n[f'{key}_Name']
-            unlock: str = i18n[f'{key}_Explain']
+            name = i18n.get(f'{key}_Name', value['Name']['SourceString'])
+            unlock: str = i18n.get(f'{key}_Explain', value['Explain']['SourceString'])
             if "{0}" in unlock:
                 unlock = unlock.format(value['Param2'][0])
                 unlock = re.sub(r"<Chat-Self>(\d+)</>", lambda match: match.group(1), unlock)
-            description = i18n[f'{key}_Details']
+            description = i18n.get(f'{key}_Details', value['Details']['SourceString'])
             achievement = Achievement(key, value['Level'], value['Type'], value['Quality'], value['Role'],
                                       name, unlock, description)
             achievements.append(achievement)

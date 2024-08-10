@@ -124,7 +124,9 @@ def generate_bond_items():
         role_id = v['OwnerRoleId']
         try:
             item = Item(v['Id'], v['ItemIcon']['AssetPathName'].split("_")[-1],
-                        i18n[f"{k}_Name"], i18n[f"{k}_Desc"], i18n[f"{k}_ItemStory"])
+                        i18n.get(f"{k}_Name", v['Name']['SourceString']),
+                        i18n.get(f"{k}_Desc", v['Desc']['SourceString']),
+                        i18n.get(f"{k}_ItemStory", v['ItemStory']['SourceString']))
             if "NoTextFound" in item.name:
                 continue
             if role_id not in id_to_items:
