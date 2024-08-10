@@ -59,7 +59,7 @@ def find_audio_file(file_name: str) -> str | None:
     if not event_file.exists():
         # print(event_file.name + " does not exist")
         return None
-    data = json.load(open(event_file, "r", encoding="utf-8"))[0]["Properties"]
+    data = json.load(open(event_file, "r", encoding="utf-8"))["Properties"]
     bank_name = data["RequiredBank"]["ObjectName"].split("'")[1]
     short_id = str(data["ShortID"])
     if short_id not in sid_to_ix:
@@ -80,7 +80,7 @@ def find_audio_file(file_name: str) -> str | None:
 
 
 def parse_banks_xml():
-    cn_bank_file = audio_root.parent / "cn_banks.xml"
+    cn_bank_file = audio_root / "banks/cn_banks.xml"
     assert cn_bank_file.exists()
     lines = open(cn_bank_file, "r", encoding="utf-8").readlines()
     ix = None
@@ -196,9 +196,6 @@ def main():
     print(f"Missing voice files: {missing_1}. Missing trigger {missing_2}")
     voices = [v for k, v in voices.items() if k in can_be_triggered]
     print(f"Non-orphan voice-lines: {len(voices)}")
-
-    for t in triggers + upgrades:
-        print(t)
 
 
 if __name__ == "__main__":
