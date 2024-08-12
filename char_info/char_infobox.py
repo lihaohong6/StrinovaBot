@@ -105,8 +105,6 @@ def generate_character_selector():
     for char_id in char_id_mapper.keys():
         key = f'{char_id}_NameCn'
         role_profile = get_role_profile(char_id)
-        if key not in i18n:
-            continue
         char_name = i18n[key]
         char_list.append(make_infobox(char_id, char_name, role_profile, i18n, save=False))
     result = []

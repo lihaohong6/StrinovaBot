@@ -14,9 +14,15 @@ from wiki_utils import bwiki, s
 
 
 def generate_emotes():
+    @dataclass
+    class Emote:
+        id: int
+        name: str
+        text: str
+
     goods_table = get_table("Goods")
     i18n = get_game_json()['Goods']
-    items: dict[str, list[int]] = {}
+    items: dict[str, list[Emote]] = {}
     for k, v in goods_table.items():
         if v['ItemType'] != 6:
             continue
@@ -25,19 +31,17 @@ def generate_emotes():
         if name_en is None:
             continue
         lst = items.get(name_en, [])
-        lst.append(k)
+        lst.append(Emote(k,
+                         i18n.get(f'{k}_Name', v['Name']['SourceString']),
+                         i18n.get(f'{k}_Desc', v['Desc']['SourceString'])))
         items[name_en] = lst
 
-    for name, item_list in items.items():
+    for name, emote_list in items.items():
         gallery = ['<gallery mode="packed">']
-        for item in item_list:
-            key = f'{item}_Name'
-            if key not in i18n:
-                continue
-            emote_name = i18n[key]
-            emote_name = re.search(f"^{name} ?- ?(.*)", emote_name).group(1)
-            description = i18n[f'{item}_Desc']
-            gallery.append(f"Emote_{item}.png|'''{emote_name}'''<br/>{description}")
+        for emote in emote_list:
+            split = emote.name.split("-")
+            emote_name = "-".join(split[1:]).strip()
+            gallery.append(f"Emote_{emote.id}.png|'''{emote_name}'''<br/>{emote.text}")
         gallery.append("</gallery>")
         p = Page(s, name)
         parsed = wtp.parse(p.text)
@@ -277,4 +281,4 @@ def generate_skins():
 
 
 if __name__ == '__main__':
-    generate_skins()
+    generate_emotes()

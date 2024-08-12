@@ -88,9 +88,12 @@ def make_all_weapons():
                 w.file = f"{char_name} GrowthWeapon.png"
 
             p = Page(s, w.name)
+            if p.exists():
+                continue
             t = Template("{{WeaponInfobox\n}}")
             make_weapon_infobox(w, t)
-            p.text = str(t) + "\n\n{{WeaponNavbox}}"
+            text = str(t) + "\n\n{{WeaponNavbox}}"
+            p.text = text
             p.save(summary="Batch create weapon pages")
 
 

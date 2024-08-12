@@ -6,7 +6,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from asset_utils import audio_root, audio_event_root
+from asset_utils import audio_root, audio_event_root, wav_root
 from utils import get_table, get_game_json
 
 
@@ -30,6 +30,7 @@ class Voice:
     name_en: str = ""
     text_cn: str = ""
     text_en: str = ""
+    path: str = ""
     file: str = ""
 
 
@@ -151,7 +152,7 @@ def in_game_triggers_upgrade() -> list[UpgradeTrigger]:
 
 def role_voice() -> dict[int, Voice]:
     parse_banks_xml()
-    map_bank_name_to_files(Path("files/audio/Chinese/txtp"))
+    map_bank_name_to_files(wav_root)
     i18n = get_game_json()['RoleVoice']
     voice_table = get_table("RoleVoice")
 
@@ -159,7 +160,8 @@ def role_voice() -> dict[int, Voice]:
     for k, v in voice_table.items():
         content_cn, content_en, name_cn, name_en = get_text(i18n, v)
 
-        file = find_audio_file(v["AkEvent"]["AssetPathName"].split(".")[-1])
+        path = v["AkEvent"]["AssetPathName"].split(".")[-1]
+        file = find_audio_file(path)
         if file is None:
             continue
 
@@ -170,6 +172,7 @@ def role_voice() -> dict[int, Voice]:
                       name_en=name_en,
                       text_cn=content_cn,
                       text_en=content_en,
+                      path=path,
                       file=file)
         voices[k] = voice
 
@@ -194,9 +197,44 @@ def main():
             print(f"Orphan voice: {voices[k]}")
             missing_2 += 1
     print(f"Missing voice files: {missing_1}. Missing trigger {missing_2}")
-    voices = [v for k, v in voices.items() if k in can_be_triggered]
-    print(f"Non-orphan voice-lines: {len(voices)}")
+    voices_non_orphan = [v for k, v in voices.items() if k in can_be_triggered]
+    print(f"Non-orphan voice-lines: {len(voices_non_orphan)}")
+    # print("\n".join(str(v) for v in voices_non_orphan))
 
+    # TODO:
+    #  Role.json: UnlockVoiceId, AppearanceVoiceId, EquipSecondWeaponVoiceId, EquipGrenadeVoiceId
+
+    for v in voices.values():
+        if "BPCHAR_037" in v.path:
+            print(v.path)
+            os.startfile(wav_root / v.file)
+
+
+comm: dict[str, str] = {
+    "COM_103": "这里可以安装炸弹",
+    "COM_105": "这里有子弹",
+    "COM_106": "这里有护甲",
+    "COM_107": "这里有战术道具",
+    "COM_151": "警报器发现敌人"
+}
+
+bp_char: dict[str, str] = {
+    "065": "七夕",
+    "016": "情人节",
+    "017": "卡拉彼丘纪念日",
+    "012": "角色生日",
+    "023": "打招呼",
+    "024": "赠送角色礼物",
+    "030": "战斗胜利",
+    "031": "战斗胜利MVP",
+    "032": "战斗失败",
+    "033": "战斗失败SVP",
+    "034": "玩家生日",
+    "035": "交谈",
+    "036": "交谈",
+    "037": "交谈",
+    "038": "交谈",
+}
 
 if __name__ == "__main__":
     main()
