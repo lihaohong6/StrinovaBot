@@ -189,33 +189,68 @@ def main():
         for vid in t.voice_id:
             can_be_triggered.add(vid)
             if vid not in voices:
-                print(f"{vid} can be triggered but is not in a voice file")
+                # print(f"{vid} can be triggered but is not in a voice file")
                 missing_1 += 1
     missing_2 = 0
-    for k in voices.keys():
-        if k not in can_be_triggered:
-            print(f"Orphan voice: {voices[k]}")
-            missing_2 += 1
+    orphans = []
+    for k, v in voices.items():
+        if k in can_be_triggered:
+            continue
+        if v.name_cn != "":
+            continue
+        for c in comm:
+            if c in v.path:
+                break
+        else:
+            for b in bp_char:
+                if f"BPCHAR_{b}" in v.path or f"BPCHAT_{b}" in v.path:
+                    break
+            else:
+                print(f"Orphan voice: {v}")
+                missing_2 += 1
+                orphans.append(v)
     print(f"Missing voice files: {missing_1}. Missing trigger {missing_2}")
     voices_non_orphan = [v for k, v in voices.items() if k in can_be_triggered]
     print(f"Non-orphan voice-lines: {len(voices_non_orphan)}")
-    # print("\n".join(str(v) for v in voices_non_orphan))
 
     # TODO:
     #  Role.json: UnlockVoiceId, AppearanceVoiceId, EquipSecondWeaponVoiceId, EquipGrenadeVoiceId
     exists = set()
     for v in voices.values():
-        conditions = ["BPCHAT_072", "BPCHAT_073", "BPCHAT_074"]
-        # if any(c in v.path for c in conditions):
-        if "Celestia" in v.path and "org" in v.file and "Skill" in v.file:
+        conditions = ["_155"]
+        if any(c in v.path for c in conditions):
             if v.path in exists:
                 continue
             exists.add(v.path)
             print(v.path + "    " + v.file)
-            print(v)
+            os.startfile(wav_root / v.file)
 
+
+no_prefix: dict[str, str] = {
+    "700": "生日贺卡",
+    "701": "生日蛋糕",
+    "702": "生日回礼",
+    "703": "生日礼物",
+}
 
 comm: dict[str, str] = {
+    "COM_081": "进攻",
+    "COM_082": "等待",
+    "COM_083": "撤退",
+    "COM_084": "谢谢",
+    "COM_085": "称赞",
+    "COM_086": "是",
+    "COM_087": "否",
+    "COM_088": "抱歉",
+    "COM_089": "你好",
+    "COM_090": "手榴弹",
+    "COM_091": "拦截者",
+    "COM_092": "烟雾弹",
+    "COM_093": "闪光弹",
+    "COM_094": "治疗雷",
+    "COM_095": "风场雷",
+    "COM_096": "减速雷",
+    "COM_097": "警报器",
     "COM_103": "这里可以安装炸弹",
     "COM_105": "这里有子弹",
     "COM_106": "这里有护甲",
@@ -224,26 +259,62 @@ comm: dict[str, str] = {
 }
 
 bp_char: dict[str, str] = {
-    "065": "七夕",
+
+    "018": "获得角色",
+    "021": "装备战术道具",
+
+    "019": "当天第一次进入休息室",  # 休息室是什么？
+
+    # dorm
     "008": "早上问候",
     "009": "晚间问候",
     "010": "深夜问候",
+
+    "001": "点击互动",
+    "002": "点击互动",
+    "003": "点击互动",
+    "004": "摸头",
+
+    "005": "收到邮件",
+
     "011": "玩家生日",
     "012": "角色生日",
+
+    "006": "朋友生日",
+    "007": "朋友生日",
+
     "013": "元旦",
     "014": "春节",
     "015": "圣诞节",
     "016": "情人节",
     "017": "卡拉彼丘纪念日",
+    "065": "七夕",
     "023": "打招呼",
     "024": "赠送角色礼物",
+    "025": "好感度上升后触碰",
+    "026": "好感度上升后触碰",
+    "027": "好感度上升后触碰",
+    "028": "好感度上升后触碰",
+    "029": "好感度上升后触碰",
     "030": "战斗胜利",
     "031": "战斗胜利MVP",
     "032": "战斗失败",
     "033": "战斗失败SVP",
     "034": "玩家生日",
-    "035": "交谈",
-    "036": "交谈",
+    "035": "好感提升后交谈",
+    "036": "好感提升后交谈",
+    "037": "好感提升后交谈",
+    "038": "好感提升后交谈",
+    "039": "打招呼",
+    "040": "打招呼",
+    "041": "打招呼",
+    "042": "打招呼",
+    "043": "打招呼",
+    "044": "自言自语",
+    "045": "自言自语",
+    "046": "自言自语",
+    "047": "自言自语",
+    "048": "自言自语",
     "049": "打断角色状态",
     "050": "打断角色状态",
     "051": "打断角色状态",
@@ -254,8 +325,23 @@ bp_char: dict[str, str] = {
     "056": "感谢礼物",
     "057": "感谢专属礼物",
     "058": "近景交谈（进入房间后互动触发）",
-    "060": "互动交谈（进入房间后互动触发）"
+    "059": "互动交谈",
+    "060": "互动交谈",
+    "061": "互动交谈",
+    "062": "互动交谈",
+    "063": "互动交谈",
+    "064": "好感度10语音",
 
+    # 战斗
+    "066": "选择角色",
+    # "067": "确认准备",
+    "068": "开场台词",
+    "069": "开场台词",
+    "070": "开场台词",
+    "137": "失败",
+    "138": "胜利",
+    "139": "失败SVP",
+    "140": "胜利MVP"
 }
 
 if __name__ == "__main__":
