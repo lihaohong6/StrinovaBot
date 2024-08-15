@@ -87,10 +87,12 @@ def upload_item_icons(items: list[int | str], cat: str):
 
 def upload_local():
     p = Path("files")
-    for f in p.glob("*.*"):
+    for f in p.rglob("*.ogg"):
         target_file = FilePage(s, "File:" + f.name)
-        Uploader(s, target_file, source_filename=str(f), comment="batch upload",
-                 text="[[Category:Currency images]]").upload()
+        if target_file.exists():
+            continue
+        Uploader(s, target_file, source_filename=str(f), comment="batch upload music",
+                 text="[[Category:Character BGM]]").upload()
 
 
 def upload_file(text: str, target: FilePage, summary: str = "batch upload file",
@@ -114,7 +116,7 @@ def upload_file(text: str, target: FilePage, summary: str = "batch upload file",
 
 
 def main():
-    upload_achievement_icons()
+    upload_local()
 
 
 if __name__ == '__main__':

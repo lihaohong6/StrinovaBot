@@ -124,12 +124,13 @@ def get_quality_table() -> dict[int, str]:
 
 
 def download_file(url, target: Path):
-    r = requests.get(url)
-    f = open(target, 'wb')
-    for chunk in r.iter_content(chunk_size=512 * 1024):
-        if chunk:  # filter out keep-alive new chunks
-            f.write(chunk)
-    f.close()
+    with requests.get(url, stream=True) as r:
+        r.raise_for_status()
+        f = open(target, 'wb')
+        for chunk in r.iter_content(chunk_size=16 * 1024):
+            if chunk:  # filter out keep-alive new chunks
+                f.write(chunk)
+        f.close()
 
 
 def get_cn_wiki_skins():

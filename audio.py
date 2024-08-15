@@ -203,11 +203,16 @@ def main():
 
     # TODO:
     #  Role.json: UnlockVoiceId, AppearanceVoiceId, EquipSecondWeaponVoiceId, EquipGrenadeVoiceId
-
+    exists = set()
     for v in voices.values():
-        if "BPCHAR_037" in v.path:
-            print(v.path)
-            os.startfile(wav_root / v.file)
+        conditions = ["BPCHAT_072", "BPCHAT_073", "BPCHAT_074"]
+        # if any(c in v.path for c in conditions):
+        if "Celestia" in v.path and "org" in v.file and "Skill" in v.file:
+            if v.path in exists:
+                continue
+            exists.add(v.path)
+            print(v.path + "    " + v.file)
+            print(v)
 
 
 comm: dict[str, str] = {
@@ -220,9 +225,16 @@ comm: dict[str, str] = {
 
 bp_char: dict[str, str] = {
     "065": "七夕",
+    "008": "早上问候",
+    "009": "晚间问候",
+    "010": "深夜问候",
+    "011": "玩家生日",
+    "012": "角色生日",
+    "013": "元旦",
+    "014": "春节",
+    "015": "圣诞节",
     "016": "情人节",
     "017": "卡拉彼丘纪念日",
-    "012": "角色生日",
     "023": "打招呼",
     "024": "赠送角色礼物",
     "030": "战斗胜利",
@@ -232,8 +244,18 @@ bp_char: dict[str, str] = {
     "034": "玩家生日",
     "035": "交谈",
     "036": "交谈",
-    "037": "交谈",
-    "038": "交谈",
+    "049": "打断角色状态",
+    "050": "打断角色状态",
+    "051": "打断角色状态",
+    "052": "打断角色状态",
+    "053": "打断角色状态",
+    "054": "近景交谈",
+    "055": "近景交谈",
+    "056": "感谢礼物",
+    "057": "感谢专属礼物",
+    "058": "近景交谈（进入房间后互动触发）",
+    "060": "互动交谈（进入房间后互动触发）"
+
 }
 
 if __name__ == "__main__":

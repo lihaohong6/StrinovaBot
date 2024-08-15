@@ -76,16 +76,5 @@ def download_category(cat: str):
         download_file(url, file_dir / page.title(underscore=True, with_ns=False))
 
 
-def upload():
-    for f in file_dir.glob("*.*"):
-        file_page = FilePage(bwiki, "File:" + f.name)
-        if file_page.exists():
-            continue
-        Uploader(s, file_page, source_filename=str(f),
-                 comment="batch upload",
-                 text="[[Category:Skill icons]]",
-                 ignore_warnings=True).upload()
-
-
 if __name__ == "__main__":
-    upload()
+    download_category("音乐")
