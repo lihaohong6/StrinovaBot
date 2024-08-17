@@ -1,12 +1,14 @@
 import re
+from enum import Enum
 
 import json
 import os
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, fields, field
 from pathlib import Path
 
 from asset_utils import audio_root, audio_event_root, wav_root
+from audio.conversion_table import comm, bp_char, other
 from utils import get_table, get_game_json
 
 
@@ -23,7 +25,7 @@ def audio_convert():
 
 @dataclass
 class Voice:
-    id: int
+    id: list[int]
     role_id: int
     quality: int
     name_cn: str = ""
@@ -31,16 +33,44 @@ class Voice:
     text_cn: str = ""
     text_en: str = ""
     path: str = ""
-    file: str = ""
+    file_cn: str = ""
+    file_jp: str = ""
+
+    def merge(self, o: "Voice"):
+        assert self.file_cn == o.file_cn and self.path == o.path
+        assert len(o.id) == 1
+        self.id.append(o.id[0])
+        for f in fields(self):
+            if f.type == str:
+                a1 = getattr(self, f.name)
+                a2 = getattr(o, f.name)
+                if a1 == a2:
+                    continue
+                if a1 == "":
+                    setattr(self, f.name, a2)
+                raise RuntimeError(str(self) + "\n" + str(o))
+        if self.role_id != o.role_id:
+            if self.role_id == 999:
+                self.role_id = o.role_id
+
+
+class VoiceType(Enum):
+    DORM = "Dorm"
+    BATTLE = "Battle"
+    OTHER = "Other"
 
 
 @dataclass
 class Trigger:
     id: int
+    type: VoiceType
     description_cn: str
     description_en: str
-    voice_id: list[int]
-    role_id: int
+    voice_id: list[int] = field(default_factory=list)
+    # 0: applicable for all
+    # otherwise: applicable to a single character
+    role_id: int = 0
+    voices: list[Voice] = field(default_factory=list)
 
 
 @dataclass
@@ -135,7 +165,9 @@ def in_game_triggers() -> list[Trigger]:
             if len(lst) > 0:
                 assert v['IsRandom']
                 voice_id = lst
-        result.append(Trigger(k, description_cn, description_en, voice_id, role_id))
+        result.append(
+            Trigger(k, description_cn=description_cn, description_en=description_en, voice_id=voice_id, role_id=role_id,
+                    type=VoiceType.BATTLE))
     return result
 
 
@@ -165,7 +197,7 @@ def role_voice() -> dict[int, Voice]:
         if file is None:
             continue
 
-        voice = Voice(id=k,
+        voice = Voice(id=[k],
                       role_id=v['RoleId'],
                       quality=v['Quality'],
                       name_cn=name_cn,
@@ -173,24 +205,61 @@ def role_voice() -> dict[int, Voice]:
                       text_cn=content_cn,
                       text_en=content_en,
                       path=path,
-                      file=file)
+                      file_cn=file)
         voices[k] = voice
-
     return voices
+
+
+def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
+    triggers: dict[str, Trigger] = {}
+
+    def make_trigger(key, name, type: VoiceType):
+        triggers[key] = Trigger(
+            id=int(key),
+            description_cn=name,
+            description_en="",
+            role_id=0,
+            type=type,
+        )
+
+    for key, name in comm.items():
+        make_trigger(key, name, VoiceType.BATTLE)
+
+    for key, name in bp_char.items():
+        make_trigger(key, name, VoiceType.DORM)
+
+    for key, name in other.items():
+        make_trigger(key, name, VoiceType.OTHER)
+
+    for v in voices:
+        digits = re.search(r"(\d{3})(_|$)", v.path)
+        if digits is None:
+            continue
+        digits = digits.group(1)
+        if digits in triggers:
+            triggers[digits].voices.append(v)
+    return list(triggers.values())
 
 
 def main():
     voices = role_voice()
     triggers = in_game_triggers()
     upgrades = in_game_triggers_upgrade()
+    custom_triggers = match_custom_triggers(list(voices.values()))
     can_be_triggered: set[int] = set()
     missing_1 = 0
-    for t in triggers + upgrades:
+    for t in triggers + upgrades + custom_triggers:
         for vid in t.voice_id:
             can_be_triggered.add(vid)
             if vid not in voices:
-                # print(f"{vid} can be triggered but is not in a voice file")
+                # print(f"{vid} can be triggered by {t} but is not in a voice file")
                 missing_1 += 1
+        if hasattr(t, "voices"):
+            for v in t.voices:
+                if v.id[0] in can_be_triggered:
+                    print(t.id, t.description_cn, "is a duplicate trigger")
+                can_be_triggered.add(v.id[0])
+
     missing_2 = 0
     orphans = []
     for k, v in voices.items():
@@ -202,147 +271,26 @@ def main():
             if c in v.path:
                 break
         else:
-            for b in bp_char:
-                if f"BPCHAR_{b}" in v.path or f"BPCHAT_{b}" in v.path:
-                    break
-            else:
-                print(f"Orphan voice: {v}")
-                missing_2 += 1
-                orphans.append(v)
+            # print(f"Orphan voice: {v}")
+            missing_2 += 1
+            orphans.append(v)
     print(f"Missing voice files: {missing_1}. Missing trigger {missing_2}")
     voices_non_orphan = [v for k, v in voices.items() if k in can_be_triggered]
     print(f"Non-orphan voice-lines: {len(voices_non_orphan)}")
 
+
     # TODO:
     #  Role.json: UnlockVoiceId, AppearanceVoiceId, EquipSecondWeaponVoiceId, EquipGrenadeVoiceId
-    exists = set()
-    for v in voices.values():
-        conditions = ["_155"]
-        if any(c in v.path for c in conditions):
-            if v.path in exists:
-                continue
-            exists.add(v.path)
-            print(v.path + "    " + v.file)
-            os.startfile(wav_root / v.file)
+    # exists = set()
+    # for v in voices.values():
+    #     conditions = ["_155"]
+    #     if any(c in v.path for c in conditions):
+    #         if v.path in exists:
+    #             continue
+    #         exists.add(v.path)
+    #         print(v.path + "    " + v.file)
+    #         os.startfile(wav_root / v.file)
 
-
-no_prefix: dict[str, str] = {
-    "700": "生日贺卡",
-    "701": "生日蛋糕",
-    "702": "生日回礼",
-    "703": "生日礼物",
-}
-
-comm: dict[str, str] = {
-    "COM_081": "进攻",
-    "COM_082": "等待",
-    "COM_083": "撤退",
-    "COM_084": "谢谢",
-    "COM_085": "称赞",
-    "COM_086": "是",
-    "COM_087": "否",
-    "COM_088": "抱歉",
-    "COM_089": "你好",
-    "COM_090": "手榴弹",
-    "COM_091": "拦截者",
-    "COM_092": "烟雾弹",
-    "COM_093": "闪光弹",
-    "COM_094": "治疗雷",
-    "COM_095": "风场雷",
-    "COM_096": "减速雷",
-    "COM_097": "警报器",
-    "COM_103": "这里可以安装炸弹",
-    "COM_105": "这里有子弹",
-    "COM_106": "这里有护甲",
-    "COM_107": "这里有战术道具",
-    "COM_151": "警报器发现敌人"
-}
-
-bp_char: dict[str, str] = {
-
-    "018": "获得角色",
-    "021": "装备战术道具",
-
-    "019": "当天第一次进入休息室",  # 休息室是什么？
-
-    # dorm
-    "008": "早上问候",
-    "009": "晚间问候",
-    "010": "深夜问候",
-
-    "001": "点击互动",
-    "002": "点击互动",
-    "003": "点击互动",
-    "004": "摸头",
-
-    "005": "收到邮件",
-
-    "011": "玩家生日",
-    "012": "角色生日",
-
-    "006": "朋友生日",
-    "007": "朋友生日",
-
-    "013": "元旦",
-    "014": "春节",
-    "015": "圣诞节",
-    "016": "情人节",
-    "017": "卡拉彼丘纪念日",
-    "065": "七夕",
-    "023": "打招呼",
-    "024": "赠送角色礼物",
-    "025": "好感度上升后触碰",
-    "026": "好感度上升后触碰",
-    "027": "好感度上升后触碰",
-    "028": "好感度上升后触碰",
-    "029": "好感度上升后触碰",
-    "030": "战斗胜利",
-    "031": "战斗胜利MVP",
-    "032": "战斗失败",
-    "033": "战斗失败SVP",
-    "034": "玩家生日",
-    "035": "好感提升后交谈",
-    "036": "好感提升后交谈",
-    "037": "好感提升后交谈",
-    "038": "好感提升后交谈",
-    "039": "打招呼",
-    "040": "打招呼",
-    "041": "打招呼",
-    "042": "打招呼",
-    "043": "打招呼",
-    "044": "自言自语",
-    "045": "自言自语",
-    "046": "自言自语",
-    "047": "自言自语",
-    "048": "自言自语",
-    "049": "打断角色状态",
-    "050": "打断角色状态",
-    "051": "打断角色状态",
-    "052": "打断角色状态",
-    "053": "打断角色状态",
-    "054": "近景交谈",
-    "055": "近景交谈",
-    "056": "感谢礼物",
-    "057": "感谢专属礼物",
-    "058": "近景交谈（进入房间后互动触发）",
-    "059": "互动交谈",
-    "060": "互动交谈",
-    "061": "互动交谈",
-    "062": "互动交谈",
-    "063": "互动交谈",
-    "064": "好感度10语音",
-
-    # 战斗
-    "066": "选择角色",
-    # "067": "确认准备",
-    "068": "开场台词",
-    "069": "开场台词",
-    "070": "开场台词",
-    "137": "失败",
-    "138": "胜利",
-    "139": "失败SVP",
-    "140": "胜利MVP"
-}
 
 if __name__ == "__main__":
     main()

@@ -210,7 +210,8 @@ def main():
                 x.append((tab[0], processed, tab[1]))
         group_string = f" group=strinova_comms_{make_tab_group(conversation_name)} | "
         tabs, contents = zip(*[(t[0], t[1]) for t in sorted(x, key=lambda t: t[2])])
-        result = "{{Tab/tabs| " + group_string + " | ".join(tabs) + " }}\n" + \
+        result = "<noinclude>{{StrinovaCommsTop}}</noinclude>" + \
+                 "{{Tab/tabs| " + group_string + " | ".join(tabs) + " }}\n" + \
                  "{{Tab/content| " + group_string + "\n\n" + "\n\n|\n\n".join(contents) + "\n\n}}" + \
                  "<noinclude>[[Category:Strinova Comms]]</noinclude>"
 
@@ -222,5 +223,5 @@ def main():
         group_counter = 1
 
 
-if __name__ == "__name__":
+if __name__ == "__main__":
     main()
