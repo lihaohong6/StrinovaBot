@@ -7,9 +7,9 @@ import json
 from pathlib import Path
 import re
 
-from utils import get_table, get_game_json, make_tab_group
-from asset_utils import csv_root
-from wiki_utils import s
+from utils.general_utils import get_game_json, make_tab_group
+from utils.asset_utils import csv_root
+from utils.wiki_utils import s
 from global_config import char_id_mapper
 
 group_counter = 1

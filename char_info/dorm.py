@@ -8,9 +8,9 @@ from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from global_config import characters_with_dorms, char_id_mapper
-from uploader import upload_item_icons, upload_item
-from utils import get_game_json, get_table, get_char_by_id, make_tab_group
-from wiki_utils import s
+from utils.uploader import upload_item_icons, upload_item
+from utils.general_utils import get_game_json, get_table, get_char_by_id, make_tab_group
+from utils.wiki_utils import s
 
 
 @dataclass

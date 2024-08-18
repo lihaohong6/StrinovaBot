@@ -1,5 +1,6 @@
 from char_info.achievement import generate_achievements
-from char_info.char_infobox import generate_infobox, generate_character_selector
+from char_info.char_infobox import generate_infobox
+from char_info.character_selector import generate_character_selector
 from char_info.gallery import generate_emotes, generate_skins
 from char_info.dorm import generate_gifts, generate_bond_items
 from char_info.skills import generate_skills, generate_string_energy_network
@@ -19,6 +20,9 @@ from char_info.weapons import generate_weapons
 
 
 def main():
+    no_run = {
+        "infobox"
+    }
     f = {
         "infobox": generate_infobox,
         "weapons": generate_weapons,
@@ -30,7 +34,6 @@ def main():
         "string_energy_network": generate_string_energy_network,
         "bond_items": generate_bond_items,
         "gifts": generate_gifts,
-        "character_selector": generate_character_selector,
         "achievements": generate_achievements
     }
     from sys import argv
@@ -39,7 +42,11 @@ def main():
     if arg in f:
         f[arg]()
     elif arg == "all":
-        for func in f.values():
+        for name, func in f.items():
+            if name in no_run:
+                print("Skipping " + name)
+                continue
+            print("Running " + name)
             func()
     else:
         print(f.keys())

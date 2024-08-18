@@ -4,7 +4,7 @@ from pywikibot import Site, FilePage
 from pywikibot.pagegenerators import GeneratorFactory
 from pywikibot.site._upload import Uploader
 
-from utils import zh_name_to_en, download_file, get_id_by_char
+from general_utils import zh_name_to_en, download_file, get_id_by_char
 
 bwiki = Site(code="bwiki")
 s = Site()
@@ -61,7 +61,7 @@ def skills():
                 s.upload(target_page, source_url=url, comment="upload from bwiki; own work as User:16635128")
 
 
-file_dir = Path("files")
+file_dir = Path("../files")
 file_dir.mkdir(exist_ok=True)
 
 

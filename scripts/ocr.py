@@ -5,7 +5,7 @@ from cnocr import CnOcr
 
 from PIL import Image
 
-from utils import zh_name_to_en, en_name_to_zh
+from utils.general_utils import en_name_to_zh
 
 std = CnStd()
 cn_ocr = CnOcr()

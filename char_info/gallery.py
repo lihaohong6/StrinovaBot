@@ -1,4 +1,3 @@
-import re
 from dataclasses import dataclass
 from functools import reduce
 
@@ -6,11 +5,11 @@ import wikitextparser as wtp
 from pywikibot import Page, FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
 
-from asset_utils import portrait_root, skin_back_root, local_asset_root
-from uploader import upload_file
-from utils import get_table, get_game_json, zh_name_to_en, load_json, get_char_by_id, get_cn_wiki_skins, \
+from utils.asset_utils import portrait_root, skin_back_root, local_asset_root
+from utils.uploader import upload_file
+from utils.general_utils import get_table, get_game_json, zh_name_to_en, get_char_by_id, get_cn_wiki_skins, \
     en_name_to_zh
-from wiki_utils import bwiki, s
+from utils.wiki_utils import bwiki, s
 
 
 def generate_emotes():

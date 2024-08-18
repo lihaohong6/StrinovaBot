@@ -7,9 +7,9 @@ import subprocess
 from dataclasses import dataclass, fields, field
 from pathlib import Path
 
-from asset_utils import audio_root, audio_event_root, wav_root
+from utils.asset_utils import audio_root, audio_event_root, wav_root
 from audio.conversion_table import comm, bp_char, other
-from utils import get_table, get_game_json
+from utils.general_utils import get_table, get_game_json
 
 
 def audio_convert():

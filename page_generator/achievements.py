@@ -3,8 +3,8 @@ from dataclasses import dataclass
 
 from pywikibot import Page
 
-from utils import get_table, get_game_json, make_tab_group
-from wiki_utils import s
+from utils.general_utils import get_table, get_game_json, make_tab_group
+from utils.wiki_utils import s
 
 import wikitextparser as wtp
 

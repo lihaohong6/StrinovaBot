@@ -4,9 +4,9 @@ from typing import Callable
 import wikitextparser as wtp
 from pywikibot import Page
 
-from utils import get_game_json_cn, get_game_json_ja, camp_id_to_string, role_id_to_string, get_weapon_name, \
-    get_default_weapon_id, get_game_json, get_char_by_id, get_role_profile, get_weapon_type
-from wiki_utils import s
+from utils.general_utils import get_game_json_cn, get_game_json_ja, camp_id_to_string, role_id_to_string, get_weapon_name, \
+    get_default_weapon_id, get_game_json, get_char_by_id
+from utils.wiki_utils import s
 from global_config import char_id_mapper
 
 
@@ -98,30 +98,3 @@ def generate_infobox():
         make_infobox(char_id, char_name, char_profile, profile)
 
 
-def generate_character_selector():
-    i18n = get_game_json()['RoleProfile']
-    char_list = []
-    get_char_by_id(101)
-    for char_id in char_id_mapper.keys():
-        key = f'{char_id}_NameCn'
-        role_profile = get_role_profile(char_id)
-        char_name = i18n[key]
-        char_list.append(make_infobox(char_id, char_name, role_profile, i18n, save=False))
-    result = []
-
-    def make_tr(lst: list[str]):
-        return "<tr>" + "".join(f"<td>{e}</td>" for e in lst) + "</tr>"
-
-    for r in sorted(char_list, key=lambda d: d['Camp']):
-        name = r['Name']
-        camp = r['Camp']
-        weapon = get_weapon_type(get_default_weapon_id(r['Id']))
-        result.append(make_tr([
-            "{{ProfileImage|" + name + "}}",
-            f"[[{name}]]",
-            camp,
-            r['Role'],
-            weapon
-        ]))
-
-    print("\n".join(result))

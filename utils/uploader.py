@@ -6,7 +6,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 from pywikibot.site._apisite import APISite
 from pywikibot.site._upload import Uploader
 
-from asset_utils import resource_root
+from utils.asset_utils import resource_root
 
 s: APISite = Site()
 
@@ -86,7 +86,7 @@ def upload_item_icons(items: list[int | str], cat: str):
 
 
 def upload_local():
-    p = Path("files")
+    p = Path("../files")
     for f in p.rglob("*.ogg"):
         target_file = FilePage(s, "File:" + f.name)
         if target_file.exists():

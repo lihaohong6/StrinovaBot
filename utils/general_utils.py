@@ -39,7 +39,7 @@ game_ja_json = None
 def get_game_json_ja():
     global game_ja_json
     if game_ja_json is None:
-        game_ja_json = load_json("json/GameJa.json")
+        game_ja_json = load_json(localization_root / "ja/Game.json")
     return game_ja_json
 
 

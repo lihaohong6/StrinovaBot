@@ -1,8 +1,8 @@
 import wikitextparser as wtp
 from pywikibot import Page
 
-from utils import load_json, get_game_json, get_char_by_id, get_table
-from wiki_utils import s
+from utils.general_utils import get_game_json, get_char_by_id, get_table
+from utils.wiki_utils import s
 
 
 def generate_biography():
@@ -31,13 +31,21 @@ def generate_biography():
                 return
             t.set_arg(name, value + "\n")
 
+        valid = True
         for story_count, story_id in enumerate(story_list, 1):
-            title = i18n[f'{story_id}_StoryTitle']
-            unlock = i18n[f'{story_id}_UnlockTip']
-            content = i18n[f'{story_id}_StoryContent']
+            try:
+                title = i18n[f'{story_id}_StoryTitle']
+                unlock = i18n[f'{story_id}_UnlockTip']
+                content = i18n[f'{story_id}_StoryContent']
+            except KeyError:
+                valid = False
+                print(f"Failed to generate biography for {char_name} due to missing i18n")
+                break
             add_arg(f"Title{story_count}", title)
             add_arg(f"Unlock{story_count}", unlock)
             add_arg(f"Content{story_count}", content.replace("\n", "\n\n"))
+        if not valid:
+            continue
 
         if p.text.strip() == str(parsed).strip():
             continue
@@ -74,8 +82,11 @@ def generate_return_letter():
 
         assert len(story_list) == 1
         story = story_list[0]
-        content = i18n[f'{story}_LetterTitle'] + "\n\n" + i18n[f'{story}_LetterTitleTwo']
+        content = (i18n.get(f'{story}_LetterTitle', "!NoTextFound!") +
+                   "\n\n" +
+                   i18n.get(f'{story}_LetterTitleTwo', "!NoTextFound!"))
         if "!NoTextFound!" in content:
+            print(f"Can't generate return letter for {char_name} due to missing i18n")
             continue
         add_arg(f"Content", content.replace("\n", "<br/>"))
 

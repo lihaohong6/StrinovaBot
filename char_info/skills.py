@@ -4,20 +4,27 @@ import wikitextparser as wtp
 from pywikibot import Page
 from pywikibot.pagegenerators import GeneratorFactory
 
-from utils import get_game_json, get_table, get_role_profile, get_char_by_id, en_name_to_zh, get_id_by_char, \
+from global_config import char_id_mapper
+from utils.general_utils import get_game_json, get_table, get_role_profile, en_name_to_zh, get_id_by_char, \
     get_weapon_name, get_default_weapon_id
-from wiki_utils import bwiki, s
+from utils.wiki_utils import bwiki, s
 
 
 def generate_skills():
     skill_texts = get_game_json()['Skill']
     skill_table = get_table("Skill")
     get_role_profile(101)
-    for char_id, char_profile in get_role_profile.dict.items():
-        char_name = get_char_by_id(char_id)
+    for char_id, char_name in char_id_mapper.items():
         templates = []
         valid = True
-        t = wtp.Template("{{Skill\n}}")
+        p = Page(s, char_name)
+        parsed = wtp.parse(p.text)
+        for t in parsed.templates:
+            if t.name.strip() == "Skill":
+                break
+        else:
+            print("No skill template found for " + char_name)
+            continue
 
         def add_arg(name, value):
             if t.has_arg(name) and value.strip() == "":
@@ -37,14 +44,6 @@ def generate_skills():
 
             templates.append(str(t))
         if not valid:
-            continue
-        p = Page(s, char_name)
-        parsed = wtp.parse(p.text)
-        for section in parsed.sections:
-            if section.title is not None and section.title.strip() == "Skills":
-                section.contents = str(t) + "\n\n"
-                break
-        else:
             continue
         if p.text.strip() == str(parsed).strip():
             continue
