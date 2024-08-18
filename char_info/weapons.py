@@ -2,7 +2,7 @@ import wikitextparser as wtp
 from pywikibot import Page
 
 from utils.general_utils import get_game_json, get_char_by_id, get_default_weapon_id, get_weapon_name, \
-    get_weapon_type
+    get_weapon_type, get_char_pages
 from utils.wiki_utils import s
 from global_config import char_id_mapper
 
@@ -10,9 +10,7 @@ from global_config import char_id_mapper
 def generate_weapons():
     from utils.uploader import upload_weapon
     i18n = get_game_json()['Weapon']
-    for char_id in char_id_mapper.keys():
-        char_name = get_char_by_id(char_id)
-        p = Page(s, char_name)
+    for char_id, char_name, p in get_char_pages():
         parsed = wtp.parse(p.text)
         t = None
         for template in parsed.templates:

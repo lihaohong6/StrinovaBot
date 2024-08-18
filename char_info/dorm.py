@@ -7,9 +7,9 @@ import wikitextparser as wtp
 from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
-from global_config import characters_with_dorms, char_id_mapper
+from global_config import characters_with_dorms
+from utils.general_utils import get_game_json, get_table, get_char_by_id, make_tab_group, get_char_pages
 from utils.uploader import upload_item_icons, upload_item
-from utils.general_utils import get_game_json, get_table, get_char_by_id, make_tab_group
 from utils.wiki_utils import s
 
 
@@ -134,9 +134,10 @@ def generate_bond_items():
             id_to_items[role_id].append(item)
         except KeyError:
             continue
-    for role_id, items in id_to_items.items():
-        char_name = char_id_mapper[role_id]
-        p = Page(s, char_name)
+    for role_id, char_name, p in get_char_pages():
+        if role_id not in id_to_items:
+            continue
+        items = id_to_items[role_id]
         parsed = wtp.parse(p.text)
         for t in parsed.templates:
             if t.name.strip() == "BondItems":

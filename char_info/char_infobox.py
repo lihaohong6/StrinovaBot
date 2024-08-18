@@ -4,10 +4,11 @@ from typing import Callable
 import wikitextparser as wtp
 from pywikibot import Page
 
-from utils.general_utils import get_game_json_cn, get_game_json_ja, camp_id_to_string, role_id_to_string, get_weapon_name, \
-    get_default_weapon_id, get_game_json, get_char_by_id
-from utils.wiki_utils import s
 from global_config import char_id_mapper
+from utils.general_utils import get_game_json_cn, get_game_json_ja, camp_id_to_string, role_id_to_string, \
+    get_weapon_name, \
+    get_default_weapon_id, get_game_json
+from utils.wiki_utils import s
 
 
 def nop(x: str | list[str]):
@@ -89,7 +90,6 @@ def make_infobox(char_id, char_name, char_profile, profile, save=True) -> dict:
 
 def generate_infobox():
     profile = get_game_json()['RoleProfile']
-    get_char_by_id(101)
     for char_id, char_profile in char_id_mapper.items():
         key = f'{char_id}_NameCn'
         if key not in profile:

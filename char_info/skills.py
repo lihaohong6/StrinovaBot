@@ -2,22 +2,19 @@ import re
 
 import wikitextparser as wtp
 from pywikibot import Page
-from pywikibot.pagegenerators import GeneratorFactory
 
-from global_config import char_id_mapper
 from utils.general_utils import get_game_json, get_table, get_role_profile, en_name_to_zh, get_id_by_char, \
-    get_weapon_name, get_default_weapon_id
-from utils.wiki_utils import bwiki, s
+    get_weapon_name, get_default_weapon_id, get_char_pages
+from utils.wiki_utils import bwiki
 
 
 def generate_skills():
     skill_texts = get_game_json()['Skill']
     skill_table = get_table("Skill")
     get_role_profile(101)
-    for char_id, char_name in char_id_mapper.items():
+    for char_id, char_name, p in get_char_pages():
         templates = []
         valid = True
-        p = Page(s, char_name)
         parsed = wtp.parse(p.text)
         for t in parsed.templates:
             if t.name.strip() == "Skill":
@@ -78,11 +75,7 @@ Growth_Team
     i18n_skill = get_game_json()['Skill']
     role_json = get_table("Role")
     skill_json = get_table("Skill")
-    gen = GeneratorFactory(s)
-    gen.handle_args(['-cat:Characters', '-ns:0'])
-    gen = gen.getCombinedGenerator(preload=True)
-    for p in gen:
-        char_name = p.title()
+    for char_id, char_name, p in get_char_pages():
         bwiki_base_page = Page(bwiki(), en_name_to_zh[char_name])
         if bwiki_base_page.isRedirectPage():
             bwiki_base_page = bwiki_base_page.getRedirectTarget()

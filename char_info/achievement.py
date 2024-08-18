@@ -1,16 +1,12 @@
-from pywikibot import Page
+import wikitextparser as wtp
 
 from page_generator.achievements import get_achievements, achievements_to_tabs
-from utils.wiki_utils import s
-from global_config import char_id_mapper
-
-import wikitextparser as wtp
+from utils.general_utils import get_char_pages
 
 
 def generate_achievements():
     achievements = get_achievements()
-    for char_id, char_name in char_id_mapper.items():
-        p = Page(s, char_name)
+    for char_id, char_name, p in get_char_pages():
         parsed = wtp.parse(p.text)
 
         for section in parsed.sections:

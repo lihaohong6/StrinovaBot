@@ -1,7 +1,7 @@
 import wikitextparser as wtp
 from pywikibot import Page
 
-from utils.general_utils import get_game_json, get_char_by_id, get_table
+from utils.general_utils import get_game_json, get_char_by_id, get_table, get_char_pages
 from utils.wiki_utils import s
 
 
@@ -62,9 +62,10 @@ def generate_return_letter():
         lst.append(k)
         char_stories[char_id] = lst
     i18n = get_game_json()['ReturnLetterCfg']
-    for char_id, story_list in char_stories.items():
-        char_name = get_char_by_id(char_id)
-        p = Page(s, char_name)
+    for char_id, char_name, p in get_char_pages():
+        if char_id not in char_stories:
+            continue
+        story_list = char_stories[char_id]
         parsed = wtp.parse(p.text)
         for t in parsed.templates:
             if t.name.strip() == "ReturnLetter":
