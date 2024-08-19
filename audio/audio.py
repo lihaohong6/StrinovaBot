@@ -6,9 +6,11 @@ import os
 import subprocess
 from dataclasses import dataclass, fields, field
 from pathlib import Path
+import wikitextparser as wtp
 
+from global_config import char_id_mapper
 from utils.asset_utils import audio_root, audio_event_root, wav_root
-from audio.conversion_table import comm, bp_char, other
+from conversion_table import comm, bp_char, other
 from utils.general_utils import get_table, get_game_json
 
 
@@ -32,6 +34,7 @@ class Voice:
     name_en: str = ""
     text_cn: str = ""
     text_en: str = ""
+    text_jp: str = ""
     path: str = ""
     file_cn: str = ""
     file_jp: str = ""
@@ -71,6 +74,7 @@ class Trigger:
     # otherwise: applicable to a single character
     role_id: int = 0
     voices: list[Voice] = field(default_factory=list)
+    children: list["UpgradeTrigger"] = field(default_factory=list)
 
 
 @dataclass
@@ -241,7 +245,87 @@ def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
     return list(triggers.values())
 
 
-def main():
+def pick_string(a: str, b: str) -> str:
+    """
+    Pick a string. Prefer the first one but use the second one if the first is empty.
+    :param a:
+    :param b:
+    :return:
+    """
+    if "NoTextFound" in a:
+        a = ""
+    if "NoTextFound" in b:
+        b = ""
+    if a == "":
+        return b
+    return a
+
+
+def make_table(triggers: list[Trigger], char_id: int):
+    result = ['<table class="wikitable">']
+    for t in triggers:
+        for voice in t.voices:
+            if voice.role_id != 0 and voice.role_id != char_id:
+                continue
+            title = pick_string(pick_string(voice.name_en, voice.name_cn),
+                                pick_string(t.description_en, t.description_cn))
+            translation_cn = ""
+            if voice.text_en != "":
+                translation_cn = "<br/>" + voice.text_en
+
+            result.append(
+                f'<tr>'
+                f'<td rowspan="2">{title}</td>'
+                f'<td>Chinese</td>'
+                f'<td>[[File:{voice.file_cn}]]</td>'
+                f'<td>{voice.text_cn}{translation_cn}</td>'
+                f'</tr>')
+            result.append(
+                f'<tr>'
+                f'<td>Japanese</td>'
+                f'<td>[[File:{voice.file_jp}]]</td>'
+                f'<td>{voice.text_jp}</td>'
+                f'</tr>'
+            )
+    result.append('</table>')
+    return "\n".join(result)
+
+
+def make_character_audio_page(triggers: list[Trigger], char_id: int):
+    result = []
+    for voice_type in VoiceType:
+        result.append(f"=={voice_type.value}==")
+        table = make_table([t for t in triggers if t.type.value == voice_type.value],
+                           char_id)
+        result.append(table)
+        result.append("")
+    print("\n".join(result))
+
+
+def make_character_audio_pages():
+    voices = role_voice()
+    triggers = dict((t.id, t) for t in in_game_triggers())
+    upgrades = in_game_triggers_upgrade()
+    for upgrade in upgrades:
+        if upgrade.trigger not in triggers:
+            continue
+        triggers[upgrade.trigger].children.append(upgrade)
+    custom_triggers = match_custom_triggers(list(voices.values()))
+    all_triggers = list(triggers.values()) + custom_triggers
+    result = []
+    for t in all_triggers:
+        for voice_id in t.voice_id:
+            if voice_id not in voices:
+                break
+            t.voices.append(voices[voice_id])
+        else:
+            result.append(t)
+    for char_id, char_name in char_id_mapper.items():
+        make_character_audio_page(result, char_id)
+        break
+
+
+def test_audio():
     voices = role_voice()
     triggers = in_game_triggers()
     upgrades = in_game_triggers_upgrade()
@@ -278,7 +362,6 @@ def main():
     voices_non_orphan = [v for k, v in voices.items() if k in can_be_triggered]
     print(f"Non-orphan voice-lines: {len(voices_non_orphan)}")
 
-
     # TODO:
     #  Role.json: UnlockVoiceId, AppearanceVoiceId, EquipSecondWeaponVoiceId, EquipGrenadeVoiceId
     # exists = set()
@@ -290,6 +373,10 @@ def main():
     #         exists.add(v.path)
     #         print(v.path + "    " + v.file)
     #         os.startfile(wav_root / v.file)
+
+
+def main():
+    make_character_audio_pages()
 
 
 if __name__ == "__main__":

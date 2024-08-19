@@ -8,9 +8,9 @@ import json
 from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
-from asset_utils import csv_root, localization_root
+from utils.asset_utils import csv_root, localization_root
 from global_config import name_to_en, char_id_mapper
-from wiki_utils import bwiki, s
+from utils.wiki_utils import bwiki, s
 
 
 def load_json(file: str | Path):
@@ -154,7 +154,7 @@ def make_tab_group(original: str) -> str:
 
 
 def get_char_pages() -> list[tuple[int, str, Page]]:
-    pages = list(PreloadingGenerator(Page(s, v) for k, v in char_id_mapper.values()))
+    pages = list(PreloadingGenerator(Page(s, v) for k, v in char_id_mapper.items()))
     assert len(pages) == len(char_id_mapper)
     res = [(t[0], t[1], pages[index])
            for index, t in enumerate(char_id_mapper.items())
