@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 import re
 
-from utils.general_utils import get_game_json, make_tab_group
+from utils.general_utils import get_game_json, make_tab_group, get_game_json_cn
 from utils.asset_utils import csv_root
 from utils.wiki_utils import s
 from global_config import char_id_mapper
@@ -73,7 +73,14 @@ def find_convergence_point(conversations: dict[str, Node], start: Node) -> str |
 
 
 def get_i18n():
-    return get_game_json()[""]
+    en = get_game_json()[""]
+    zh = get_game_json_cn()[""]
+    result = dict()
+    for k, v in zh.items():
+        if k in en:
+            result[v] = en[k]
+    return result
+
 
 
 def process_file(p: Path) -> str:
@@ -131,7 +138,13 @@ def process_file(p: Path) -> str:
             text = [value['TextContent']]
         new_text = []
         for t in text:
-            new_text.append(i18n.get(t.get('Key', ""), t.get('SourceString', "")))
+            source = t.get('SourceString', "PLACEHOLDER")
+            translated = i18n.get(source, source)
+            if "NoTextFound" in translated:
+                translated = source
+            if "PLACEHOLDER" == translated:
+                translated = ""
+            new_text.append(translated)
         text = new_text
 
         if len(text) > 1:
