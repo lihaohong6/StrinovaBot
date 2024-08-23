@@ -82,7 +82,6 @@ def get_i18n():
     return result
 
 
-
 def process_file(p: Path) -> str:
     i18n = get_i18n()
     obj = json.load(open(p, "r", encoding="utf-8"))['Rows']

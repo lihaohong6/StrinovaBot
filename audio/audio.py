@@ -1,16 +1,15 @@
 import re
-from enum import Enum
 
 import json
 import os
 import subprocess
 from dataclasses import dataclass, fields, field
 from pathlib import Path
-import wikitextparser as wtp
 
-from global_config import char_id_mapper
+from conversion_table import VoiceType
+from global_config import char_id_mapper, internal_names
 from utils.asset_utils import audio_root, audio_event_root, wav_root
-from conversion_table import comm, bp_char, other
+from conversion_table import voice_conversion_table
 from utils.general_utils import get_table, get_game_json
 
 
@@ -36,11 +35,10 @@ class Voice:
     text_en: str = ""
     text_jp: str = ""
     path: str = ""
-    file_cn: str = ""
-    file_jp: str = ""
+    file: str = ""
 
     def merge(self, o: "Voice"):
-        assert self.file_cn == o.file_cn and self.path == o.path
+        assert self.file == o.file and self.path == o.path
         assert len(o.id) == 1
         self.id.append(o.id[0])
         for f in fields(self):
@@ -57,24 +55,37 @@ class Voice:
                 self.role_id = o.role_id
 
 
-class VoiceType(Enum):
-    DORM = "Dorm"
-    BATTLE = "Battle"
-    OTHER = "Other"
-
-
 @dataclass
 class Trigger:
     id: int
     type: VoiceType
-    description_cn: str
-    description_en: str
+    name_cn: str = ""
+    name_en: str = ""
+    title_cn: str = ""
+    title_en: str = ""
+    description_cn: str = ""
+    description_en: str = ""
     voice_id: list[int] = field(default_factory=list)
     # 0: applicable for all
     # otherwise: applicable to a single character
     role_id: int = 0
     voices: list[Voice] = field(default_factory=list)
     children: list["UpgradeTrigger"] = field(default_factory=list)
+
+    def merge(self, o: "Trigger"):
+        assert self.id == o.id and self.type == o.type
+        for f in fields(self):
+            if f.type == str:
+                a1 = getattr(self, f.name)
+                a2 = getattr(o, f.name)
+                if a1 == a2:
+                    continue
+                if a1 == "":
+                    setattr(self, f.name, a2)
+                raise RuntimeError(str(self) + "\n" + str(o))
+        if self.role_id != o.role_id:
+            if self.role_id == 999:
+                self.role_id = o.role_id
 
 
 @dataclass
@@ -209,7 +220,7 @@ def role_voice() -> dict[int, Voice]:
                       text_cn=content_cn,
                       text_en=content_en,
                       path=path,
-                      file_cn=file)
+                      file=file)
         voices[k] = voice
     return voices
 
@@ -220,20 +231,16 @@ def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
     def make_trigger(key, name, type: VoiceType):
         triggers[key] = Trigger(
             id=int(key),
+            name_cn=name,
             description_cn=name,
             description_en="",
             role_id=0,
             type=type,
         )
 
-    for key, name in comm.items():
-        make_trigger(key, name, VoiceType.BATTLE)
-
-    for key, name in bp_char.items():
-        make_trigger(key, name, VoiceType.DORM)
-
-    for key, name in other.items():
-        make_trigger(key, name, VoiceType.OTHER)
+    for voice_type, table in voice_conversion_table.items():
+        for key,name in table.items():
+            make_trigger(key, name, voice_type)
 
     for v in voices:
         digits = re.search(r"(\d{3})(_|$)", v.path)
@@ -277,7 +284,7 @@ def make_table(triggers: list[Trigger], char_id: int):
                 f'<tr>'
                 f'<td rowspan="2">{title}</td>'
                 f'<td>Chinese</td>'
-                f'<td>[[File:{voice.file_cn}]]</td>'
+                f'<td>[[File:{voice.file}]]</td>'
                 f'<td>{voice.text_cn}{translation_cn}</td>'
                 f'</tr>')
             result.append(
@@ -300,6 +307,16 @@ def make_character_audio_page(triggers: list[Trigger], char_id: int):
         result.append(table)
         result.append("")
     print("\n".join(result))
+
+
+def parse_system_voice():
+    """
+    InGameSystemVoiceTrigger.json
+    InGameSystemVoiceUpgrade.json (for Kanami)
+    Files with prefix "Vox_Communicate"
+    :return:
+    """
+    pass
 
 
 def make_character_audio_pages():
@@ -338,45 +355,54 @@ def test_audio():
             if vid not in voices:
                 # print(f"{vid} can be triggered by {t} but is not in a voice file")
                 missing_1 += 1
-        if hasattr(t, "voices"):
-            for v in t.voices:
-                if v.id[0] in can_be_triggered:
-                    print(t.id, t.description_cn, "is a duplicate trigger")
-                can_be_triggered.add(v.id[0])
+        # if hasattr(t, "voices"):
+        #     for v in t.voices:
+        #         if v.id[0] in can_be_triggered:
+        #             print(t.id, t.description_cn, "is a duplicate trigger")
+        #         can_be_triggered.add(v.id[0])
+
+    nums = [num for table in voice_conversion_table.values() for num in table.keys()]
 
     missing_2 = 0
     orphans = []
     for k, v in voices.items():
-        if k in can_be_triggered:
-            continue
-        if v.name_cn != "":
-            continue
-        for c in comm:
-            if c in v.path:
-                break
+        # if k in can_be_triggered:
+        #     continue
+        # if v.name_cn != "":
+        #     continue
+        if v.path.startswith("Vox_") and v.path.split("_")[1] in internal_names:
+            for c in nums:
+                if c in v.path:
+                    break
+            else:
+                # print(f"Orphan voice: {v}")
+                missing_2 += 1
+                orphans.append(v)
         else:
-            # print(f"Orphan voice: {v}")
             missing_2 += 1
             orphans.append(v)
     print(f"Missing voice files: {missing_1}. Missing trigger {missing_2}")
     voices_non_orphan = [v for k, v in voices.items() if k in can_be_triggered]
     print(f"Non-orphan voice-lines: {len(voices_non_orphan)}")
+    print("\n".join(str(o) for o in orphans))
 
     # TODO:
     #  Role.json: UnlockVoiceId, AppearanceVoiceId, EquipSecondWeaponVoiceId, EquipGrenadeVoiceId
-    # exists = set()
-    # for v in voices.values():
-    #     conditions = ["_155"]
-    #     if any(c in v.path for c in conditions):
-    #         if v.path in exists:
-    #             continue
-    #         exists.add(v.path)
-    #         print(v.path + "    " + v.file)
-    #         os.startfile(wav_root / v.file)
+    exists = set()
+    while True:
+        cond = input("Cond: ")
+        for v in voices.values():
+            conditions = ["_" + cond.strip()]
+            if any(c in v.path for c in conditions):
+                if v.path in exists:
+                    continue
+                exists.add(v.path)
+                print(v.path + "    " + v.file)
+                os.startfile(wav_root / v.file)
 
 
 def main():
-    make_character_audio_pages()
+    test_audio()
 
 
 if __name__ == "__main__":
