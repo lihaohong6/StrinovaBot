@@ -11,10 +11,10 @@ from typing import Any
 from pywikibot import FilePage, Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
-from conversion_table import VoiceType
-from global_config import char_id_mapper, internal_names, name_to_en
+from audio.data.conversion_table import VoiceType
+from global_config import char_id_mapper, internal_names
 from utils.asset_utils import audio_root, audio_event_root, wav_root
-from conversion_table import voice_conversion_table
+from audio.data.conversion_table import voice_conversion_table
 from utils.general_utils import get_table, get_game_json, get_bwiki_char_pages
 from utils.uploader import upload_file
 from utils.wiki_utils import s, bwiki
@@ -356,12 +356,14 @@ def make_json(triggers: list[Trigger], char_id: int):
             title_cn = pick_string(t.name_cn, title_cn)
             title_en = pick_string(t.name_en, pick_string(v.name_en, t.description_en))
             title_en = pick_string(title_en, title_cn)
-            obj = {"id": v.id[0], 'title_cn': title_cn, 'title_en': title_en}
+            obj = {"id": v.id[0], 'title_cn': '', 'title_en': '', '__title_hint': title_cn}
             for attribute in attributes:
                 obj[attribute] = getattr(v, attribute)
             result[obj['id']] = obj
 
-    print(json.dumps(result, ensure_ascii=False, indent=4))
+    char_name = char_id_mapper[char_id]
+    with open(f"audio/data/{char_name}.json", "w", encoding="utf-8") as f:
+        json.dump(result, f, ensure_ascii=False, indent=4)
 
 
 def make_table(triggers: list[Trigger], char_id: int):
@@ -417,14 +419,14 @@ def make_table(triggers: list[Trigger], char_id: int):
 
 def make_character_audio_page(triggers: list[Trigger], char_id: int):
     result = []
+    make_json(triggers, char_id)
     for voice_type in VoiceType:
         t_list = [t for t in triggers if t.type.value == voice_type.value]
-        make_json(t_list, char_id)
-        result.append(f"=={voice_type.value}==")
-        table = make_table(t_list, char_id)
-        result.append(table)
-        result.append("")
-    print("\n".join(result))
+        # result.append(f"=={voice_type.value}==")
+        # table = make_table(t_list, char_id)
+        # result.append(table)
+        # result.append("")
+    # print("\n".join(result))
 
 
 def parse_system_voice():
@@ -495,7 +497,6 @@ def make_character_audio_pages():
             result.append(t)
     for char_id, char_name in char_id_mapper.items():
         make_character_audio_page(result, char_id)
-        break
 
 
 def test_audio():
