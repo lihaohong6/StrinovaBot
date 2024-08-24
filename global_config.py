@@ -23,5 +23,5 @@ char_id_mapper: dict[int, str] = {101: 'Michele', 105: 'Audrey', 107: 'Maddelena
                                   128: 'Lawine', 131: 'Yvette', 132: 'Ming', 133: 'Meredith', 137: 'Kanami',
                                   146: 'Celestia', 205: 'Galatea'}
 
-internal_names: set[str] = set(char_id_mapper.values())
-internal_names.update({"HuiXing", "MoBai", "Aika"})
+internal_names: dict[str, int] = dict((v, k) for k, v in char_id_mapper.items())
+internal_names.update({"HuiXing": 146, "MoBai": 110, "Aika": 119})

@@ -9,7 +9,7 @@ from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from utils.asset_utils import csv_root, localization_root
-from global_config import name_to_en, char_id_mapper
+from global_config import name_to_en, char_id_mapper, internal_names
 from utils.wiki_utils import bwiki, s
 
 
@@ -159,5 +159,15 @@ def get_char_pages() -> list[tuple[int, str, Page]]:
     res = [(t[0], t[1], pages[index])
            for index, t in enumerate(char_id_mapper.items())
            if t[1] == pages[index].title()]
+    assert len(res) == len(char_id_mapper)
+    return res
+
+
+def get_bwiki_char_pages() -> list[tuple[int, str, Page]]:
+    pages = list(PreloadingGenerator(Page(bwiki(), k) for k in name_to_en))
+    assert len(pages) == len(name_to_en)
+    res = [(internal_names[t[1]], t[1], pages[index])
+           for index, t in enumerate(name_to_en.items())
+           if t[0] == pages[index].title()]
     assert len(res) == len(char_id_mapper)
     return res

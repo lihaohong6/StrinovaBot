@@ -4,13 +4,19 @@ import json
 import os
 import subprocess
 from dataclasses import dataclass, fields, field
+from enum import Enum
 from pathlib import Path
 
+from pywikibot import FilePage, Page
+from pywikibot.pagegenerators import PreloadingGenerator
+
 from conversion_table import VoiceType
-from global_config import char_id_mapper, internal_names
+from global_config import char_id_mapper, internal_names, name_to_en
 from utils.asset_utils import audio_root, audio_event_root, wav_root
 from conversion_table import voice_conversion_table
-from utils.general_utils import get_table, get_game_json
+from utils.general_utils import get_table, get_game_json, get_bwiki_char_pages
+from utils.uploader import upload_file
+from utils.wiki_utils import s, bwiki
 
 
 def audio_convert():
@@ -22,6 +28,12 @@ def audio_convert():
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path = out_path.parent.joinpath(file_name.replace(".txtp", ".wav"))
         subprocess.call(["vgmstream-cli.exe", file, "-o", out_path], stdout=open(os.devnull, 'wb'))
+
+
+class VoiceUpgrade(Enum):
+    REGULAR = 0
+    ORG = 1
+    RED = 2
 
 
 @dataclass
@@ -36,6 +48,9 @@ class Voice:
     text_jp: str = ""
     path: str = ""
     file: str = ""
+    file_page_cn: str = ""
+    file_page_jp: str = ""
+    upgrade: VoiceUpgrade = VoiceUpgrade.REGULAR
 
     def merge(self, o: "Voice"):
         assert self.file == o.file and self.path == o.path
@@ -202,6 +217,7 @@ def role_voice() -> dict[int, Voice]:
     map_bank_name_to_files(wav_root)
     i18n = get_game_json()['RoleVoice']
     voice_table = get_table("RoleVoice")
+    path_to_voice: dict[str, Voice] = {}
 
     voices = {}
     for k, v in voice_table.items():
@@ -211,7 +227,11 @@ def role_voice() -> dict[int, Voice]:
         file = find_audio_file(path)
         if file is None:
             continue
-
+        upgrade = VoiceUpgrade.REGULAR
+        if "org" in path:
+            upgrade = VoiceUpgrade.ORG
+        if "red" in path:
+            upgrade = VoiceUpgrade.RED
         voice = Voice(id=[k],
                       role_id=v['RoleId'],
                       quality=v['Quality'],
@@ -220,7 +240,11 @@ def role_voice() -> dict[int, Voice]:
                       text_cn=content_cn,
                       text_en=content_en,
                       path=path,
-                      file=file)
+                      file=file,
+                      upgrade=upgrade)
+        if path in path_to_voice:
+            path_to_voice[path].merge(voice)
+            voice = path_to_voice[path]
         voices[k] = voice
     return voices
 
@@ -239,10 +263,16 @@ def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
         )
 
     for voice_type, table in voice_conversion_table.items():
-        for key,name in table.items():
+        for key, name in table.items():
             make_trigger(key, name, voice_type)
 
+    voice_found: set[tuple] = set()
+
     for v in voices:
+        ids = tuple(v.id)
+        if ids in voice_found:
+            continue
+        voice_found.add(ids)
         digits = re.search(r"(\d{3})(_|$)", v.path)
         if digits is None:
             continue
@@ -263,34 +293,79 @@ def pick_string(a: str, b: str) -> str:
         a = ""
     if "NoTextFound" in b:
         b = ""
-    if a == "":
+    if a.strip() in {"", "?", "彩蛋"}:
         return b
     return a
 
 
+def upload_audio(source: Path, target: FilePage, text: str):
+    assert source.exists()
+    temp_file = Path("temp.ogg")
+    subprocess.run(["ffmpeg", "-i", source, temp_file], check=True)
+    upload_file(text=text, target=target, file=temp_file)
+    temp_file.unlink()
+
+
+def upload_audio_file(voices: list[Voice], char_name: str):
+    lang_config = [("Chinese", "CN"), ("Japanese", "JP")]
+    for lang_name, lang_code in lang_config:
+        for v in voices:
+            path = audio_root.joinpath(lang_name).joinpath(f"{v.file}")
+            if lang_code == "CN":
+                assert path.exists(), f"{path} does not exist"
+                v.file_page_cn = f"{lang_code}_{v.path}.ogg"
+            else:
+                if path.exists():
+                    v.file_page_jp = f"{lang_code}_{v.path}.ogg"
+    names = [v.file_page_cn for v in voices] + [v.file_page_jp for v in voices]
+    gen = list(PreloadingGenerator(FilePage(s, "File:" + name) for name in names if name != ""))
+    existing: set[str] = set(p.title(underscore=True) for p in gen if p.exists())
+    text = f"[[Category:{char_name} voice lines]]"
+    for v in voices:
+        if v.file_page_cn not in existing:
+            path = audio_root.joinpath(lang_config[0][0]).joinpath(f"{v.file}")
+            upload_audio(path, FilePage(s, "File:" + v.file_page_cn), text)
+        elif v.file_page_jp not in existing:
+            path = audio_root.joinpath(lang_config[1][0]).joinpath(f"{v.file}")
+            upload_audio(path, FilePage(s, "File:" + v.file_page_jp), text)
+
+
 def make_table(triggers: list[Trigger], char_id: int):
+    def voice_filter(v: Voice):
+        return v.role_id == 0 or v.role_id == char_id
+
+    all_voices = [v for t in triggers for v in t.voices if voice_filter(v)]
+    upload_audio_file(all_voices, char_id_mapper[char_id])
+
     result = ['<table class="wikitable">']
     for t in triggers:
         for voice in t.voices:
-            if voice.role_id != 0 and voice.role_id != char_id:
+            if not voice_filter(voice):
                 continue
             title = pick_string(pick_string(voice.name_en, voice.name_cn),
                                 pick_string(t.description_en, t.description_cn))
+            title = pick_string(t.name_cn, title)
             translation_cn = ""
             if voice.text_en != "":
                 translation_cn = "<br/>" + voice.text_en
 
+            title_extra = ""
+            if "red" in voice.path:
+                title_extra = " (legendary skin)"
+            if "org" in voice.path:
+                title_extra = " (dorm skin)"
+
             result.append(
                 f'<tr>'
-                f'<td rowspan="2">{title}</td>'
+                f'<td rowspan="2">{title}{title_extra}</td>'
                 f'<td>Chinese</td>'
-                f'<td>[[File:{voice.file}]]</td>'
+                f'<td>[[File:CN_{voice.path}.ogg]]</td>'
                 f'<td>{voice.text_cn}{translation_cn}</td>'
                 f'</tr>')
             result.append(
                 f'<tr>'
                 f'<td>Japanese</td>'
-                f'<td>[[File:{voice.file_jp}]]</td>'
+                f'<td>[[File:JP_{voice.path}.ogg]]</td>'
                 f'<td>{voice.text_jp}</td>'
                 f'</tr>'
             )
@@ -319,16 +394,54 @@ def parse_system_voice():
     pass
 
 
+def match_role_voice_with_bwiki(voices: list[Voice]):
+    import wikitextparser as wtp
+    for char_id, char_name, page in get_bwiki_char_pages():
+        parsed = wtp.parse(page.text)
+        for section in parsed.sections:
+            if section.title is not None and section.title == "角色台词":
+                break
+        else:
+            print("Audio section not found on " + page.title())
+            continue
+        if "/语音台词" in str(section):
+            page = Page(bwiki(), page.title() + "/语音台词")
+            text = page.text
+        else:
+            text = str(section)
+        for v in voices:
+            if char_id != v.role_id:
+                continue
+            digits = re.search(r"(\d{3})(_|$)", v.path)
+            if digits is None or v.path.endswith("_a"):
+                continue
+            digits = digits.group(1)
+            upgrade = v.upgrade
+            results = re.findall(rf"语音-{digits}(CN|JP)([^|]+)\|([^|]+)", text, re.DOTALL)
+            if len(results) == 0:
+                continue
+            for r in results:
+                result_upgrade = VoiceUpgrade.ORG if "org" in r[1] else \
+                    (VoiceUpgrade.RED if "red" in r[1] else VoiceUpgrade.REGULAR)
+                if upgrade != result_upgrade:
+                    continue
+                if r[0] == "CN":
+                    v.text_cn = r[2]
+                else:
+                    v.text_jp = r[2]
+
+
 def make_character_audio_pages():
     voices = role_voice()
-    triggers = dict((t.id, t) for t in in_game_triggers())
-    upgrades = in_game_triggers_upgrade()
-    for upgrade in upgrades:
-        if upgrade.trigger not in triggers:
-            continue
-        triggers[upgrade.trigger].children.append(upgrade)
+    match_role_voice_with_bwiki(list(voices.values()))
+    # triggers = dict((t.id, t) for t in in_game_triggers())
+    # upgrades = in_game_triggers_upgrade()
+    # for upgrade in upgrades:
+    #     if upgrade.trigger not in triggers:
+    #         continue
+    #     triggers[upgrade.trigger].children.append(upgrade)
     custom_triggers = match_custom_triggers(list(voices.values()))
-    all_triggers = list(triggers.values()) + custom_triggers
+    all_triggers = custom_triggers
     result = []
     for t in all_triggers:
         for voice_id in t.voice_id:
@@ -402,7 +515,9 @@ def test_audio():
 
 
 def main():
-    test_audio()
+    make_character_audio_pages()
+    # test_audio()
+    pass
 
 
 if __name__ == "__main__":

@@ -4,8 +4,8 @@ from enum import Enum
 class VoiceType(Enum):
     DORM = "Dorm"
     BATTLE = "Battle"
-    COMMUNICATIONS = "Communications",
-    SYSTEM = "System",
+    COMMUNICATIONS = "Communications"
+    SYSTEM = "System"
     OTHER = "Other"
 
 
