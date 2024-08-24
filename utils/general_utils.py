@@ -8,7 +8,7 @@ import json
 from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
-from utils.asset_utils import csv_root, localization_root
+from utils.asset_utils import csv_root, localization_root, en_csv_root
 from global_config import name_to_en, char_id_mapper, internal_names
 from utils.wiki_utils import bwiki, s
 
@@ -92,6 +92,15 @@ def get_table(file_name: str) -> dict[int, dict]:
         return table_cache[file_name]
     table = dict((int(k), v) for k, v in load_json(csv_root / f"{file_name}.json")['Rows'].items())
     table_cache[file_name] = table
+    return table
+
+
+def get_table_en(file_name: str) -> dict[int, dict]:
+    table_entry = "EN" + file_name
+    if table_entry in table_cache:
+        return table_cache[file_name]
+    table = dict((int(k), v) for k, v in load_json(en_csv_root / f"{file_name}.json")['Rows'].items())
+    table_cache[table_entry] = table
     return table
 
 

@@ -6,6 +6,7 @@ import subprocess
 from dataclasses import dataclass, fields, field
 from enum import Enum
 from pathlib import Path
+from typing import Any
 
 from pywikibot import FilePage, Page
 from pywikibot.pagegenerators import PreloadingGenerator
@@ -31,9 +32,9 @@ def audio_convert():
 
 
 class VoiceUpgrade(Enum):
-    REGULAR = 0
-    ORG = 1
-    RED = 2
+    REGULAR = ""
+    ORG = "org"
+    RED = "red"
 
 
 @dataclass
@@ -235,12 +236,12 @@ def role_voice() -> dict[int, Voice]:
         voice = Voice(id=[k],
                       role_id=v['RoleId'],
                       quality=v['Quality'],
-                      name_cn=name_cn,
-                      name_en=name_en,
-                      text_cn=content_cn,
-                      text_en=content_en,
-                      path=path,
-                      file=file,
+                      name_cn=name_cn.strip(),
+                      name_en=name_en.strip(),
+                      text_cn=content_cn.strip(),
+                      text_en=content_en.strip(),
+                      path=path.strip(),
+                      file=file.strip(),
                       upgrade=upgrade)
         if path in path_to_voice:
             path_to_voice[path].merge(voice)
@@ -301,7 +302,11 @@ def pick_string(a: str, b: str) -> str:
 def upload_audio(source: Path, target: FilePage, text: str):
     assert source.exists()
     temp_file = Path("temp.ogg")
-    subprocess.run(["ffmpeg", "-i", source, temp_file], check=True)
+    subprocess.run(["ffmpeg", "-i", source, "-c:a", "libopus", "-y", temp_file],
+                   check=True,
+                   stdout=subprocess.DEVNULL,
+                   stderr=subprocess.DEVNULL
+                   )
     upload_file(text=text, target=target, file=temp_file)
     temp_file.unlink()
 
@@ -319,15 +324,44 @@ def upload_audio_file(voices: list[Voice], char_name: str):
                     v.file_page_jp = f"{lang_code}_{v.path}.ogg"
     names = [v.file_page_cn for v in voices] + [v.file_page_jp for v in voices]
     gen = list(PreloadingGenerator(FilePage(s, "File:" + name) for name in names if name != ""))
-    existing: set[str] = set(p.title(underscore=True) for p in gen if p.exists())
+    existing: set[str] = set(p.title(underscore=True, with_ns=False) for p in gen if p.exists())
     text = f"[[Category:{char_name} voice lines]]"
     for v in voices:
+        assert v.file_page_cn != ""
         if v.file_page_cn not in existing:
             path = audio_root.joinpath(lang_config[0][0]).joinpath(f"{v.file}")
+            assert char_name in path
             upload_audio(path, FilePage(s, "File:" + v.file_page_cn), text)
-        elif v.file_page_jp not in existing:
-            path = audio_root.joinpath(lang_config[1][0]).joinpath(f"{v.file}")
-            upload_audio(path, FilePage(s, "File:" + v.file_page_jp), text)
+        # FIXME: Vox_SelectCharacter-0208-event.wav is for Michele in CN but for Yvette in JP;
+        #  do not upload Japanese files for now
+        # if v.file_page_jp not in existing and v.file_page_jp != "":
+        #     path = audio_root.joinpath(lang_config[1][0]).joinpath(f"{v.file}")
+        #     assert char_name in path
+        #     upload_audio(path, FilePage(s, "File:" + v.file_page_jp), text)
+
+
+def make_json(triggers: list[Trigger], char_id: int):
+    def voice_filter(v: Voice):
+        return v.role_id == 0 or v.role_id == char_id
+
+    result: dict[int, [dict[str, Any]]] = {}
+    attributes = ["path", "file", "text_cn", "text_en", "text_jp"]
+
+    for t in triggers:
+        for v in t.voices:
+            if not voice_filter(v):
+                continue
+            title_cn = pick_string(v.name_cn,
+                                   t.description_cn)
+            title_cn = pick_string(t.name_cn, title_cn)
+            title_en = pick_string(t.name_en, pick_string(v.name_en, t.description_en))
+            title_en = pick_string(title_en, title_cn)
+            obj = {"id": v.id[0], 'title_cn': title_cn, 'title_en': title_en}
+            for attribute in attributes:
+                obj[attribute] = getattr(v, attribute)
+            result[obj['id']] = obj
+
+    print(json.dumps(result, ensure_ascii=False, indent=4))
 
 
 def make_table(triggers: list[Trigger], char_id: int):
@@ -355,20 +389,28 @@ def make_table(triggers: list[Trigger], char_id: int):
             if "org" in voice.path:
                 title_extra = " (dorm skin)"
 
-            result.append(
-                f'<tr>'
-                f'<td rowspan="2">{title}{title_extra}</td>'
-                f'<td>Chinese</td>'
-                f'<td>[[File:CN_{voice.path}.ogg]]</td>'
-                f'<td>{voice.text_cn}{translation_cn}</td>'
-                f'</tr>')
-            result.append(
-                f'<tr>'
-                f'<td>Japanese</td>'
-                f'<td>[[File:JP_{voice.path}.ogg]]</td>'
-                f'<td>{voice.text_jp}</td>'
-                f'</tr>'
-            )
+            if voice.file_page_jp != "":
+                result.append(
+                    f'<tr>'
+                    f'<td rowspan="2">{title}{title_extra}</td>'
+                    f'<td>Chinese</td>'
+                    f'<td>[[File:CN_{voice.path}.ogg]]</td>'
+                    f'<td>{voice.text_cn}{translation_cn}</td>'
+                    f'</tr>')
+                result.append(
+                    f'<tr>'
+                    f'<td>Japanese</td>'
+                    f'<td>[[File:JP_{voice.path}.ogg]]</td>'
+                    f'<td>{voice.text_jp}</td>'
+                    f'</tr>')
+            else:
+                result.append(
+                    f'<tr>'
+                    f'<td>{title}{title_extra}</td>'
+                    f'<td>Chinese</td>'
+                    f'<td>[[File:CN_{voice.path}.ogg]]</td>'
+                    f'<td>{voice.text_cn}{translation_cn}</td>'
+                    f'</tr>')
     result.append('</table>')
     return "\n".join(result)
 
@@ -376,9 +418,10 @@ def make_table(triggers: list[Trigger], char_id: int):
 def make_character_audio_page(triggers: list[Trigger], char_id: int):
     result = []
     for voice_type in VoiceType:
+        t_list = [t for t in triggers if t.type.value == voice_type.value]
+        make_json(t_list, char_id)
         result.append(f"=={voice_type.value}==")
-        table = make_table([t for t in triggers if t.type.value == voice_type.value],
-                           char_id)
+        table = make_table(t_list, char_id)
         result.append(table)
         result.append("")
     print("\n".join(result))
@@ -413,7 +456,7 @@ def match_role_voice_with_bwiki(voices: list[Voice]):
             if char_id != v.role_id:
                 continue
             digits = re.search(r"(\d{3})(_|$)", v.path)
-            if digits is None or v.path.endswith("_a"):
+            if digits is None or (v.path.endswith("_a") and "red" not in v.path and "org" not in v.path):
                 continue
             digits = digits.group(1)
             upgrade = v.upgrade
@@ -426,9 +469,9 @@ def match_role_voice_with_bwiki(voices: list[Voice]):
                 if upgrade != result_upgrade:
                     continue
                 if r[0] == "CN":
-                    v.text_cn = r[2]
+                    v.text_cn = r[2].strip()
                 else:
-                    v.text_jp = r[2]
+                    v.text_jp = r[2].strip()
 
 
 def make_character_audio_pages():
