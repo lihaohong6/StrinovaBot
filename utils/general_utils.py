@@ -12,39 +12,29 @@ from utils.asset_utils import csv_root, localization_root, en_csv_root
 from global_config import name_to_en, char_id_mapper, internal_names
 from utils.wiki_utils import bwiki, s
 
+json_cache: dict[str, dict] = {}
+
 
 def load_json(file: str | Path):
-    return json.load(open(file, "r", encoding="utf-8"))
-
-
-game_json = None
+    if isinstance(file, str):
+        file_str = file
+    else:
+        file_str = str(file.absolute())
+    if file_str not in json_cache:
+        json_cache[file_str] = json.load(open(file, "r", encoding="utf-8"))
+    return json_cache[file_str]
 
 
 def get_game_json():
-    global game_json
-    if game_json is None:
-        game_json = load_json(localization_root / "en/Game.json")
-    return game_json
-
-
-game_cn_json = None
+    return load_json(localization_root / "en/Game.json")
 
 
 def get_game_json_cn():
-    global game_cn_json
-    if game_cn_json is None:
-        game_cn_json = load_json(localization_root / "zh-Hans/Game.json")
-    return game_cn_json
-
-
-game_ja_json = None
+    return load_json(localization_root / "zh-Hans/Game.json")
 
 
 def get_game_json_ja():
-    global game_ja_json
-    if game_ja_json is None:
-        game_ja_json = load_json(localization_root / "ja/Game.json")
-    return game_ja_json
+    return load_json(localization_root / "ja/Game.json")
 
 
 def zh_name_to_en(o: str) -> str:

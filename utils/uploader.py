@@ -97,22 +97,26 @@ def upload_local():
 
 def upload_file(text: str, target: FilePage, summary: str = "batch upload file",
                 file: str | Path = None, url: str = None):
+    force = False
     while True:
-        if target.exists():
-            return
         try:
             if url is not None:
-                Uploader(s, target, source_url=url, text=text, comment=summary).upload()
+                Uploader(s, target, source_url=url, text=text, comment=summary, ignore_warnings=force).upload()
             if file is not None:
-                Uploader(s, target, source_filename=str(file), text=text, comment=summary).upload()
+                Uploader(s, target, source_filename=str(file), text=text, comment=summary, ignore_warnings=force).upload()
+            return
         except Exception as e:
             search = re.search(r"duplicate of \['([^']+)'", str(e))
             if 'already exists' in str(e):
                 return
             if "http-timed-out" in str(e):
                 continue
-            assert search is not None
+            if "was-deleted" in str(e):
+                force = True
+                continue
+            assert search is not None, str(e)
             target.set_redirect_target(FilePage(s, f"File:{search.group(1)}"), create=True)
+            return
 
 
 def main():

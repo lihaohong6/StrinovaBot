@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 import re
 
-from utils.general_utils import get_game_json, make_tab_group, get_game_json_cn
+from utils.general_utils import get_game_json, make_tab_group, get_game_json_cn, load_json
 from utils.asset_utils import csv_root
 from utils.wiki_utils import s
 from global_config import char_id_mapper
@@ -84,7 +84,7 @@ def get_i18n():
 
 def process_file(p: Path) -> str:
     i18n = get_i18n()
-    obj = json.load(open(p, "r", encoding="utf-8"))['Rows']
+    obj = load_json(p)['Rows']
 
     result = ["{{StrinovaComms"]
 

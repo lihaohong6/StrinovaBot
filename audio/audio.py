@@ -11,11 +11,11 @@ from typing import Any
 from pywikibot import FilePage, Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
-from audio.data.conversion_table import VoiceType
+from data.conversion_table import VoiceType
 from global_config import char_id_mapper, internal_names
-from utils.asset_utils import audio_root, audio_event_root, wav_root
-from audio.data.conversion_table import voice_conversion_table
-from utils.general_utils import get_table, get_game_json, get_bwiki_char_pages
+from utils.asset_utils import audio_root, audio_event_root, wav_root_cn, wav_root_jp
+from data.conversion_table import voice_conversion_table
+from utils.general_utils import get_table, get_game_json, get_bwiki_char_pages, load_json
 from utils.uploader import upload_file
 from utils.wiki_utils import s, bwiki
 
@@ -40,21 +40,22 @@ class VoiceUpgrade(Enum):
 @dataclass
 class Voice:
     id: list[int]
-    role_id: int
-    quality: int
+    role_id: int = -1
+    quality: int = -1
     name_cn: str = ""
     name_en: str = ""
     text_cn: str = ""
     text_en: str = ""
     text_jp: str = ""
     path: str = ""
-    file: str = ""
+    file_cn: str = ""
+    file_jp: str = ""
     file_page_cn: str = ""
     file_page_jp: str = ""
     upgrade: VoiceUpgrade = VoiceUpgrade.REGULAR
 
     def merge(self, o: "Voice"):
-        assert self.file == o.file and self.path == o.path
+        assert self.file_cn == o.file_cn and self.path == o.path
         assert len(o.id) == 1
         self.id.append(o.id[0])
         for f in fields(self):
@@ -77,8 +78,6 @@ class Trigger:
     type: VoiceType
     name_cn: str = ""
     name_en: str = ""
-    title_cn: str = ""
-    title_en: str = ""
     description_cn: str = ""
     description_en: str = ""
     voice_id: list[int] = field(default_factory=list)
@@ -111,23 +110,19 @@ class UpgradeTrigger:
     skins: list[int]
 
 
-sid_to_ix: dict[str, str] = {}
-bank_name_to_files: dict[str, list[Path]] = {}
-
-
-def find_audio_file(file_name: str) -> str | None:
-    assert len(sid_to_ix) > 0
+def find_audio_file(file_name: str, table: dict, bank_name_to_files: dict) -> str | None:
+    assert len(table) > 0
     event_file = audio_event_root / f"{file_name}.json"
     if not event_file.exists():
         # print(event_file.name + " does not exist")
         return None
-    data = json.load(open(event_file, "r", encoding="utf-8"))["Properties"]
+    data = load_json(event_file)["Properties"]
     bank_name = data["RequiredBank"]["ObjectName"].split("'")[1]
     short_id = str(data["ShortID"])
-    if short_id not in sid_to_ix:
+    if short_id not in table:
         # print(f"Short ID {short_id} is not in conversion table")
         return None
-    ix = int(sid_to_ix[short_id])
+    ix = int(table[short_id])
     candidates = []
     if bank_name not in bank_name_to_files:
         # print(f"No file corresponding to bank name " + bank_name)
@@ -141,10 +136,9 @@ def find_audio_file(file_name: str) -> str | None:
     return candidates[0].name
 
 
-def parse_banks_xml():
-    cn_bank_file = audio_root / "banks/cn_banks.xml"
-    assert cn_bank_file.exists()
-    lines = open(cn_bank_file, "r", encoding="utf-8").readlines()
+def parse_bank(bank_file: Path, table: dict[str, str]):
+    assert bank_file.exists()
+    lines = open(bank_file, "r", encoding="utf-8").readlines()
     ix = None
     sid = None
     for line in lines:
@@ -153,15 +147,27 @@ def parse_banks_xml():
         if 'ty="sid"' in line:
             sid = re.search(r'va="(\d+)"', line).group(1)
             if ix is not None:
-                sid_to_ix[sid] = ix
+                table[sid] = ix
 
 
-def map_bank_name_to_files(p: Path):
+def parse_banks_xml():
+    sid_to_ix_cn = {}
+    cn_bank_file = audio_root / "banks/cn_banks.xml"
+    parse_bank(cn_bank_file, sid_to_ix_cn)
+    sid_to_ix_ja = {}
+    jp_bank_file = audio_root / "banks/ja_banks.xml"
+    parse_bank(jp_bank_file, sid_to_ix_ja)
+    return sid_to_ix_cn, sid_to_ix_ja
+
+
+def map_bank_name_to_files(p: Path) -> dict[str, list[Path]]:
+    table = {}
     for f in p.iterdir():
         bank_name = f.name.split("-")[0]
-        if bank_name not in bank_name_to_files:
-            bank_name_to_files[bank_name] = []
-        bank_name_to_files[bank_name].append(f)
+        if bank_name not in table:
+            table[bank_name] = []
+        table[bank_name].append(f)
+    return table
 
 
 def get_text(i18n, v):
@@ -214,8 +220,9 @@ def in_game_triggers_upgrade() -> list[UpgradeTrigger]:
 
 
 def role_voice() -> dict[int, Voice]:
-    parse_banks_xml()
-    map_bank_name_to_files(wav_root)
+    table_cn, table_jp = parse_banks_xml()
+    bank_name_to_files_cn = map_bank_name_to_files(wav_root_cn)
+    bank_name_to_files_jp = map_bank_name_to_files(wav_root_jp)
     i18n = get_game_json()['RoleVoice']
     voice_table = get_table("RoleVoice")
     path_to_voice: dict[str, Voice] = {}
@@ -225,9 +232,12 @@ def role_voice() -> dict[int, Voice]:
         content_cn, content_en, name_cn, name_en = get_text(i18n, v)
 
         path = v["AkEvent"]["AssetPathName"].split(".")[-1]
-        file = find_audio_file(path)
-        if file is None:
+        file_cn = find_audio_file(path, table_cn, bank_name_to_files_cn)
+        if file_cn is None:
             continue
+        file_jp = find_audio_file(path, table_jp, bank_name_to_files_jp)
+        if file_jp is None:
+            file_jp = ""
         upgrade = VoiceUpgrade.REGULAR
         if "org" in path:
             upgrade = VoiceUpgrade.ORG
@@ -241,11 +251,14 @@ def role_voice() -> dict[int, Voice]:
                       text_cn=content_cn.strip(),
                       text_en=content_en.strip(),
                       path=path.strip(),
-                      file=file.strip(),
+                      file_cn=file_cn.strip(),
+                      file_jp=file_jp.strip(),
                       upgrade=upgrade)
         if path in path_to_voice:
             path_to_voice[path].merge(voice)
             voice = path_to_voice[path]
+        else:
+            path_to_voice[path] = voice
         voices[k] = voice
     return voices
 
@@ -253,19 +266,20 @@ def role_voice() -> dict[int, Voice]:
 def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
     triggers: dict[str, Trigger] = {}
 
-    def make_trigger(key, name, type: VoiceType):
+    def make_trigger(key, name_cn, name_en, type: VoiceType):
         triggers[key] = Trigger(
             id=int(key),
-            name_cn=name,
-            description_cn=name,
-            description_en="",
+            name_cn=name_cn,
+            name_en=name_en,
+            description_cn=name_cn,
+            description_en=name_en,
             role_id=0,
             type=type,
         )
 
     for voice_type, table in voice_conversion_table.items():
-        for key, name in table.items():
-            make_trigger(key, name, voice_type)
+        for key, names in table.items():
+            make_trigger(key, names[0], names[1], voice_type)
 
     voice_found: set[tuple] = set()
 
@@ -283,7 +297,7 @@ def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
     return list(triggers.values())
 
 
-def pick_string(a: str, b: str) -> str:
+def pick_two(a: str, b: str) -> str:
     """
     Pick a string. Prefer the first one but use the second one if the first is empty.
     :param a:
@@ -299,6 +313,14 @@ def pick_string(a: str, b: str) -> str:
     return a
 
 
+def pick_string(strings: list[str]) -> str:
+    i = len(strings) - 2
+    while i >= 0:
+        strings[i] = pick_two(strings[i], strings[i + 1])
+        i -= 1
+    return strings[0]
+
+
 def upload_audio(source: Path, target: FilePage, text: str):
     assert source.exists()
     temp_file = Path("temp.ogg")
@@ -312,16 +334,13 @@ def upload_audio(source: Path, target: FilePage, text: str):
 
 
 def upload_audio_file(voices: list[Voice], char_name: str):
-    lang_config = [("Chinese", "CN"), ("Japanese", "JP")]
-    for lang_name, lang_code in lang_config:
-        for v in voices:
-            path = audio_root.joinpath(lang_name).joinpath(f"{v.file}")
-            if lang_code == "CN":
-                assert path.exists(), f"{path} does not exist"
-                v.file_page_cn = f"{lang_code}_{v.path}.ogg"
-            else:
-                if path.exists():
-                    v.file_page_jp = f"{lang_code}_{v.path}.ogg"
+    for v in voices:
+        path_cn = audio_root.joinpath("Chinese").joinpath(f"{v.file_cn}")
+        assert path_cn.exists(), f"{path_cn} does not exist"
+        v.file_page_cn = f"CN_{v.path}.ogg"
+        path_jp = audio_root.joinpath("Japanese").joinpath(f"{v.file_jp}")
+        if v.file_jp != "" and path_jp.exists():
+            v.file_page_jp = f"JP_{v.path}.ogg"
     names = [v.file_page_cn for v in voices] + [v.file_page_jp for v in voices]
     gen = list(PreloadingGenerator(FilePage(s, "File:" + name) for name in names if name != ""))
     existing: set[str] = set(p.title(underscore=True, with_ns=False) for p in gen if p.exists())
@@ -329,15 +348,13 @@ def upload_audio_file(voices: list[Voice], char_name: str):
     for v in voices:
         assert v.file_page_cn != ""
         if v.file_page_cn not in existing:
-            path = audio_root.joinpath(lang_config[0][0]).joinpath(f"{v.file}")
-            assert char_name in path
+            path = audio_root.joinpath("Chinese").joinpath(f"{v.file_cn}")
             upload_audio(path, FilePage(s, "File:" + v.file_page_cn), text)
         # FIXME: Vox_SelectCharacter-0208-event.wav is for Michele in CN but for Yvette in JP;
         #  do not upload Japanese files for now
-        # if v.file_page_jp not in existing and v.file_page_jp != "":
-        #     path = audio_root.joinpath(lang_config[1][0]).joinpath(f"{v.file}")
-        #     assert char_name in path
-        #     upload_audio(path, FilePage(s, "File:" + v.file_page_jp), text)
+        if v.file_page_jp not in existing and v.file_page_jp != "":
+            path = audio_root.joinpath("Japanese").joinpath(f"{v.file_jp}")
+            upload_audio(path, FilePage(s, "File:" + v.file_page_jp), text)
 
 
 def make_json(triggers: list[Trigger], char_id: int):
@@ -345,17 +362,13 @@ def make_json(triggers: list[Trigger], char_id: int):
         return v.role_id == 0 or v.role_id == char_id
 
     result: dict[int, [dict[str, Any]]] = {}
-    attributes = ["path", "file", "text_cn", "text_en", "text_jp"]
+    attributes = ["path", "file_cn", "file_jp", "text_cn", "text_en", "text_jp"]
 
     for t in triggers:
         for v in t.voices:
             if not voice_filter(v):
                 continue
-            title_cn = pick_string(v.name_cn,
-                                   t.description_cn)
-            title_cn = pick_string(t.name_cn, title_cn)
-            title_en = pick_string(t.name_en, pick_string(v.name_en, t.description_en))
-            title_en = pick_string(title_en, title_cn)
+            title_cn = pick_string([t.name_cn, v.name_cn, t.description_cn])
             obj = {"id": v.id[0], 'title_cn': '', 'title_en': '', '__title_hint': title_cn}
             for attribute in attributes:
                 obj[attribute] = getattr(v, attribute)
@@ -366,24 +379,11 @@ def make_json(triggers: list[Trigger], char_id: int):
         json.dump(result, f, ensure_ascii=False, indent=4)
 
 
-def make_table(triggers: list[Trigger], char_id: int):
-    def voice_filter(v: Voice):
-        return v.role_id == 0 or v.role_id == char_id
-
-    all_voices = [v for t in triggers for v in t.voices if voice_filter(v)]
-    upload_audio_file(all_voices, char_id_mapper[char_id])
-
+def make_table(triggers: list[Trigger]):
     result = ['<table class="wikitable">']
     for t in triggers:
         for voice in t.voices:
-            if not voice_filter(voice):
-                continue
-            title = pick_string(pick_string(voice.name_en, voice.name_cn),
-                                pick_string(t.description_en, t.description_cn))
-            title = pick_string(t.name_cn, title)
-            translation_cn = ""
-            if voice.text_en != "":
-                translation_cn = "<br/>" + voice.text_en
+            title = pick_string([voice.name_en, t.name_en, t.name_cn])
 
             title_extra = ""
             if "red" in voice.path:
@@ -391,42 +391,47 @@ def make_table(triggers: list[Trigger], char_id: int):
             if "org" in voice.path:
                 title_extra = " (dorm skin)"
 
+            args = [
+                ("Title", f"{title}{title_extra}"),
+                ("FileCN", f"CN_{voice.path}.ogg"),
+                ("TextCN", voice.text_cn),
+                ("TextEN", voice.text_en),
+            ]
+
             if voice.file_page_jp != "":
-                result.append(
-                    f'<tr>'
-                    f'<td rowspan="2">{title}{title_extra}</td>'
-                    f'<td>Chinese</td>'
-                    f'<td>[[File:CN_{voice.path}.ogg]]</td>'
-                    f'<td>{voice.text_cn}{translation_cn}</td>'
-                    f'</tr>')
-                result.append(
-                    f'<tr>'
-                    f'<td>Japanese</td>'
-                    f'<td>[[File:JP_{voice.path}.ogg]]</td>'
-                    f'<td>{voice.text_jp}</td>'
-                    f'</tr>')
-            else:
-                result.append(
-                    f'<tr>'
-                    f'<td>{title}{title_extra}</td>'
-                    f'<td>Chinese</td>'
-                    f'<td>[[File:CN_{voice.path}.ogg]]</td>'
-                    f'<td>{voice.text_cn}{translation_cn}</td>'
-                    f'</tr>')
+                args.append(("FileJP", f"JP_{voice.path}.ogg"))
+                args.append(("TextJP", voice.text_jp))
+
+            result.append("{{Voice/row | " + " | ".join(f"{k}={v}" for k, v in args) + " }}")
     result.append('</table>')
     return "\n".join(result)
 
 
+def load_json_voices(char_name: str) -> list[Voice]:
+    voices_json = load_json("audio/data/" + char_name + ".json")
+    voices = []
+    for voice_id, voice_data in voices_json.items():
+        voice = Voice([int(voice_id)])
+        for k, v in voice_data.items():
+            setattr(voice, k, v)
+        voice.id = [voice.id]
+        voices.append(voice)
+    return voices
+
+
 def make_character_audio_page(triggers: list[Trigger], char_id: int):
     result = []
-    make_json(triggers, char_id)
+    char_name = char_id_mapper[char_id]
+    voices = load_json_voices(char_name)
+    upload_audio_file(voices, char_name)
+    triggers = match_custom_triggers(voices)
     for voice_type in VoiceType:
         t_list = [t for t in triggers if t.type.value == voice_type.value]
-        # result.append(f"=={voice_type.value}==")
-        # table = make_table(t_list, char_id)
-        # result.append(table)
-        # result.append("")
-    # print("\n".join(result))
+        result.append(f"=={voice_type.value}==")
+        table = make_table(t_list)
+        result.append(table)
+        result.append("")
+    print("\n".join(result))
 
 
 def parse_system_voice():
@@ -496,7 +501,9 @@ def make_character_audio_pages():
         else:
             result.append(t)
     for char_id, char_name in char_id_mapper.items():
-        make_character_audio_page(result, char_id)
+        make_json(result, char_id)
+        # make_character_audio_page(result, char_id)
+        # break
 
 
 def test_audio():
@@ -555,7 +562,7 @@ def test_audio():
                     continue
                 exists.add(v.path)
                 print(v.path + "    " + v.file)
-                os.startfile(wav_root / v.file)
+                os.startfile(wav_root_cn / v.file)
 
 
 def main():
