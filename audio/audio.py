@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from pywikibot import FilePage, Page
-from pywikibot.pagegenerators import PreloadingGenerator
+from pywikibot.pagegenerators import PreloadingGenerator, GeneratorFactory
 
 from data.conversion_table import VoiceType
 from global_config import char_id_mapper, internal_names
@@ -341,9 +341,10 @@ def upload_audio_file(voices: list[Voice], char_name: str):
         path_jp = audio_root.joinpath("Japanese").joinpath(f"{v.file_jp}")
         if v.file_jp != "" and path_jp.exists():
             v.file_page_jp = f"JP_{v.path}.ogg"
-    names = [v.file_page_cn for v in voices] + [v.file_page_jp for v in voices]
-    gen = list(PreloadingGenerator(FilePage(s, "File:" + name) for name in names if name != ""))
-    existing: set[str] = set(p.title(underscore=True, with_ns=False) for p in gen if p.exists())
+    gen = GeneratorFactory()
+    gen.handle_args([f"-cat:{char_name} voice lines", "-ns:File"])
+    gen = gen.getCombinedGenerator()
+    existing: set[str] = set(p.title(underscore=True, with_ns=False) for p in gen)
     text = f"[[Category:{char_name} voice lines]]"
     for v in voices:
         assert v.file_page_cn != ""
@@ -380,7 +381,7 @@ def make_json(triggers: list[Trigger], char_id: int):
 
 
 def make_table(triggers: list[Trigger]):
-    result = ['<table class="wikitable">']
+    result = ['{{Voice/start}}']
     for t in triggers:
         for voice in t.voices:
             title = pick_string([voice.name_en, t.name_en, t.name_cn])
@@ -403,7 +404,7 @@ def make_table(triggers: list[Trigger]):
                 args.append(("TextJP", voice.text_jp))
 
             result.append("{{Voice/row | " + " | ".join(f"{k}={v}" for k, v in args) + " }}")
-    result.append('</table>')
+    result.append('{{Voice/end}}')
     return "\n".join(result)
 
 
@@ -419,8 +420,8 @@ def load_json_voices(char_name: str) -> list[Voice]:
     return voices
 
 
-def make_character_audio_page(triggers: list[Trigger], char_id: int):
-    result = []
+def make_character_audio_page(char_id: int):
+    result = ["{{CharacterAudioTop}}"]
     char_name = char_id_mapper[char_id]
     voices = load_json_voices(char_name)
     upload_audio_file(voices, char_name)
@@ -431,7 +432,9 @@ def make_character_audio_page(triggers: list[Trigger], char_id: int):
         table = make_table(t_list)
         result.append(table)
         result.append("")
-    print("\n".join(result))
+    p = Page(s, f"{char_name}/audio")
+    p.text = "\n".join(result)
+    p.save("Generate audio page")
 
 
 def parse_system_voice():
@@ -502,8 +505,7 @@ def make_character_audio_pages():
             result.append(t)
     for char_id, char_name in char_id_mapper.items():
         make_json(result, char_id)
-        # make_character_audio_page(result, char_id)
-        # break
+        make_character_audio_page(char_id)
 
 
 def test_audio():
