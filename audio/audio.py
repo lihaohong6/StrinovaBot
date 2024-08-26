@@ -38,6 +38,8 @@ def make_character_json(triggers: list[Trigger], char_id: int):
     def voice_filter(v: Voice):
         return v.role_id == 0 or v.role_id == char_id
 
+    # TODO: do not simply overwrite json; merge instead
+
     result: dict[int, [dict[str, Any]]] = {}
     attributes = ["path", "file_cn", "file_jp", "text_cn", "text_en", "text_jp"]
 
@@ -82,12 +84,16 @@ def match_role_voice_with_bwiki(voices: list[Voice]):
             text = page.text
         else:
             text = str(section)
+        text_seen: set[str] = set()
         for v in voices:
             if char_id != v.role_id:
                 continue
             digits = re.search(r"(\d{3})(_|$)", v.path)
-            if digits is None or (v.path.endswith("_a") and "red" not in v.path and "org" not in v.path):
-                continue
+            # if (digits is None or
+            #         ((v.path[-2:] in {"_a", "_b", "_c"}) and
+            #          "red" not in v.path and
+            #          "org" not in v.path)):
+            #     continue
             digits = digits.group(1)
             upgrade = v.upgrade
             results = re.findall(f"语音-{digits}" + r"(CN|JP)([^|]+)\|([^|<}}{{\\]+)", text, re.DOTALL)
@@ -99,6 +105,9 @@ def match_role_voice_with_bwiki(voices: list[Voice]):
                 if upgrade != result_upgrade:
                     continue
                 res: str = r[2].strip()
+                if res in text_seen:
+                    continue
+                text_seen.add(res)
                 if r[0] == "CN":
                     v.text_cn = res
                 else:
