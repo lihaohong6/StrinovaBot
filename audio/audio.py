@@ -7,17 +7,17 @@ from pathlib import Path
 from sys import argv
 from typing import Any
 
-from pywikibot import FilePage, Page
-from pywikibot.pagegenerators import PreloadingGenerator, GeneratorFactory
+from pywikibot import Page
+from pywikibot.pagegenerators import PreloadingGenerator
 
-from audio.audio_parser import VoiceUpgrade, Voice, Trigger, in_game_triggers, in_game_triggers_upgrade, role_voice, \
+from audio_parser import VoiceUpgrade, Voice, Trigger, in_game_triggers, in_game_triggers_upgrade, role_voice, \
     match_custom_triggers
-from data.conversion_table import VoiceType
+from audio_utils import pick_string
+from character_page import make_character_audio_page
 from global_config import char_id_mapper, internal_names
 from utils.asset_utils import audio_root, wav_root_cn
 from data.conversion_table import voice_conversion_table
 from utils.general_utils import get_bwiki_char_pages, load_json
-from utils.uploader import upload_file
 from utils.wiki_utils import s, bwiki
 
 import wikitextparser as wtp
@@ -34,67 +34,6 @@ def audio_convert():
         subprocess.call(["vgmstream-cli.exe", file, "-o", out_path], stdout=open(os.devnull, 'wb'))
 
 
-def pick_two(a: str, b: str) -> str:
-    """
-    Pick a string. Prefer the first one but use the second one if the first is empty.
-    :param a:
-    :param b:
-    :return:
-    """
-    if "NoTextFound" in a:
-        a = ""
-    if "NoTextFound" in b:
-        b = ""
-    if a.strip() in {"", "?", "彩蛋"}:
-        return b
-    return a
-
-
-def pick_string(strings: list[str]) -> str:
-    i = len(strings) - 2
-    while i >= 0:
-        strings[i] = pick_two(strings[i], strings[i + 1])
-        i -= 1
-    return strings[0]
-
-
-def upload_audio(source: Path, target: FilePage, text: str):
-    assert source.exists()
-    temp_file = Path("temp.ogg")
-    subprocess.run(["ffmpeg", "-i", source, "-c:a", "libopus", "-y", temp_file],
-                   check=True,
-                   stdout=subprocess.DEVNULL,
-                   stderr=subprocess.DEVNULL
-                   )
-    upload_file(text=text, target=target, file=temp_file)
-    temp_file.unlink()
-
-
-def upload_audio_file(voices: list[Voice], char_name: str):
-    for v in voices:
-        path_cn = audio_root.joinpath("Chinese").joinpath(f"{v.file_cn}")
-        assert path_cn.exists(), f"{path_cn} does not exist"
-        v.file_page_cn = f"CN_{v.path}.ogg"
-        path_jp = audio_root.joinpath("Japanese").joinpath(f"{v.file_jp}")
-        if v.file_jp != "" and path_jp.exists():
-            v.file_page_jp = f"JP_{v.path}.ogg"
-    gen = GeneratorFactory()
-    gen.handle_args([f"-cat:{char_name} voice lines", "-ns:File"])
-    gen = gen.getCombinedGenerator()
-    existing: set[str] = set(p.title(underscore=True, with_ns=False) for p in gen)
-    text = f"[[Category:{char_name} voice lines]]"
-    for v in voices:
-        assert v.file_page_cn != ""
-        if v.file_page_cn not in existing:
-            path = audio_root.joinpath("Chinese").joinpath(f"{v.file_cn}")
-            upload_audio(path, FilePage(s, "File:" + v.file_page_cn), text)
-        # FIXME: Vox_SelectCharacter-0208-event.wav is for Michele in CN but for Yvette in JP;
-        #  do not upload Japanese files for now
-        if v.file_page_jp not in existing and v.file_page_jp != "":
-            path = audio_root.joinpath("Japanese").joinpath(f"{v.file_jp}")
-            upload_audio(path, FilePage(s, "File:" + v.file_page_jp), text)
-
-
 def make_character_json(triggers: list[Trigger], char_id: int):
     def voice_filter(v: Voice):
         return v.role_id == 0 or v.role_id == char_id
@@ -106,8 +45,8 @@ def make_character_json(triggers: list[Trigger], char_id: int):
         for v in t.voices:
             if not voice_filter(v):
                 continue
-            title_cn = pick_string([t.name_cn, v.name_cn, t.description_cn])
-            title_en = pick_string([t.name_en, v.name_en, t.description_en])
+            title_cn = pick_string([t.name_cn, v.title_cn, t.description_cn])
+            title_en = pick_string([t.name_en, v.title_en, t.description_en])
             obj = {"id": v.id[0], 'title_cn': '', 'title_en': '', '__title_hint': title_cn + "/" + title_en}
             for attribute in attributes:
                 obj[attribute] = getattr(v, attribute)
@@ -116,63 +55,6 @@ def make_character_json(triggers: list[Trigger], char_id: int):
     char_name = char_id_mapper[char_id]
     with open(f"audio/data/{char_name}.json", "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=4)
-
-
-def make_table(triggers: list[Trigger]):
-    result = ['{{Voice/start}}']
-    for t in triggers:
-        for voice in t.voices:
-            title = pick_string([voice.name_en, t.name_en, t.name_cn])
-
-            title_extra = ""
-            if "red" in voice.path:
-                title_extra = " (legendary skin)"
-            if "org" in voice.path:
-                title_extra = " (dorm skin)"
-
-            args = [
-                ("Title", f"{title}{title_extra}"),
-                ("FileCN", f"CN_{voice.path}.ogg"),
-                ("TextCN", voice.text_cn),
-                ("TextEN", voice.text_en),
-            ]
-
-            if voice.file_page_jp != "":
-                args.append(("FileJP", f"JP_{voice.path}.ogg"))
-                args.append(("TextJP", voice.text_jp))
-
-            result.append("{{Voice/row | " + " | ".join(f"{k}={v}" for k, v in args) + " }}")
-    result.append('{{Voice/end}}')
-    return "\n".join(result)
-
-
-def load_json_voices(char_name: str) -> list[Voice]:
-    voices_json = load_json("audio/data/" + char_name + ".json")
-    voices = []
-    for voice_id, voice_data in voices_json.items():
-        voice = Voice([int(voice_id)])
-        for k, v in voice_data.items():
-            setattr(voice, k, v)
-        voice.id = [voice.id]
-        voices.append(voice)
-    return voices
-
-
-def make_character_audio_page(char_id: int):
-    result = ["{{CharacterAudioTop}}"]
-    char_name = char_id_mapper[char_id]
-    voices = load_json_voices(char_name)
-    upload_audio_file(voices, char_name)
-    triggers = match_custom_triggers(voices)
-    for voice_type in VoiceType:
-        t_list = [t for t in triggers if t.type.value == voice_type.value]
-        result.append(f"=={voice_type.value}==")
-        table = make_table(t_list)
-        result.append(table)
-        result.append("")
-    p = Page(s, f"{char_name}/audio")
-    p.text = "\n".join(result)
-    p.save("Generate audio page")
 
 
 def parse_system_voice():
@@ -292,7 +174,7 @@ def test_audio():
 
 def make_character_audio_pages():
     for char_id, char_name in char_id_mapper.items():
-        if char_name == "Fuchsia":
+        if char_name == "Michele":
             make_character_audio_page(char_id)
 
 
@@ -322,14 +204,21 @@ def pull_from_miraheze():
             mapping = {
                 "TextCN": "text_cn",
                 "TextEN": "text_en",
-                "TextJP": "text_jp"
+                "TextJP": "text_jp",
+                "Title": "title_en"
             }
+            regular_title = voice['__title_hint'].split("/")[1]
             for k, v in mapping.items():
                 arg = t.get_arg(k)
                 if arg is None:
                     continue
                 arg = arg.value.strip()
                 if arg != "" and arg != voice[v]:
+                    if k == "Title" and (
+                            arg == regular_title or
+                            (arg.startswith(regular_title) and
+                             arg.replace(regular_title, "").strip().startswith("("))):
+                        continue
                     voice[v] = arg
                     changed = True
         if not changed:

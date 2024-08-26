@@ -157,7 +157,7 @@ def upload_skins(char_name: str, skin_list: list[SkinInfo]) -> list[SkinInfo]:
     return skin_list
 
 
-def process_portraits(char_name, name_zh, skin_list):
+def process_portraits(char_name, name_zh, skin_list: list[SkinInfo]):
     # process portraits
     targets = [FilePage(s, f"File:{char_name} Skin Portrait {skin.name_en}.png") for skin in skin_list]
     existing_targets = set(p.title()
@@ -183,7 +183,7 @@ def process_portraits(char_name, name_zh, skin_list):
         skin.portrait = skin.name_en
 
 
-def process_back_images(char_name, name_zh, skin_list):
+def process_back_images(char_name, name_zh, skin_list: list[SkinInfo]):
     # process portraits
     targets = [FilePage(s, f"File:{char_name} Skin Back {skin.name_en}.png") for skin in skin_list]
     existing_targets = set(p.title()
@@ -205,7 +205,7 @@ def process_back_images(char_name, name_zh, skin_list):
         skin.back = skin.name_en
 
 
-def localize_skins(skin_list):
+def localize_skins(skin_list: list[SkinInfo]):
     i18n_skin = get_game_json()['RoleSkin']
     i18n_store = get_game_json()['Goods']
     for skin in skin_list:

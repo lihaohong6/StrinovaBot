@@ -3,7 +3,7 @@ from dataclasses import dataclass, fields, field
 from enum import Enum
 from pathlib import Path
 
-from audio.data.conversion_table import VoiceType, voice_conversion_table
+from data.conversion_table import VoiceType, voice_conversion_table
 from utils.asset_utils import audio_event_root, audio_root, wav_root_cn, wav_root_jp
 from utils.general_utils import load_json, get_game_json, get_table
 
@@ -19,8 +19,8 @@ class Voice:
     id: list[int]
     role_id: int = -1
     quality: int = -1
-    name_cn: str = ""
-    name_en: str = ""
+    title_cn: str = ""
+    title_en: str = ""
     text_cn: str = ""
     text_en: str = ""
     text_jp: str = ""
@@ -226,8 +226,8 @@ def role_voice() -> dict[int, Voice]:
         voice = Voice(id=[k],
                       role_id=v['RoleId'],
                       quality=v['Quality'],
-                      name_cn=name_cn.strip(),
-                      name_en=name_en.strip(),
+                      title_cn=name_cn.strip(),
+                      title_en=name_en.strip(),
                       text_cn=content_cn.strip(),
                       text_en=content_en.strip(),
                       path=path.strip(),
