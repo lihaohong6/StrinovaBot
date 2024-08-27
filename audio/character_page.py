@@ -48,5 +48,8 @@ def make_character_audio_page(char_id: int):
         result.append(table)
         result.append("")
     p = Page(s, f"{char_name}/audio")
-    p.text = "\n".join(result)
-    p.save("Generate audio page")
+    result = "\n".join(result)
+    if p.text.strip() != result.strip():
+        p.save("Generate audio page")
+    else:
+        print(f"Skipping {p.title()}: no change")

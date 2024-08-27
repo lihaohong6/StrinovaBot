@@ -1,5 +1,6 @@
 import subprocess
 from pathlib import Path
+from typing import Any
 
 from pywikibot import FilePage
 from pywikibot.pagegenerators import GeneratorFactory
@@ -71,6 +72,9 @@ def upload_audio_file(voices: list[Voice], char_name: str):
         if v.file_page_jp not in existing and v.file_page_jp != "":
             path = audio_root.joinpath("Japanese").joinpath(f"{v.file_jp}")
             upload_audio(path, FilePage(s, "File:" + v.file_page_jp), text)
+
+
+VoiceJson = dict[int, dict[str, Any]]
 
 
 def load_json_voices(char_name: str) -> list[Voice]:

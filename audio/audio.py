@@ -12,7 +12,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 
 from audio_parser import VoiceUpgrade, Voice, Trigger, in_game_triggers, in_game_triggers_upgrade, role_voice, \
     match_custom_triggers
-from audio_utils import pick_string
+from audio_utils import pick_string, load_json_voices, VoiceJson
 from character_page import make_character_audio_page
 from global_config import char_id_mapper, internal_names
 from utils.asset_utils import audio_root, wav_root_cn
@@ -32,6 +32,17 @@ def audio_convert():
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path = out_path.parent.joinpath(file_name.replace(".txtp", ".wav"))
         subprocess.call(["vgmstream-cli.exe", file, "-o", out_path], stdout=open(os.devnull, 'wb'))
+
+
+def merge_results(previous: VoiceJson, current: VoiceJson) -> VoiceJson:
+    for vid, voice in previous.items():
+        vid = int(vid)
+        assert vid in current, f"{vid} not in current"
+        for k, v in voice.items():
+            if k.startswith("text") or k.startswith("title"):
+                current[vid][k] = v
+        assert current[vid]['path'] == voice['path'], f"Path does not match: {current[vid]['path']} != {voice['path']}"
+    return current
 
 
 def make_character_json(triggers: list[Trigger], char_id: int):
@@ -55,6 +66,8 @@ def make_character_json(triggers: list[Trigger], char_id: int):
             result[obj['id']] = obj
 
     char_name = char_id_mapper[char_id]
+    result = merge_results(previous=load_json("audio/data/" + char_name + ".json"),
+                           current=result)
     with open(f"audio/data/{char_name}.json", "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=4)
 
@@ -183,7 +196,7 @@ def test_audio():
 
 def make_character_audio_pages():
     for char_id, char_name in char_id_mapper.items():
-        if char_name == "Michele":
+        if char_name in {"Michele", "Fuchsia"}:
             make_character_audio_page(char_id)
 
 
