@@ -66,6 +66,12 @@ camp_id_to_string = {
     3: "Urbino",
 }
 
+camp_name_cn = {
+    "欧泊": "Painting Utopia Security",
+    "剪刀手": "The Scissors",
+    "乌尔比诺": "Urbino"
+}
+
 role_id_to_string = {
     1: "Duelist",
     2: "Sentinel",

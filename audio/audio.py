@@ -3,6 +3,7 @@ import re
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 from sys import argv
 from typing import Any
@@ -10,13 +11,14 @@ from typing import Any
 from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
-from audio_parser import VoiceUpgrade, Voice, Trigger, in_game_triggers, in_game_triggers_upgrade, role_voice, \
+from audio.audio_parser import VoiceUpgrade, Voice, Trigger, in_game_triggers, in_game_triggers_upgrade, role_voice, \
     match_custom_triggers
-from audio_utils import pick_string, load_json_voices, VoiceJson
-from character_page import make_character_audio_page
+from audio.audio_utils import pick_string, load_json_voices, VoiceJson, get_json_path
+from audio.character_page import make_character_audio_page
+from audio.machine_assist import transcribe
 from global_config import char_id_mapper, internal_names
 from utils.asset_utils import audio_root, wav_root_cn
-from data.conversion_table import voice_conversion_table
+from audio.data.conversion_table import voice_conversion_table
 from utils.general_utils import get_bwiki_char_pages, load_json
 from utils.wiki_utils import s, bwiki
 
@@ -66,9 +68,9 @@ def make_character_json(triggers: list[Trigger], char_id: int):
             result[obj['id']] = obj
 
     char_name = char_id_mapper[char_id]
-    result = merge_results(previous=load_json("audio/data/" + char_name + ".json"),
+    result = merge_results(previous=load_json(get_json_path(char_name)),
                            current=result)
-    with open(f"audio/data/{char_name}.json", "w", encoding="utf-8") as f:
+    with open(get_json_path(char_name), "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=4)
 
 
@@ -207,7 +209,7 @@ def pull_from_miraheze():
             print(page.title() + " does not exist")
             continue
         char_name = page.title().split("/")[0]
-        json_file = Path(f"audio/data/{char_name}.json")
+        json_file = get_json_path(char_name)
         assert json_file.exists(), f"{json_file} does not exist"
         existing = load_json(json_file)
         path_to_voice: dict[str, dict] = {}
@@ -250,15 +252,18 @@ def pull_from_miraheze():
         print("Overwriting " + char_name)
 
 
-def main():
+def audio_main(args=None):
+    if args is None:
+        args = argv
     commands = {
         "push": make_character_audio_pages,
         "gen": make_json,
         "pull": pull_from_miraheze,
         "test": test_audio,
+        "transcribe": transcribe
     }
-    commands[argv[1]]()
+    commands[args[1]]()
 
 
 if __name__ == "__main__":
-    main()
+    audio_main()

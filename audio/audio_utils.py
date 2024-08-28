@@ -5,7 +5,7 @@ from typing import Any
 from pywikibot import FilePage
 from pywikibot.pagegenerators import GeneratorFactory
 
-from audio_parser import Voice
+from audio.audio_parser import Voice
 from utils.asset_utils import audio_root
 from utils.general_utils import load_json
 
@@ -78,7 +78,7 @@ VoiceJson = dict[int, dict[str, Any]]
 
 
 def load_json_voices(char_name: str) -> list[Voice]:
-    voices_json = load_json("audio/data/" + char_name + ".json")
+    voices_json = load_json(get_json_path(char_name))
     voices = []
     for voice_id, voice_data in voices_json.items():
         voice = Voice([int(voice_id)])
@@ -87,3 +87,7 @@ def load_json_voices(char_name: str) -> list[Voice]:
         voice.id = [voice.id]
         voices.append(voice)
     return voices
+
+
+def get_json_path(char_name: str) -> Path:
+    return Path("audio/data/" + char_name + ".json")
