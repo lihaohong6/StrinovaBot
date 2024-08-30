@@ -9,7 +9,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 
 from global_config import characters_with_dorms
 from utils.general_utils import get_game_json, get_table, get_char_by_id, make_tab_group, get_char_pages
-from utils.uploader import upload_item_icons, upload_item
+from utils.uploader import upload_item_icons
 from utils.wiki_utils import s
 
 
@@ -42,7 +42,6 @@ def get_gifts() -> dict[int, Gift]:
 
 
 def generate_gifts():
-
     i18n = get_game_json()['Item']
     gift_dict: dict[int, Gift] = get_gifts()
     item_table = get_table("Item")
@@ -65,11 +64,12 @@ def generate_gifts():
         max_favorability = max(map(lambda t: t[0], gift.characters.values()))
         gift.best_characters = list(
             map(lambda t: t[0],
-                filter(lambda t: t[1][0] == max_favorability and t[0] in characters_with_dorms, gift.characters.items())))
+                filter(lambda t: t[1][0] == max_favorability and t[0] in characters_with_dorms,
+                       gift.characters.items())))
         if len(gift.best_characters) == len(characters_with_dorms):
             gift.best_characters = ["Everyone"]
 
-    upload_item_icons([g.file for g in gifts], cat="Gift icons")
+    upload_item_icons([g.id for g in gifts], "[[Category:Gift icons]]", "batch upload gift icons")
 
     # quality_table = get_quality_table()
     # for g in gifts.values():
@@ -106,7 +106,7 @@ def generate_gifts():
 
 def generate_bond_items():
     @dataclass
-    class Item:
+    class PledgeItem:
         id: int
         file: str
         name: str
@@ -119,21 +119,24 @@ def generate_bond_items():
 
     i18n = get_game_json()['PledgeItem']
     items_table = get_table("PledgeItem")
-    id_to_items: dict[int, list[Item]] = {}
+    id_to_items: dict[int, list[PledgeItem]] = {}
+    upload_lst: list[int | str] = []
     for k, v in items_table.items():
         role_id = v['OwnerRoleId']
         try:
-            item = Item(v['Id'], v['ItemIcon']['AssetPathName'].split("_")[-1],
-                        i18n.get(f"{k}_Name", v['Name']['SourceString']),
-                        i18n.get(f"{k}_Desc", v['Desc']['SourceString']),
-                        i18n.get(f"{k}_ItemStory", v['ItemStory']['SourceString']))
+            item = PledgeItem(v['Id'], v['ItemIcon']['AssetPathName'].split("_")[-1],
+                              i18n.get(f"{k}_Name", v['Name']['SourceString']),
+                              i18n.get(f"{k}_Desc", v['Desc']['SourceString']),
+                              i18n.get(f"{k}_ItemStory", v['ItemStory']['SourceString']))
             if "NoTextFound" in item.name:
                 continue
             if role_id not in id_to_items:
                 id_to_items[role_id] = []
             id_to_items[role_id].append(item)
+            upload_lst.append(item.file)
         except KeyError:
             continue
+    upload_item_icons(upload_lst, "[[Category:Bond item icons]]", "batch upload bond item icons")
     for role_id, char_name, p in get_char_pages():
         if role_id not in id_to_items:
             continue
@@ -152,7 +155,6 @@ def generate_bond_items():
         for item in items:
             tabs.set_arg("", item.name, positional=True)
             contents.set_arg("", item.to_template() + "\n", positional=True)
-            upload_item(item.file, cat="Bond item icons")
         t.set_arg("1", "\n" + str(tabs) + "\n" + str(contents) + "\n", positional=True)
         if p.text.strip() != str(parsed).strip():
             p.text = str(parsed)

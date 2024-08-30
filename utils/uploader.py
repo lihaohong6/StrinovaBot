@@ -12,28 +12,6 @@ from utils.asset_utils import resource_root
 s: APISite = Site()
 
 
-def upload_emotes():
-    path = resource_root / "Emote"
-    for f in path.glob("*.png"):
-        if f.name.startswith("T_Dynamic_Emote_"):
-            file_num = re.search(r"\d+", f.name).group(0)
-            target = FilePage(s, f"File:Emote_{file_num}.png")
-            s.upload(target,
-                     source_filename=str(f.absolute()),
-                     text='[[Category:Emotes]]', comment='Batch upload emotes')
-
-
-def upload_achievement_icons():
-    path = resource_root / "Achievement"
-    requests = []
-    for f in path.glob("*.png"):
-        if f.name.startswith("T_Dynamic_Achievement_"):
-            file_num = re.search(r"\d+", f.name).group(0)
-            target = FilePage(s, f"File:Achievement_{file_num}.png")
-            requests.append(UploadRequest(f, target, '[[Category:Achievement icons]]', "Batch upload achievement icons"))
-    process_uploads(requests)
-
-
 def upload_skill_demo():
     url = "https://klbq-web-cdn.strinova.com/www/video/CharactersSkillVideos/{}/{}/{}{}.mp4"
     factions = {
@@ -67,23 +45,15 @@ def upload_skill_demo():
                          ignore_warnings=True).upload()
 
 
-def upload_item_icons(items: list[int | str], cat: str):
-    targets = []
-    paths = []
+def upload_item_icons(items: list[int | str], text: str = "[[Category:Item icons]]",
+                      summary: str = "batch upload item icons", ):
+    lst: list[UploadRequest] = []
     for item in items:
-        path = resource_root / f"Item/ItemIcon/T_Dynamic_Item_{item}.png"
-        assert path.exists()
-        paths.append(path)
-        targets.append(FilePage(s, f"File:Item Icon {item}.png"))
-    existing = set(p.title() for p in PreloadingGenerator(targets) if p.exists())
-    for index, item in enumerate(items):
-        target = targets[index]
-        if target.title() in existing:
-            continue
-        Uploader(s, target, source_filename=str(paths[index]),
-                 comment="batch upload items",
-                 text=f"[[Category:{cat}]]",
-                 ignore_warnings=False).upload()
+        lst.append(UploadRequest(resource_root / f"Item/ItemIcon/T_Dynamic_Item_{item}.png",
+                                 FilePage(s, f"File:Item Icon {item}.png"),
+                                 text,
+                                 summary))
+    process_uploads(lst)
 
 
 def upload_local():
@@ -122,7 +92,7 @@ def upload_file(text: str, target: FilePage, summary: str = "batch upload file",
 
 
 def main():
-    upload_achievement_icons()
+    pass
 
 
 if __name__ == '__main__':
@@ -141,18 +111,6 @@ def upload_weapon(char_name: str, weapon_id: int) -> bool:
     Uploader(s, p, source_filename=str(weapon_path),
              text="[[Category:Weapon growth images]]", comment="upload from game assets").upload()
     return True
-
-
-def upload_item(item_id: int | str, cat: str):
-    path = resource_root / f"Item/ItemIcon/T_Dynamic_Item_{item_id}.png"
-    assert path.exists()
-    p = FilePage(s, f"File:Item Icon {item_id}.png")
-    if p.exists():
-        return
-    Uploader(s, p,
-             source_filename=str(path),
-             text=f"[[Category:{cat}]]",
-             comment="upload from game assets").upload()
 
 
 @dataclass

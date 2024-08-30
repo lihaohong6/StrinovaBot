@@ -1,9 +1,12 @@
 import re
 from dataclasses import dataclass
 
-from pywikibot import Page
+from pandas._typing import FilePath
+from pywikibot import Page, FilePage
 
+from utils.asset_utils import resource_root
 from utils.general_utils import get_table, get_game_json, make_tab_group
+from utils.uploader import UploadRequest, process_uploads
 from utils.wiki_utils import s
 
 import wikitextparser as wtp
@@ -44,7 +47,7 @@ def get_i18n():
     return i18n
 
 
-def get_achievements() -> list[Achievement]:
+def get_achievements(upload: bool = True) -> list[Achievement]:
     i18n = get_i18n()
     achievement_table = get_table("Achievement")
     achievements = []
@@ -61,6 +64,14 @@ def get_achievements() -> list[Achievement]:
             achievements.append(achievement)
         except KeyError:
             pass
+    if upload:
+        requests: list[UploadRequest] = []
+        for achievement in achievements:
+            requests.append(UploadRequest(resource_root / "Achievement" / f"T_Dynamic_Achievement_{achievement.id}.png",
+                                          FilePage(s, f"File:Achievement_{achievement.id}.png"),
+                                          '[[Category:Achievement icons]]',
+                                          'Batch upload achievement icons'))
+        process_uploads(requests)
     return achievements
 
 
@@ -85,7 +96,7 @@ def achievements_to_tabs(achievements: list[Achievement], group: str) -> str:
         "\n\n|\n\n".join(contents) + "}}\n}}\n\n"
 
 
-def generate_achievement_page():
+def generate_achievement_page(*args):
     achievements = get_achievements()
     p = Page(s, "Achievements")
     parsed = wtp.parse(p.text)
