@@ -69,7 +69,7 @@ def generate_gifts():
         if len(gift.best_characters) == len(characters_with_dorms):
             gift.best_characters = ["Everyone"]
 
-    upload_item_icons([g.id for g in gifts], "[[Category:Gift icons]]", "batch upload gift icons")
+    upload_item_icons([g.file for g in gifts], "[[Category:Gift icons]]", "batch upload gift icons")
 
     # quality_table = get_quality_table()
     # for g in gifts.values():
