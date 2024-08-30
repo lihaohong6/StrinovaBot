@@ -3,7 +3,7 @@ from pathlib import Path
 # cn export
 cn_export_root = Path(r"D:\Strinova\AutoUnpack\CNExport")
 csv_root = Path(r"D:\Strinova\Strinova-data\CN\CSV")
-resource_root = cn_export_root
+resource_root = cn_export_root / "DynamicResource"
 audio_root = cn_export_root / "../audio"
 audio_event_root = cn_export_root / r"WwiseAssets\AkEvent"
 wav_root_cn = audio_root / "Chinese"

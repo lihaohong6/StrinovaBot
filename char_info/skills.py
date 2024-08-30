@@ -3,7 +3,7 @@ import re
 import wikitextparser as wtp
 from pywikibot import Page
 
-from utils.general_utils import get_game_json, get_table, get_role_profile, en_name_to_zh, get_id_by_char, \
+from utils.general_utils import get_game_json, get_table, en_name_to_zh, get_id_by_char, \
     get_weapon_name, get_default_weapon_id, get_char_pages
 from utils.wiki_utils import bwiki
 
@@ -11,7 +11,6 @@ from utils.wiki_utils import bwiki
 def generate_skills():
     skill_texts = get_game_json()['Skill']
     skill_table = get_table("Skill")
-    get_role_profile(101)
     for char_id, char_name, p in get_char_pages():
         templates = []
         valid = True

@@ -1,17 +1,12 @@
 from char_info.char_infobox import make_infobox
 from global_config import char_id_mapper
-from utils.general_utils import get_game_json, get_char_by_id, get_role_profile, get_weapon_type, get_default_weapon_id
+from utils.general_utils import get_game_json, get_char_by_id, get_weapon_type, get_default_weapon_id
 
 
 def generate_character_selector():
-    i18n = get_game_json()['RoleProfile']
     char_list = []
-    get_char_by_id(101)
-    for char_id in char_id_mapper.keys():
-        key = f'{char_id}_NameCn'
-        role_profile = get_role_profile(char_id)
-        char_name = i18n[key]
-        char_list.append(make_infobox(char_id, char_name, role_profile, i18n, save=False))
+    for char_id, char_name in char_id_mapper.items():
+        char_list.append(make_infobox(char_id, char_name, save=False))
     result = []
 
     def make_tr(lst: list[str]):

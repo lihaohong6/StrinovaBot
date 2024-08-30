@@ -1,4 +1,5 @@
-characters_with_dorms = {"Michele", "Kokona", "Yvette", "Lawine", "Kanami", "Celestia", "Audrey", "Maddelena"}
+characters_with_dorms = {"Michele", "Kokona", "Yvette", "Lawine", "Kanami", "Celestia", "Audrey", "Maddelena",
+                         "Fuchsia"}
 name_to_en: dict[str, str] = {
     "米雪儿·李": "Michele",
     "信": "Nobunaga",
@@ -16,10 +17,15 @@ name_to_en: dict[str, str] = {
     "玛德蕾娜·利里": "Maddelena",
     "绯莎": "Fuchsia",
     "星绘": "Celestia",
-    "白墨": "Bai Mo"
+    "白墨": "Bai Mo",
+    "珐格兰丝": "Fragrans"
 }
+
+name_to_cn: dict[str, str] = dict((v, k) for k, v in name_to_en.items())
+
 char_id_mapper: dict[int, str] = {101: 'Michele', 105: 'Audrey', 107: 'Maddelena', 108: 'Nobunaga', 109: 'Reiichi',
-                                  110: 'Bai Mo', 112: 'Fuchsia', 115: 'Flavia', 119: 'Eika', 124: 'Kokona',
+                                  110: 'Bai Mo', 112: 'Fuchsia', 115: 'Flavia', 119: 'Eika', 120: 'Fragrans',
+                                  124: 'Kokona',
                                   128: 'Lawine', 131: 'Yvette', 132: 'Ming', 133: 'Meredith', 137: 'Kanami',
                                   146: 'Celestia', 205: 'Galatea'}
 

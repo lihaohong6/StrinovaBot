@@ -1,4 +1,5 @@
 import re
+from dataclasses import dataclass
 from pathlib import Path
 
 from pywikibot import Site, FilePage
@@ -24,13 +25,13 @@ def upload_emotes():
 
 def upload_achievement_icons():
     path = resource_root / "Achievement"
+    requests = []
     for f in path.glob("*.png"):
         if f.name.startswith("T_Dynamic_Achievement_"):
             file_num = re.search(r"\d+", f.name).group(0)
             target = FilePage(s, f"File:Achievement_{file_num}.png")
-            Uploader(s, target,
-                     source_filename=str(f.absolute()),
-                     text='[[Category:Achievement icons]]', comment="Batch upload achievement icons").upload()
+            requests.append(UploadRequest(f, target, '[[Category:Achievement icons]]', "Batch upload achievement icons"))
+    process_uploads(requests)
 
 
 def upload_skill_demo():
@@ -103,7 +104,8 @@ def upload_file(text: str, target: FilePage, summary: str = "batch upload file",
             if url is not None:
                 Uploader(s, target, source_url=url, text=text, comment=summary, ignore_warnings=force).upload()
             if file is not None:
-                Uploader(s, target, source_filename=str(file), text=text, comment=summary, ignore_warnings=force).upload()
+                Uploader(s, target, source_filename=str(file), text=text, comment=summary,
+                         ignore_warnings=force).upload()
             return
         except Exception as e:
             search = re.search(r"duplicate of \['([^']+)'", str(e))
@@ -120,23 +122,25 @@ def upload_file(text: str, target: FilePage, summary: str = "batch upload file",
 
 
 def main():
-    upload_local()
+    upload_achievement_icons()
 
 
 if __name__ == '__main__':
     main()
 
 
-def upload_weapon(char_name: str, weapon_id: int):
+def upload_weapon(char_name: str, weapon_id: int) -> bool:
     weapons_root = resource_root / r"Weapon\InGameGrowth"
     weapon_path = weapons_root / f"T_Dynamic_InGameGrowth_{weapon_id}.png"
     p = FilePage(s, f"File:{char_name} GrowthWeapon.png")
     if p.exists():
-        return
+        return True
     if not weapon_path.exists():
         print(f"File for weapon {weapon_id} of {char_name} does not exist")
+        return False
     Uploader(s, p, source_filename=str(weapon_path),
              text="[[Category:Weapon growth images]]", comment="upload from game assets").upload()
+    return True
 
 
 def upload_item(item_id: int | str, cat: str):
@@ -149,3 +153,23 @@ def upload_item(item_id: int | str, cat: str):
              source_filename=str(path),
              text=f"[[Category:{cat}]]",
              comment="upload from game assets").upload()
+
+
+@dataclass
+class UploadRequest:
+    source: Path | str
+    target: FilePage
+    text: str
+    comment: str = "batch upload file"
+
+
+def process_uploads(requests: list[UploadRequest]) -> None:
+    existing = set(p.title() for p in PreloadingGenerator((r.target for r in requests)) if p.exists())
+    for r in requests:
+        if r.target.title() in existing:
+            continue
+        if isinstance(r.source, str):
+            upload_file(r.text, r.target, r.comment, url=r.source)
+        else:
+            assert r.source.exists()
+            upload_file(r.text, r.target, r.comment, file=r.source)

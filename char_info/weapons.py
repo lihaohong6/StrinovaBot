@@ -24,7 +24,9 @@ def generate_weapons():
         weapon_id = get_default_weapon_id(char_id)
         if weapon_id == -1:
             continue
-        upload_weapon(char_name, weapon_id)
+        result = upload_weapon(char_name, weapon_id)
+        if not result:
+            continue
 
         try:
             weapon_name = get_weapon_name(weapon_id)

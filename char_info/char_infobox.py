@@ -4,10 +4,10 @@ from typing import Callable
 import wikitextparser as wtp
 from pywikibot import Page
 
-from global_config import char_id_mapper
+from global_config import char_id_mapper, name_to_cn
 from utils.general_utils import get_game_json_cn, get_game_json_ja, camp_id_to_string, role_id_to_string, \
     get_weapon_name, \
-    get_default_weapon_id, get_game_json
+    get_default_weapon_id, get_game_json, get_table, get_char_pages
 from utils.wiki_utils import s
 
 
@@ -37,11 +37,12 @@ infobox_args: list[tuple[list[str] | str, str, Callable[[list[str] | str], str]]
 ]
 
 
-def make_infobox(char_id, char_name, char_profile, profile, save=True) -> dict:
+def make_infobox(char_id, char_name, p: Page, save=True) -> dict:
+    i18n = get_game_json()['RoleProfile']
+    char_profile = get_table("RoleProfile")[char_id]
     data: dict[str, str] = {}
+    parsed = wtp.parse(p.text)
     if save:
-        p = Page(s, char_name)
-        parsed = wtp.parse(p.text)
         for template in parsed.templates:
             if template.name.strip() == "CharacterInfobox":
                 t = template
@@ -62,12 +63,12 @@ def make_infobox(char_id, char_name, char_profile, profile, save=True) -> dict:
     add_arg("Id", char_id)
     add_arg("Name", char_name)
     add_arg("NameEN", char_name)
-    add_arg("NameCN", get_game_json_cn()['RoleProfile'][f'{char_id}_NameCn'])
-    add_arg("NameJP", get_game_json_ja()['RoleProfile'][f'{char_id}_NameCn'])
+    add_arg("NameCN", name_to_cn[char_name])
+    add_arg("NameJP", get_game_json_ja()['RoleProfile'].get(f'{char_id}_NameCn', ''))
     for args, key, mapper in infobox_args:
         def get_arg(arg: str) -> str:
             k = f"{char_id}_{arg}"
-            return profile[k] if k in profile else ""
+            return i18n.get(k, char_profile.get(arg, {}).get('SourceString', ''))
 
         if isinstance(args, list):
             arg_list = [get_arg(arg) for arg in args]
@@ -81,20 +82,14 @@ def make_infobox(char_id, char_name, char_profile, profile, save=True) -> dict:
     except Exception:
         print("Insufficient info for " + char_name)
         return data
-    if not save:
-        return data
-    if p.text.strip() == str(parsed).strip():
-        return data
-    p.save(summary="generate infobox")
+    if save and p.text.strip() != str(parsed).strip():
+        p.text = str(parsed)
+        p.save(summary="generate infobox")
+    return data
 
 
 def generate_infobox():
-    profile = get_game_json()['RoleProfile']
-    for char_id, char_profile in char_id_mapper.items():
-        key = f'{char_id}_NameCn'
-        if key not in profile:
-            continue
-        char_name = profile[key]
-        make_infobox(char_id, char_name, char_profile, profile)
+    for char_id, char_name, p in get_char_pages():
+        make_infobox(char_id, char_name, p, save=True)
 
 

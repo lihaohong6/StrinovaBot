@@ -100,10 +100,6 @@ def get_table_en(file_name: str) -> dict[int, dict]:
     return table
 
 
-def get_role_profile(char_id: int) -> dict:
-    return get_table("RoleProfile")[char_id]
-
-
 def get_default_weapon_id(char_id: int | str) -> int:
     char_id = int(char_id)
     if not hasattr(get_default_weapon_id, "dict"):

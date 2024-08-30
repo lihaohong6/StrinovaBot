@@ -5,8 +5,8 @@ import wikitextparser as wtp
 from pywikibot import Page, FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
 
-from utils.asset_utils import portrait_root, skin_back_root, local_asset_root
-from utils.uploader import upload_file
+from utils.asset_utils import portrait_root, skin_back_root, local_asset_root, resource_root
+from utils.uploader import upload_file, UploadRequest, process_uploads
 from utils.general_utils import get_table, get_game_json, zh_name_to_en, get_char_by_id, get_cn_wiki_skins, \
     en_name_to_zh
 from utils.wiki_utils import bwiki, s
@@ -22,6 +22,7 @@ def generate_emotes():
     goods_table = get_table("Goods")
     i18n = get_game_json()['Goods']
     items: dict[str, list[Emote]] = {}
+    upload_requests: list[UploadRequest] = []
     for k, v in goods_table.items():
         if v['ItemType'] != 6:
             continue
@@ -30,10 +31,16 @@ def generate_emotes():
         if name_en is None:
             continue
         lst = items.get(name_en, [])
-        lst.append(Emote(k,
-                         i18n.get(f'{k}_Name', v['Name']['SourceString']),
-                         i18n.get(f'{k}_Desc', v['Desc']['SourceString'])))
+        emote = Emote(k,
+                      i18n.get(f'{k}_Name', v['Name']['SourceString']),
+                      i18n.get(f'{k}_Desc', v['Desc']['SourceString']))
+        lst.append(emote)
         items[name_en] = lst
+        upload_requests.append(UploadRequest(resource_root / "Emote" / f"T_Dynamic_Emote_{emote.id}.png",
+                                             FilePage(s, f"File:Emote_{emote.id}.png"),
+                                             '[[Category:Emotes]]',
+                                             "batch upload emotes"))
+    process_uploads(upload_requests)
 
     for name, emote_list in items.items():
         gallery = ['<gallery mode="packed">']
