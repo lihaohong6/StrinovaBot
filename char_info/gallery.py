@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from functools import reduce
 
@@ -24,7 +25,7 @@ def generate_emotes():
     items: dict[str, list[Emote]] = {}
     upload_requests: list[UploadRequest] = []
     for k, v in goods_table.items():
-        if v['ItemType'] != 6:
+        if v['ItemType'] != 13:
             continue
         name_chs = v['Name']['SourceString'].split("-")[0]
         name_en = zh_name_to_en(name_chs)

@@ -1,16 +1,28 @@
 import re
 
 import wikitextparser as wtp
-from pywikibot import Page
+from pywikibot import Page, FilePage
 
+from global_config import char_id_mapper
+from utils.asset_utils import resource_root
 from utils.general_utils import get_game_json, get_table, en_name_to_zh, get_id_by_char, \
     get_weapon_name, get_default_weapon_id, get_char_pages
-from utils.wiki_utils import bwiki
+from utils.uploader import UploadRequest, process_uploads
+from utils.wiki_utils import bwiki, s
 
 
 def generate_skills():
     skill_texts = get_game_json()['Skill']
     skill_table = get_table("Skill")
+    requests: list[UploadRequest] = []
+    for char_id, char_name in char_id_mapper.items():
+        for num in range(1, 4):
+            source = resource_root / "Skill" / f"T_Dynamic_Skill_{char_id}{num:02}.png"
+            target = FilePage(s, f"File:{char_name}_Skill_{num}.png")
+            req = UploadRequest(source, target, text="", comment="batch upload skill icons")
+            requests.append(req)
+    process_uploads(requests)
+
     for char_id, char_name, p in get_char_pages():
         templates = []
         valid = True

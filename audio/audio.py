@@ -68,7 +68,12 @@ def make_character_json(triggers: list[Trigger], char_id: int):
             result[obj['id']] = obj
 
     char_name = char_id_mapper[char_id]
-    result = merge_results(previous=load_json(get_json_path(char_name)),
+    previous_path = get_json_path(char_name)
+    if previous_path.exists():
+        previous = load_json(previous_path)
+    else:
+        previous = {}
+    result = merge_results(previous=previous,
                            current=result)
     with open(get_json_path(char_name), "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=4)
