@@ -15,7 +15,7 @@ from audio.audio_parser import VoiceUpgrade, Voice, Trigger, in_game_triggers, i
     match_custom_triggers
 from audio.audio_utils import pick_string, load_json_voices, VoiceJson, get_json_path
 from audio.character_page import make_character_audio_page
-from audio.machine_assist import transcribe
+from audio.machine_assist import transcribe, translate
 from global_config import char_id_mapper, internal_names
 from utils.asset_utils import audio_root, wav_root_cn
 from audio.data.conversion_table import voice_conversion_table
@@ -265,7 +265,8 @@ def audio_main(args=None):
         "gen": make_json,
         "pull": pull_from_miraheze,
         "test": test_audio,
-        "transcribe": transcribe
+        "transcribe": transcribe,
+        "translate": translate
     }
     commands[args[1]]()
 
