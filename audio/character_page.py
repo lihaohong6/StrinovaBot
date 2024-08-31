@@ -11,7 +11,7 @@ def make_table(triggers: list[Trigger]):
     result = ['{{Voice/start}}']
     for t in triggers:
         for voice in t.voices:
-            title = pick_string([voice.title_en, voice.title_en, t.name_en, t.name_cn])
+            title = pick_string([voice.title_en, t.name_en, t.name_cn])
 
             title_extra = ""
             if "red" in voice.path:
