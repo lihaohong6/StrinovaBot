@@ -7,6 +7,7 @@ import cohere
 
 from audio.audio_utils import get_json_path
 from global_config import char_id_mapper, name_to_en
+from page_generator.weapons import get_weapons_by_type, WeaponType
 from utils.asset_utils import wav_root_cn
 from utils.general_utils import load_json, camp_name_cn
 
@@ -17,6 +18,9 @@ general_prompts = dict([(k.split("·")[0], v) for k, v in name_to_en.items()] +
 char_prompts: dict[str, dict[str, str]] = {
     'Michele': {'喵喵卫士': 'Pawtector', '火力大喵': 'Mighty Meowblast', '搜查官': 'Inspector'}
 }
+
+
+weapon_prompts: dict[str, str] = dict((w.name_cn, w.name) for w in get_weapons_by_type("Grenade"))
 
 
 def postprocess_chinese(t: str) -> str:
@@ -59,7 +63,7 @@ def translate():
     assert json_path.exists()
     voices = load_json(json_path)
     preamble = ("Translate from Chinese to English. " +
-                " ".join(f"{k} is {v}." for k, v in (general_prompts | char_prompts[char_name]).items()))
+                " ".join(f"{k} is {v}." for k, v in (general_prompts | weapon_prompts | char_prompts[char_name]).items()))
     index = 0
     for v in voices.values():
         if v['text_en'].strip() != '':

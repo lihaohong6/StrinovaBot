@@ -197,8 +197,8 @@ def test_audio():
                 if v.path in exists:
                     continue
                 exists.add(v.path)
-                print(v.path + "    " + v.file)
-                os.startfile(wav_root_cn / v.file)
+                print(v.path + "    " + v.file_cn)
+                os.startfile(wav_root_cn / v.file_cn)
 
 
 def make_character_audio_pages():
