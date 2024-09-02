@@ -9,7 +9,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 from utils.asset_utils import portrait_root, skin_back_root, local_asset_root, resource_root
 from utils.upload_utils import upload_file, UploadRequest, process_uploads
 from utils.general_utils import get_table, get_game_json, zh_name_to_en, get_char_by_id, get_cn_wiki_skins, \
-    en_name_to_zh
+    en_name_to_zh, get_char_pages
 from utils.wiki_utils import bwiki, s
 
 
@@ -30,6 +30,7 @@ def generate_emotes():
         name_chs = v['Name']['SourceString'].split("-")[0]
         name_en = zh_name_to_en(name_chs)
         if name_en is None:
+            print(f"{name_chs} has no EN name")
             continue
         lst = items.get(name_en, [])
         emote = Emote(k,
@@ -43,14 +44,14 @@ def generate_emotes():
                                              "batch upload emotes"))
     process_uploads(upload_requests)
 
-    for name, emote_list in items.items():
+    for char_id, name, p in get_char_pages("gallery"):
+        emote_list = items[name]
         gallery = ['<gallery mode="packed">']
         for emote in emote_list:
             split = emote.name.split("-")
             emote_name = "-".join(split[1:]).strip()
             gallery.append(f"Emote_{emote.id}.png|'''{emote_name}'''<br/>{emote.text}")
         gallery.append("</gallery>")
-        p = Page(s, name)
         parsed = wtp.parse(p.text)
         for section in parsed.sections:
             if section.title is not None and section.title.strip() == "Emotes":
@@ -263,12 +264,15 @@ def make_skin_template(t: wtp.Template, char_name: str, skin_list: list[SkinInfo
 def generate_skins():
     skins = parse_skin_tables()
 
-    for char_name, skin_list in skins.items():
+    for char_id, char_name, p in get_char_pages("gallery"):
+        if char_name not in skins:
+            print("No skin found for " + char_name)
+            continue
+        skin_list = skins[char_name]
         if char_name not in en_name_to_zh:
-            print("Skipping character " + char_name)
+            print("Skipping character " + char_name + " due to lack of en-zh name mapping")
             continue
 
-        p = Page(s, char_name)
         parsed = wtp.parse(p.text)
         for template in parsed.templates:
             if template.name.strip() == "CharacterSkins":
