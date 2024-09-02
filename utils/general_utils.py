@@ -154,12 +154,17 @@ def make_tab_group(original: str) -> str:
     return original.replace(" ", "").replace("-", "")
 
 
-def get_char_pages() -> list[tuple[int, str, Page]]:
-    pages = list(PreloadingGenerator(Page(s, v) for k, v in char_id_mapper.items()))
+def get_char_pages(subpage_name: str | None = None) -> list[tuple[int, str, Page]]:
+    def get_page_name(char_name):
+        if subpage_name is None:
+            return char_name
+        return f"{char_name}/{subpage_name}"
+
+    pages = list(PreloadingGenerator(Page(s, get_page_name(v)) for k, v in char_id_mapper.items()))
     assert len(pages) == len(char_id_mapper)
     res = [(t[0], t[1], pages[index])
            for index, t in enumerate(char_id_mapper.items())
-           if t[1] == pages[index].title()]
+           if get_page_name(t[1]) == pages[index].title()]
     assert len(res) == len(char_id_mapper)
     return res
 

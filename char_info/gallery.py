@@ -7,7 +7,7 @@ from pywikibot import Page, FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from utils.asset_utils import portrait_root, skin_back_root, local_asset_root, resource_root
-from utils.uploader import upload_file, UploadRequest, process_uploads
+from utils.upload_utils import upload_file, UploadRequest, process_uploads
 from utils.general_utils import get_table, get_game_json, zh_name_to_en, get_char_by_id, get_cn_wiki_skins, \
     en_name_to_zh
 from utils.wiki_utils import bwiki, s

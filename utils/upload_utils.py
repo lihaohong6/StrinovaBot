@@ -2,14 +2,12 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from pywikibot import Site, FilePage
+from pywikibot import FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
-from pywikibot.site._apisite import APISite
 from pywikibot.site._upload import Uploader
 
 from utils.asset_utils import resource_root
-
-s: APISite = Site()
+from utils.wiki_utils import s
 
 
 def upload_skill_demo():
@@ -54,16 +52,6 @@ def upload_item_icons(items: list[int | str], text: str = "[[Category:Item icons
                                  text,
                                  summary))
     process_uploads(lst)
-
-
-def upload_local():
-    p = Path("../files")
-    for f in p.rglob("*.ogg"):
-        target_file = FilePage(s, "File:" + f.name)
-        if target_file.exists():
-            continue
-        Uploader(s, target_file, source_filename=str(f), comment="batch upload music",
-                 text="[[Category:Character BGM]]").upload()
 
 
 def upload_file(text: str, target: FilePage, summary: str = "batch upload file",

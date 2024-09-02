@@ -8,7 +8,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 from wikitextparser import Template
 
 from global_config import char_id_mapper
-from utils.uploader import upload_file
+from utils.upload_utils import upload_file
 from utils.general_utils import get_game_json, get_table, get_game_json_cn, get_default_weapon_id
 from utils.wiki_utils import bwiki, s
 

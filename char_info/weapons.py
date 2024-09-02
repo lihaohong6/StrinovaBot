@@ -8,7 +8,7 @@ from global_config import char_id_mapper
 
 
 def generate_weapons():
-    from utils.uploader import upload_weapon
+    from utils.upload_utils import upload_weapon
     i18n = get_game_json()['Weapon']
     for char_id, char_name, p in get_char_pages():
         parsed = wtp.parse(p.text)

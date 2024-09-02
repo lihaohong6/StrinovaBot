@@ -9,7 +9,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 
 from global_config import characters_with_dorms
 from utils.general_utils import get_game_json, get_table, get_char_by_id, make_tab_group, get_char_pages
-from utils.uploader import upload_item_icons
+from utils.upload_utils import upload_item_icons
 from utils.wiki_utils import s
 
 
