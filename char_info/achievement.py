@@ -2,11 +2,13 @@ import wikitextparser as wtp
 
 from page_generator.achievements import get_achievements, achievements_to_tabs
 from utils.general_utils import get_char_pages
+from utils.lang_utils import get_language
 
 
 def generate_achievements():
-    achievements = get_achievements()
-    for char_id, char_name, p in get_char_pages():
+    lang = get_language()
+    achievements = get_achievements(lang=lang)
+    for char_id, char_name, p in get_char_pages(lang=lang):
         parsed = wtp.parse(p.text)
 
         for section in parsed.sections:

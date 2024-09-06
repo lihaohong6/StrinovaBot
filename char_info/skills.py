@@ -25,7 +25,7 @@ def generate_skills():
             requests.append(req)
     process_uploads(requests)
 
-    for char_id, char_name, p in get_char_pages(lang.page_suffix):
+    for char_id, char_name, p in get_char_pages(lang=lang):
         templates = []
         valid = True
         parsed = wtp.parse(p.text)
@@ -89,7 +89,7 @@ Growth_Team
     i18n_skill = get_game_json(lang)['Skill']
     role_json = get_table("Role")
     skill_json = get_table("Skill")
-    for char_id, char_name, p in get_char_pages(lang.page_suffix):
+    for char_id, char_name, p in get_char_pages(lang=lang):
         bwiki_base_page = Page(bwiki(), en_name_to_zh[char_name])
         if bwiki_base_page.isRedirectPage():
             bwiki_base_page = bwiki_base_page.getRedirectTarget()

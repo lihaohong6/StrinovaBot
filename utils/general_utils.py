@@ -10,7 +10,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 
 from utils.asset_utils import csv_root, localization_root, en_csv_root
 from global_config import name_to_en, char_id_mapper, internal_names
-from utils.lang_utils import Language, LanguageVariants
+from utils.lang_utils import Language, LanguageVariants, ENGLISH
 from utils.wiki_utils import bwiki, s
 
 json_cache: dict[str, dict] = {}
@@ -113,8 +113,8 @@ def get_default_weapon_id(char_id: int | str) -> int:
     return get_default_weapon_id.dict.get(char_id, -1)
 
 
-def get_weapon_name(weapon_id: int) -> str:
-    return get_game_json()['Weapon'].get(f"{weapon_id}_Name", "")
+def get_weapon_name(weapon_id: int, lang: Language = ENGLISH) -> str:
+    return get_game_json(lang)['Weapon'].get(f"{weapon_id}_Name", "")
 
 
 def get_quality_table() -> dict[int, str]:
@@ -157,11 +157,9 @@ def make_tab_group(original: str) -> str:
     return original.replace(" ", "").replace("-", "")
 
 
-def get_char_pages(subpage_name: str | None = None) -> list[tuple[int, str, Page]]:
+def get_char_pages(subpage_name: str = "", lang: Language = ENGLISH) -> list[tuple[int, str, Page]]:
     def get_page_name(char_name):
-        if subpage_name is None:
-            return char_name
-        return f"{char_name}{subpage_name}"
+        return f"{char_name}{subpage_name}{lang.page_suffix}"
 
     pages = list(PreloadingGenerator(Page(s, get_page_name(v)) for k, v in char_id_mapper.items()))
     assert len(pages) == len(char_id_mapper)

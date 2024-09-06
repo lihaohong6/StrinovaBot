@@ -3,14 +3,17 @@ from pywikibot import Page
 
 from utils.general_utils import get_game_json, get_char_by_id, get_default_weapon_id, get_weapon_name, \
     get_weapon_type, get_char_pages
+from utils.lang_utils import ENGLISH, get_language, RedirectRequest, redirect_pages
 from utils.wiki_utils import s
 from global_config import char_id_mapper
 
 
 def generate_weapons():
     from utils.upload_utils import upload_weapon
-    i18n = get_game_json()['Weapon']
-    for char_id, char_name, p in get_char_pages():
+    lang = get_language()
+    i18n = get_game_json(lang)['Weapon']
+    redirect_requests: list[RedirectRequest] = []
+    for char_id, char_name, p in get_char_pages(lang=lang):
         parsed = wtp.parse(p.text)
         t = None
         for template in parsed.templates:
@@ -18,7 +21,7 @@ def generate_weapons():
                 t = template
                 break
         else:
-            print(f"No template found on {char_name}")
+            print(f"No template found on {p.title()}")
             continue
 
         weapon_id = get_default_weapon_id(char_id)
@@ -29,9 +32,13 @@ def generate_weapons():
             continue
 
         try:
-            weapon_name = get_weapon_name(weapon_id)
+            weapon_name = get_weapon_name(weapon_id, lang)
             weapon_description = i18n.get(f"{weapon_id}_Tips", "")
             weapon_type = get_weapon_type(weapon_id)
+
+            weapon_name_en = get_weapon_name(weapon_id, ENGLISH)
+            if weapon_name_en != weapon_name:
+                redirect_requests.append(RedirectRequest(lang, weapon_name, weapon_name_en))
         except Exception as e:
             print(f"Failed to generate weapon for {char_name} due to {e}")
             continue
@@ -49,3 +56,9 @@ def generate_weapons():
             continue
         p.text = str(parsed)
         p.save(summary="generate weapon", minor=True)
+
+    redirect_pages(redirect_requests)
+
+
+if __name__ == '__main__':
+    generate_weapons()

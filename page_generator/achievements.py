@@ -6,6 +6,7 @@ from pywikibot import Page, FilePage
 
 from utils.asset_utils import resource_root
 from utils.general_utils import get_table, get_game_json, make_tab_group
+from utils.lang_utils import Language, ENGLISH
 from utils.upload_utils import UploadRequest, process_uploads
 from utils.wiki_utils import s
 
@@ -39,25 +40,31 @@ def achievements_to_gallery(achievements: list[Achievement]) -> str:
     return "\n".join(gallery)
 
 
-def get_i18n():
-    i18n = get_game_json()['Achievement']
-    for k, v in get_game_json()['Badge'].items():
+def get_i18n(lang: Language) -> dict:
+    i18n = get_game_json(lang)['Achievement']
+    for k, v in get_game_json(lang)['Badge'].items():
         if k not in i18n:
             i18n[k] = v
     return i18n
 
 
-def get_achievements(upload: bool = True) -> list[Achievement]:
-    i18n = get_i18n()
+def get_achievements(upload: bool = True, lang: Language = ENGLISH) -> list[Achievement]:
+    i18n = get_i18n(lang)
     achievement_table = get_table("Achievement")
     achievements = []
     for key, value in achievement_table.items():
         try:
             name = i18n.get(f'{key}_Name', value['Name']['SourceString'])
             unlock: str = i18n.get(f'{key}_Explain', value['Explain']['SourceString'])
-            if "{0}" in unlock:
-                unlock = unlock.format(value['Param2'][0])
-                unlock = re.sub(r"<Chat-Self>(\d+)</>", lambda match: match.group(1), unlock)
+
+            def sub_condition(string: str):
+                if "{0}" in string:
+                    string = string.format(value['Param2'][0])
+                    return re.sub(r"<Chat-Self>(\d+)</>", lambda match: match.group(1), string)
+                return string
+
+            name = sub_condition(name)
+            unlock = sub_condition(unlock)
             description = i18n.get(f'{key}_Details', value['Details']['SourceString'])
             achievement = Achievement(key, value['Level'], value['Type'], value['Quality'], value['Role'],
                                       name, unlock, description)

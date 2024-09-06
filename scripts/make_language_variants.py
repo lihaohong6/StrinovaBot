@@ -13,7 +13,7 @@ lang = LanguageVariants.JAPANESE.value
 
 english_version = dict((char_id, p) for char_id, _, p in get_char_pages())
 
-for char_id, char_name, p in get_char_pages(lang.page_suffix):
+for char_id, char_name, p in get_char_pages(lang=lang):
     p_original = english_version[char_id]
     p.text = p_original.text
     p.save(f"new {lang.code} page")
