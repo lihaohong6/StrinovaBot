@@ -37,8 +37,9 @@ class LanguageVariants(Enum):
 
 ENGLISH: Language = LanguageVariants.ENGLISH.value
 
+
 def get_language() -> Language:
-    return LanguageVariants.JAPANESE.value
+    return LanguageVariants.ENGLISH.value
 
 
 @dataclass

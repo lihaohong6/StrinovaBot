@@ -9,6 +9,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 
 from global_config import characters_with_dorms
 from utils.general_utils import get_game_json, get_table, get_char_by_id, make_tab_group, get_char_pages
+from utils.lang_utils import get_language
 from utils.upload_utils import upload_item_icons
 from utils.wiki_utils import s
 
@@ -117,7 +118,8 @@ def generate_bond_items():
             return f"{{{{ BondItem | file={self.file} " \
                    f"| description={self.description} | story={self.story} }}}}"
 
-    i18n = get_game_json()['PledgeItem']
+    lang = get_language()
+    i18n = get_game_json(lang)['PledgeItem']
     items_table = get_table("PledgeItem")
     id_to_items: dict[int, list[PledgeItem]] = {}
     upload_lst: list[int | str] = []
@@ -137,7 +139,7 @@ def generate_bond_items():
         except KeyError:
             continue
     upload_item_icons(upload_lst, "[[Category:Bond item icons]]", "batch upload bond item icons")
-    for role_id, char_name, p in get_char_pages():
+    for role_id, char_name, p in get_char_pages(lang=lang):
         if role_id not in id_to_items:
             continue
         items = id_to_items[role_id]
