@@ -7,12 +7,14 @@ from global_config import char_id_mapper
 from utils.asset_utils import resource_root
 from utils.general_utils import get_game_json, get_table, en_name_to_zh, get_id_by_char, \
     get_weapon_name, get_default_weapon_id, get_char_pages
+from utils.lang_utils import get_language
 from utils.upload_utils import UploadRequest, process_uploads
 from utils.wiki_utils import bwiki, s
 
 
 def generate_skills():
-    skill_texts = get_game_json()['Skill']
+    lang = get_language()
+    skill_texts = get_game_json(lang)['Skill']
     skill_table = get_table("Skill")
     requests: list[UploadRequest] = []
     for char_id, char_name in char_id_mapper.items():
@@ -23,7 +25,7 @@ def generate_skills():
             requests.append(req)
     process_uploads(requests)
 
-    for char_id, char_name, p in get_char_pages():
+    for char_id, char_name, p in get_char_pages(lang.page_suffix):
         templates = []
         valid = True
         parsed = wtp.parse(p.text)
@@ -82,11 +84,12 @@ Growth_Escort
 Growth_Team
     :return:
     """
-    i18n = get_game_json()['Growth_Bomb']
-    i18n_skill = get_game_json()['Skill']
+    lang = get_language()
+    i18n = get_game_json(lang)['Growth_Bomb']
+    i18n_skill = get_game_json(lang)['Skill']
     role_json = get_table("Role")
     skill_json = get_table("Skill")
-    for char_id, char_name, p in get_char_pages():
+    for char_id, char_name, p in get_char_pages(lang.page_suffix):
         bwiki_base_page = Page(bwiki(), en_name_to_zh[char_name])
         if bwiki_base_page.isRedirectPage():
             bwiki_base_page = bwiki_base_page.getRedirectTarget()
@@ -181,3 +184,13 @@ Growth_Team
             continue
         p.text = str(parsed)
         p.save(summary="generate string energy network", minor=True)
+
+
+def main():
+    generate_skills()
+    generate_string_energy_network()
+
+
+if __name__ == "__main__":
+    main()
+

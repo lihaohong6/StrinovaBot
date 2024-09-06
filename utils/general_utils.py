@@ -10,6 +10,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 
 from utils.asset_utils import csv_root, localization_root, en_csv_root
 from global_config import name_to_en, char_id_mapper, internal_names
+from utils.lang_utils import Language, LanguageVariants
 from utils.wiki_utils import bwiki, s
 
 json_cache: dict[str, dict] = {}
@@ -25,8 +26,8 @@ def load_json(file: str | Path):
     return json_cache[file_str]
 
 
-def get_game_json():
-    return load_json(localization_root / "en/Game.json")
+def get_game_json(language: Language = LanguageVariants.ENGLISH.value):
+    return load_json(localization_root / f"{language.game_json_dir}/Game.json")
 
 
 def get_game_json_cn():
@@ -160,7 +161,7 @@ def get_char_pages(subpage_name: str | None = None) -> list[tuple[int, str, Page
     def get_page_name(char_name):
         if subpage_name is None:
             return char_name
-        return f"{char_name}/{subpage_name}"
+        return f"{char_name}{subpage_name}"
 
     pages = list(PreloadingGenerator(Page(s, get_page_name(v)) for k, v in char_id_mapper.items()))
     assert len(pages) == len(char_id_mapper)

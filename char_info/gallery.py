@@ -44,7 +44,7 @@ def generate_emotes():
                                              "batch upload emotes"))
     process_uploads(upload_requests)
 
-    for char_id, name, p in get_char_pages("gallery"):
+    for char_id, name, p in get_char_pages("/gallery"):
         emote_list = items[name]
         gallery = ['<gallery mode="packed">']
         for emote in emote_list:
@@ -264,7 +264,7 @@ def make_skin_template(t: wtp.Template, char_name: str, skin_list: list[SkinInfo
 def generate_skins():
     skins = parse_skin_tables()
 
-    for char_id, char_name, p in get_char_pages("gallery"):
+    for char_id, char_name, p in get_char_pages("/gallery"):
         if char_name not in skins:
             print("No skin found for " + char_name)
             continue
