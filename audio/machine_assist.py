@@ -20,7 +20,7 @@ char_prompts: dict[str, dict[str, str]] = {
 }
 
 
-weapon_prompts: dict[str, str] = dict((w.name_cn, w.name) for w in get_weapons_by_type("Grenade"))
+weapon_prompts: dict[str, str] = dict((w.name_cn, w.name_en) for w in get_weapons_by_type("Grenade"))
 
 
 def postprocess_chinese(t: str) -> str:

@@ -44,14 +44,23 @@ def upload_skill_demo():
 
 
 def upload_item_icons(items: list[int | str], text: str = "[[Category:Item icons]]",
-                      summary: str = "batch upload item icons", ):
+                      summary: str = "batch upload item icons", big: bool = False):
     lst: list[UploadRequest] = []
+    fails: set[int | str] = set()
     for item in items:
-        lst.append(UploadRequest(resource_root / f"Item/ItemIcon/T_Dynamic_Item_{item}.png",
+        folder = "ItemIcon" if not big else "BigIcon"
+        file_name = "Item" if not big else "BigItem"
+        source = resource_root / f"Item/{folder}/T_Dynamic_{file_name}_{item}.png"
+        if not source.exists():
+            print(f"{source} does not exist")
+            fails.add(item)
+            continue
+        lst.append(UploadRequest(source,
                                  FilePage(s, f"File:Item Icon {item}.png"),
                                  text,
                                  summary))
     process_uploads(lst)
+    return fails
 
 
 def upload_file(text: str, target: FilePage, summary: str = "batch upload file",

@@ -154,7 +154,7 @@ def upload_skins(char_name: str, skin_list: list[SkinInfo]) -> list[SkinInfo]:
             upload_file(text=f"Taken from [https://wiki.biligame.com/klbq/"
                              f"{skin.source.title(with_ns=True, underscore=True)} bwiki], "
                              f"this image is licensed under CC BY-NC-SA 4.0."
-                             f"[[Category:Skin screenshots]]",
+                             f"[[Category:Skin screenshots]]\n[[Category:{char_name} images]]",
                         target=skin.target,
                         summary="upload file from bwiki",
                         url=skin.source.get_file_url())

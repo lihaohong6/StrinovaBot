@@ -87,7 +87,7 @@ class UpgradeTrigger:
     skins: list[int]
 
 
-def find_audio_file(file_name: str, table: dict, bank_name_to_files: dict) -> str | None:
+def find_audio_file(file_name: str, table: dict, bank_name_to_files: dict[str, list[Path]]) -> str | None:
     assert len(table) > 0
     event_file = audio_event_root / f"{file_name}.json"
     if not event_file.exists():
