@@ -39,7 +39,26 @@ ENGLISH: Language = LanguageVariants.ENGLISH.value
 
 
 def get_language() -> Language:
-    return LanguageVariants.ENGLISH.value
+    return LanguageVariants.JAPANESE.value
+
+
+print(f"Current language: {get_language().code}")
+
+
+def from_lang_code(lang_code: str) -> Language | None:
+    for lang in LanguageVariants:
+        if lang.value.code == lang_code:
+            return lang.value
+    return None
+
+
+def title_to_lang(title: str) -> Language:
+    if "/" in title:
+        res = from_lang_code(title.split("/")[-1])
+        if res is None:
+            return ENGLISH
+        return res
+    return ENGLISH
 
 
 @dataclass

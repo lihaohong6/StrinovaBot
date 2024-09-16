@@ -69,6 +69,13 @@ camp_id_to_string = {
     3: "Urbino",
 }
 
+
+def get_camp(camp_id: int, lang: Language = ENGLISH) -> str:
+    if camp_id == 1 and lang == ENGLISH:
+        return "Painting Utopia Security"
+    return get_game_json(lang)['RoleTeam'][f'{camp_id}_NameCn']
+
+
 camp_name_cn = {
     "欧泊": "Painting Utopia Security",
     "剪刀手": "The Scissors",
@@ -82,6 +89,11 @@ role_id_to_string = {
     4: "Initiator",
     5: "Controller"
 }
+
+
+def get_role_name(role_id: int, lang: Language = ENGLISH) -> str:
+    return get_game_json(lang)['RoleProfession'][f'{role_id}_NameCn']
+
 
 table_cache: dict[str, dict] = {}
 

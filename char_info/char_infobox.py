@@ -4,11 +4,11 @@ from typing import Callable
 import wikitextparser as wtp
 from pywikibot import Page
 
-from global_config import char_id_mapper, name_to_cn
-from utils.general_utils import get_game_json_cn, get_game_json_ja, camp_id_to_string, role_id_to_string, \
+from global_config import name_to_cn
+from utils.general_utils import get_game_json_ja, camp_id_to_string, role_id_to_string, \
     get_weapon_name, \
-    get_default_weapon_id, get_game_json, get_table, get_char_pages
-from utils.wiki_utils import s
+    get_default_weapon_id, get_game_json, get_table, get_char_pages, get_camp, get_role_name
+from utils.lang_utils import get_language
 
 
 def nop(x: str | list[str]):
@@ -38,7 +38,8 @@ infobox_args: list[tuple[list[str] | str, str, Callable[[list[str] | str], str]]
 
 
 def make_infobox(char_id, char_name, p: Page, save=True) -> dict:
-    i18n = get_game_json()['RoleProfile']
+    lang = get_language()
+    i18n = get_game_json(lang)['RoleProfile']
     char_profile = get_table("RoleProfile")[char_id]
     data: dict[str, str] = {}
     parsed = wtp.parse(p.text)
@@ -61,7 +62,7 @@ def make_infobox(char_id, char_name, p: Page, save=True) -> dict:
         data[name] = value
 
     add_arg("Id", char_id)
-    add_arg("Name", char_name)
+    add_arg("Name", i18n.get(f'{char_id}_NameCn', ''))
     add_arg("NameEN", char_name)
     add_arg("NameCN", name_to_cn[char_name])
     add_arg("NameJP", get_game_json_ja()['RoleProfile'].get(f'{char_id}_NameCn', ''))
@@ -76,11 +77,14 @@ def make_infobox(char_id, char_name, p: Page, save=True) -> dict:
             arg_list = get_arg(args)
         add_arg(key, mapper(arg_list))
     try:
-        add_arg("Camp", camp_id_to_string[char_profile['Team']])
-        add_arg("Role", role_id_to_string[char_profile['Profession']])
-        add_arg("Weapon", get_weapon_name(get_default_weapon_id(char_id)))
-    except Exception:
+        add_arg("Camp", get_camp(char_profile['Team']))
+        add_arg("CampText", get_camp(char_profile['Team'], lang=lang))
+        add_arg("Role", get_role_name(char_profile['Profession']))
+        add_arg("RoleText", get_role_name(char_profile['Profession'], lang=lang))
+        add_arg("Weapon", get_weapon_name(get_default_weapon_id(char_id), lang=lang))
+    except Exception as e:
         print("Insufficient info for " + char_name)
+        print(e)
         return data
     if save and p.text.strip() != str(parsed).strip():
         p.text = str(parsed)
@@ -89,7 +93,10 @@ def make_infobox(char_id, char_name, p: Page, save=True) -> dict:
 
 
 def generate_infobox():
-    for char_id, char_name, p in get_char_pages():
+    language = get_language()
+    for char_id, char_name, p in get_char_pages(lang=language):
         make_infobox(char_id, char_name, p, save=True)
 
 
+if __name__ == "__main__":
+    generate_infobox()
