@@ -4,6 +4,7 @@ from enum import Enum
 from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
+from utils.general_utils import get_game_json
 from utils.wiki_utils import s
 
 
@@ -43,6 +44,24 @@ def get_language() -> Language:
 
 
 print(f"Current language: {get_language().code}")
+
+
+char_name_table = {
+    LanguageVariants.JAPANESE.value.code: {
+        120: 'フラグランス',
+        205: 'ガラテア'
+    }
+}
+
+
+def get_localized_char_name(char_id: int, lang: Language = get_language()) -> str | None:
+    char_id = int(char_id)
+    if lang.code in char_name_table:
+        t = char_name_table[lang.code]
+        if char_id in t:
+            return t[char_id]
+    return get_game_json(language=lang)['RoleProfile'].get(f'{char_id}_NameEn', None)
+
 
 
 def from_lang_code(lang_code: str) -> Language | None:

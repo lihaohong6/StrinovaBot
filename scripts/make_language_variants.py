@@ -8,7 +8,7 @@ from pywikibot.data.api import APIGenerator, Request, QueryGenerator, PropertyGe
 from pywikibot.pagegenerators import GeneratorFactory
 
 from utils.general_utils import get_char_pages
-from utils.lang_utils import LanguageVariants, title_to_lang, Language, from_lang_code
+from utils.lang_utils import LanguageVariants, title_to_lang, Language, from_lang_code, get_localized_char_name
 from utils.wiki_utils import s
 
 
@@ -21,20 +21,21 @@ def make_char_pages():
     english_version = dict((char_id, p) for char_id, _, p in get_char_pages())
 
     for char_id, char_name, p in get_char_pages(lang=lang):
-        if p.exists():
-            name_ja = re.search(r"NameJP=(.*)", p.text).group(1)
-            if name_ja is not None and name_ja.strip() != "":
-                Page(s, name_ja).set_redirect_target(p, create=True)
-                continue
-        p_original = english_version[char_id]
-        p.text = p_original.text
-        p.save(f"new {lang.code} page")
-        try:
-            r = Request(s, parameters={"action": "setpagelanguage", "title": p.title(), "lang": lang.code,
-                                       "token": getattr(s, 'tokens')['csrf']})
-            r.submit()
-        except Exception as e:
-            print(e)
+        if not p.exists():
+            p_original = english_version[char_id]
+            p.text = p_original.text
+            p.save(f"new {lang.code} page")
+            try:
+                r = Request(s, parameters={"action": "setpagelanguage", "title": p.title(), "lang": lang.code,
+                                           "token": getattr(s, 'tokens')['csrf']})
+                r.submit()
+            except Exception as e:
+                print(e)
+        localized_name = get_localized_char_name(char_id, lang)
+        if localized_name is not None and localized_name.strip() != "":
+            redirect = Page(s, localized_name)
+            if not redirect.exists():
+                redirect.set_redirect_target(p, create=True)
 
 
 def make_interlanguage_links():
