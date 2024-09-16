@@ -7,6 +7,7 @@ from pywikibot import Page, FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from utils.asset_utils import portrait_root, skin_back_root, local_asset_root, resource_root
+from utils.lang_utils import get_language
 from utils.upload_utils import upload_file, UploadRequest, process_uploads
 from utils.general_utils import get_table, get_game_json, zh_name_to_en, get_char_by_id, get_cn_wiki_skins, \
     en_name_to_zh, get_char_pages
@@ -20,8 +21,9 @@ def generate_emotes():
         name: str
         text: str
 
+    lang = get_language()
     goods_table = get_table("Goods")
-    i18n = get_game_json()['Goods']
+    i18n = get_game_json(lang)['Goods']
     items: dict[str, list[Emote]] = {}
     upload_requests: list[UploadRequest] = []
     for k, v in goods_table.items():
@@ -78,7 +80,7 @@ class SkinInfo:
     back: str = ""
 
 
-def parse_skin_tables():
+def parse_skin_tables() -> dict[str, list[SkinInfo]]:
     skins_table = get_table("RoleSkin")
     store_skins_table = get_table("Goods")
     skins: dict[str, list[SkinInfo]] = {}
@@ -215,8 +217,9 @@ def process_back_images(char_name, name_zh, skin_list: list[SkinInfo]):
 
 
 def localize_skins(skin_list: list[SkinInfo]):
-    i18n_skin = get_game_json()['RoleSkin']
-    i18n_store = get_game_json()['Goods']
+    lang = get_language()
+    i18n_skin = get_game_json(lang)['RoleSkin']
+    i18n_store = get_game_json(lang)['Goods']
     for skin in skin_list:
         descriptions = []
         name_en = None
@@ -262,9 +265,10 @@ def make_skin_template(t: wtp.Template, char_name: str, skin_list: list[SkinInfo
 
 
 def generate_skins():
+    lang = get_language()
     skins = parse_skin_tables()
 
-    for char_id, char_name, p in get_char_pages("/gallery"):
+    for char_id, char_name, p in get_char_pages("/gallery", lang=lang):
         if char_name not in skins:
             print("No skin found for " + char_name)
             continue

@@ -18,24 +18,25 @@ from utils.wiki_utils import s
 def make_char_pages():
     lang = LanguageVariants.JAPANESE.value
 
-    english_version = dict((char_id, p) for char_id, _, p in get_char_pages())
-
-    for char_id, char_name, p in get_char_pages(lang=lang):
-        if not p.exists():
-            p_original = english_version[char_id]
-            p.text = p_original.text
-            p.save(f"new {lang.code} page")
-            try:
-                r = Request(s, parameters={"action": "setpagelanguage", "title": p.title(), "lang": lang.code,
-                                           "token": getattr(s, 'tokens')['csrf']})
-                r.submit()
-            except Exception as e:
-                print(e)
-        localized_name = get_localized_char_name(char_id, lang)
-        if localized_name is not None and localized_name.strip() != "":
-            redirect = Page(s, localized_name)
-            if not redirect.exists():
-                redirect.set_redirect_target(p, create=True)
+    for subpage in ['', '/gallery']:
+        english_version = dict((char_id, p) for char_id, _, p in get_char_pages(subpage_name=subpage))
+        for char_id, char_name, p in get_char_pages(subpage_name=subpage, lang=lang):
+            if not p.exists():
+                p_original = english_version[char_id]
+                p.text = p_original.text + f"\n[[en:{p_original.title()}]]"
+                p.save(f"new {lang.code} page")
+                try:
+                    r = Request(s, parameters={"action": "setpagelanguage", "title": p.title(), "lang": lang.code,
+                                               "token": getattr(s, 'tokens')['csrf']})
+                    r.submit()
+                except Exception as e:
+                    print(e)
+            if subpage == '':
+                localized_name = get_localized_char_name(char_id, lang)
+                if localized_name is not None and localized_name.strip() != "":
+                    redirect = Page(s, localized_name)
+                    if not redirect.exists():
+                        redirect.set_redirect_target(p, create=True)
 
 
 def make_interlanguage_links():
