@@ -1,9 +1,11 @@
 import wikitextparser as wtp
 from pywikibot import Page
 
-from utils.general_utils import get_game_json, get_char_by_id, get_default_weapon_id, get_weapon_name, \
+from utils.general_utils import get_char_by_id, get_default_weapon_id, get_weapon_name, \
     get_weapon_type, get_char_pages
-from utils.lang_utils import ENGLISH, get_language, RedirectRequest, redirect_pages
+from utils.json_utils import get_game_json
+from utils.lang_utils import RedirectRequest, redirect_pages
+from utils.lang import ENGLISH, get_language
 from utils.wiki_utils import s
 from global_config import char_id_mapper
 

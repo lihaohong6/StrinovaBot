@@ -1,50 +1,13 @@
 from dataclasses import dataclass
-from enum import Enum
 
 from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
-from utils.general_utils import get_game_json
+from utils.json_utils import get_game_json
+from utils.lang import Language, LanguageVariants, ENGLISH, get_language
 from utils.wiki_utils import s
 
-
-@dataclass
-class Language:
-    code: str
-
-    @property
-    def page_suffix(self):
-        if self.code != 'en':
-            return f"/{self.code}"
-        return ""
-
-    @property
-    def json_suffix(self):
-        if self.code != 'en':
-            return f"_{self.code}"
-        return ""
-
-    @property
-    def game_json_dir(self):
-        return self.code
-
-
-class LanguageVariants(Enum):
-    ENGLISH = Language('en')
-    JAPANESE = Language('ja')
-    KOREAN = Language('ko')
-    SIMPLIFIED_CHINESE = Language('zh-Hans')
-
-
-ENGLISH: Language = LanguageVariants.ENGLISH.value
-
-
-def get_language() -> Language:
-    return LanguageVariants.JAPANESE.value
-
-
 print(f"Current language: {get_language().code}")
-
 
 char_name_table = {
     LanguageVariants.JAPANESE.value.code: {
@@ -61,7 +24,6 @@ def get_localized_char_name(char_id: int, lang: Language = get_language()) -> st
         if char_id in t:
             return t[char_id]
     return get_game_json(language=lang)['RoleProfile'].get(f'{char_id}_NameEn', None)
-
 
 
 def from_lang_code(lang_code: str) -> Language | None:

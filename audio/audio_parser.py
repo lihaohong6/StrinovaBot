@@ -5,7 +5,8 @@ from pathlib import Path
 
 from audio.data.conversion_table import VoiceType, voice_conversion_table
 from utils.asset_utils import audio_event_root, audio_root, wav_root_cn, wav_root_jp
-from utils.general_utils import load_json, get_game_json, get_table
+from utils.general_utils import get_table
+from utils.json_utils import load_json, get_game_json
 
 
 class VoiceUpgrade(Enum):

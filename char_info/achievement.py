@@ -2,7 +2,7 @@ import wikitextparser as wtp
 
 from page_generator.achievements import get_achievements, achievements_to_tabs
 from utils.general_utils import get_char_pages
-from utils.lang_utils import get_language
+from utils.lang import get_language
 
 
 def generate_achievements():

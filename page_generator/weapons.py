@@ -9,7 +9,8 @@ from wikitextparser import Template
 
 from global_config import char_id_mapper
 from utils.upload_utils import upload_file, UploadRequest, upload_item_icons, process_uploads
-from utils.general_utils import get_game_json, get_table, get_game_json_cn, get_default_weapon_id
+from utils.general_utils import get_table, get_default_weapon_id
+from utils.json_utils import get_game_json, get_game_json_cn
 from utils.wiki_utils import bwiki, s
 
 

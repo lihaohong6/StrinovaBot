@@ -5,9 +5,10 @@ from pywikibot import Page, FilePage
 
 from global_config import char_id_mapper
 from utils.asset_utils import resource_root
-from utils.general_utils import get_game_json, get_table, en_name_to_zh, get_id_by_char, \
+from utils.general_utils import get_table, en_name_to_zh, get_id_by_char, \
     get_weapon_name, get_default_weapon_id, get_char_pages
-from utils.lang_utils import get_language
+from utils.json_utils import get_game_json
+from utils.lang import get_language
 from utils.upload_utils import UploadRequest, process_uploads
 from utils.wiki_utils import bwiki, s
 

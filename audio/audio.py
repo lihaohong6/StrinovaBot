@@ -19,7 +19,8 @@ from audio.machine_assist import transcribe, translate
 from global_config import char_id_mapper, internal_names
 from utils.asset_utils import audio_root, wav_root_cn
 from audio.data.conversion_table import voice_conversion_table
-from utils.general_utils import get_bwiki_char_pages, load_json
+from utils.general_utils import get_bwiki_char_pages
+from utils.json_utils import load_json
 from utils.wiki_utils import s, bwiki
 
 import wikitextparser as wtp

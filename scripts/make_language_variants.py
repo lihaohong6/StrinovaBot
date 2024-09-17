@@ -8,7 +8,8 @@ from pywikibot.data.api import APIGenerator, Request, QueryGenerator, PropertyGe
 from pywikibot.pagegenerators import GeneratorFactory
 
 from utils.general_utils import get_char_pages
-from utils.lang_utils import LanguageVariants, title_to_lang, Language, from_lang_code, get_localized_char_name
+from utils.lang_utils import title_to_lang, from_lang_code, get_localized_char_name
+from utils.lang import Language, LanguageVariants
 from utils.wiki_utils import s
 
 

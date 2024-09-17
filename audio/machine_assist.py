@@ -9,7 +9,8 @@ from audio.audio_utils import get_json_path
 from global_config import char_id_mapper, name_to_en
 from page_generator.weapons import get_weapons_by_type, WeaponType
 from utils.asset_utils import wav_root_cn
-from utils.general_utils import load_json, camp_name_cn
+from utils.general_utils import camp_name_cn
+from utils.json_utils import load_json
 
 general_prompts = dict([(k.split("·")[0], v) for k, v in name_to_en.items()] +
                        list(camp_name_cn.items()) +

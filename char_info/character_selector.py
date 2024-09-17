@@ -1,6 +1,7 @@
 from char_info.char_infobox import make_infobox
 from global_config import char_id_mapper
-from utils.general_utils import get_game_json, get_char_by_id, get_weapon_type, get_default_weapon_id
+from utils.general_utils import get_char_by_id, get_weapon_type, get_default_weapon_id
+from utils.json_utils import get_game_json
 
 
 def generate_character_selector():

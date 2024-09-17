@@ -8,8 +8,9 @@ from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from global_config import characters_with_dorms
-from utils.general_utils import get_game_json, get_table, get_char_by_id, make_tab_group, get_char_pages
-from utils.lang_utils import get_language
+from utils.general_utils import get_table, get_char_by_id, make_tab_group, get_char_pages
+from utils.json_utils import get_game_json
+from utils.lang import LanguageVariants, get_language
 from utils.upload_utils import upload_item_icons
 from utils.wiki_utils import s
 
@@ -17,10 +18,10 @@ from utils.wiki_utils import s
 @dataclass
 class Gift:
     id: int
-    name: str = ""
+    name: dict[str, str] = field(default_factory=dict)
     quality: int | str = -1
     file: str = ""
-    description: str = ""
+    description: dict[str, str] = field(default_factory=dict)
     characters: dict[str, tuple[int, int]] = field(default_factory=dict)
     best_characters: list[str] = field(default_factory=list)
 
@@ -43,7 +44,6 @@ def get_gifts() -> dict[int, Gift]:
 
 
 def generate_gifts():
-    i18n = get_game_json()['Item']
     gift_dict: dict[int, Gift] = get_gifts()
     item_table = get_table("Item")
     gifts = list(gift_dict.values())
@@ -51,12 +51,16 @@ def generate_gifts():
         g = item_table[gift.id]
         gift.file = re.search(r"_(\d+)$", g['IconItem']['AssetPathName']).group(1)
         gift.quality = g['Quality']
-        gift.name = g['Name']['SourceString']
-        gift.description = g['Desc']['SourceString']
-        key = f"{gift.id}_Name"
-        if key in i18n:
-            gift.name = i18n[key]
-            gift.description = i18n[f"{gift.id}_Desc"]
+        for lang in LanguageVariants:
+            lang_code = lang.value.code
+            gift.name[lang_code] = g['Name']['SourceString']
+            gift.description[lang_code] = g['Desc']['SourceString']
+
+            i18n = get_game_json(lang.value)['Item']
+            key = f"{gift.id}_Name"
+            if key in i18n:
+                gift.name[lang_code] = i18n[key]
+                gift.description[lang_code] = i18n[f"{gift.id}_Desc"]
 
     gifts = [g
              for g in sorted(gifts, key=lambda t: t.quality, reverse=True)
@@ -82,27 +86,28 @@ def generate_gifts():
                 return dataclasses.asdict(o)
             return super().default(o)
 
-    p = Page(s, "Module:CharacterGifts/data.json")
+    p = Page(s, "Module:CharacterGifts/data2.json")
     text = json.dumps(gifts, cls=EnhancedJSONEncoder)
     if p.text.strip() == text:
         return
     p.text = text
     p.save(summary="update gift data")
 
-    all_recipients = PreloadingGenerator(Page(s, char) for char in characters_with_dorms)
-    for p in all_recipients:
-        char_name = p.title()
-        parsed = wtp.parse(p.text)
-        for t in parsed.templates:
-            if t.name.strip() == "CharacterGifts":
-                break
-        else:
-            raise RuntimeError("Template not found on " + char_name)
-        if t.has_arg("1"):
-            continue
-        t.set_arg("1", char_name, positional=True)
-        p.text = str(parsed)
-        p.save("enable character gift")
+    for lang in LanguageVariants:
+        all_recipients = PreloadingGenerator(Page(s, char + lang.value.page_suffix) for char in characters_with_dorms)
+        for p in all_recipients:
+            char_name = p.title().split("/")[0]
+            parsed = wtp.parse(p.text)
+            for t in parsed.templates:
+                if t.name.strip() == "CharacterGifts":
+                    break
+            else:
+                raise RuntimeError("Template not found on " + p.title())
+            if t.has_arg("1"):
+                continue
+            t.set_arg("1", char_name, positional=True)
+            p.text = str(parsed)
+            p.save("enable character gift")
 
 
 def generate_bond_items():
@@ -164,5 +169,5 @@ def generate_bond_items():
 
 
 if __name__ == "__main__":
-    # generate_gifts()
-    generate_bond_items()
+    generate_gifts()
+    # generate_bond_items()

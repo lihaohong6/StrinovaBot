@@ -5,8 +5,9 @@ from pandas._typing import FilePath
 from pywikibot import Page, FilePage
 
 from utils.asset_utils import resource_root
-from utils.general_utils import get_table, get_game_json, make_tab_group
-from utils.lang_utils import Language, ENGLISH
+from utils.general_utils import get_table, make_tab_group
+from utils.json_utils import get_game_json
+from utils.lang import Language, ENGLISH
 from utils.upload_utils import UploadRequest, process_uploads
 from utils.wiki_utils import s
 

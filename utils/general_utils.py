@@ -3,39 +3,14 @@ from pathlib import Path
 
 import requests
 
-import json
-
 from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
-from utils.asset_utils import csv_root, localization_root, en_csv_root
+from utils.asset_utils import csv_root, en_csv_root
 from global_config import name_to_en, char_id_mapper, internal_names
-from utils.lang_utils import Language, LanguageVariants, ENGLISH
+from utils.json_utils import load_json, get_game_json
+from utils.lang import Language, ENGLISH
 from utils.wiki_utils import bwiki, s
-
-json_cache: dict[str, dict] = {}
-
-
-def load_json(file: str | Path):
-    if isinstance(file, str):
-        file_str = file
-    else:
-        file_str = str(file.absolute())
-    if file_str not in json_cache:
-        json_cache[file_str] = json.load(open(file, "r", encoding="utf-8"))
-    return json_cache[file_str]
-
-
-def get_game_json(language: Language = LanguageVariants.ENGLISH.value):
-    return load_json(localization_root / f"{language.game_json_dir}/Game.json")
-
-
-def get_game_json_cn():
-    return load_json(localization_root / "zh-Hans/Game.json")
-
-
-def get_game_json_ja():
-    return load_json(localization_root / "ja/Game.json")
 
 
 def zh_name_to_en(o: str) -> str:

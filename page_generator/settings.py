@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
-from utils.general_utils import get_table, get_game_json, get_table_en
+from utils.general_utils import get_table, get_table_en
+from utils.json_utils import get_game_json
 
 
 @dataclass

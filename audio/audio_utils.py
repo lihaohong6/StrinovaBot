@@ -7,7 +7,7 @@ from pywikibot.pagegenerators import GeneratorFactory
 
 from audio.audio_parser import Voice
 from utils.asset_utils import audio_root
-from utils.general_utils import load_json
+from utils.json_utils import load_json
 
 from utils.upload_utils import upload_file
 from utils.wiki_utils import s
