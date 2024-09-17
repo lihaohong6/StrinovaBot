@@ -1,13 +1,12 @@
 import json
 import re
-from pathlib import Path
 from time import sleep
 
 import cohere
 
 from audio.audio_utils import get_json_path
-from global_config import char_id_mapper, name_to_en
-from page_generator.weapons import get_weapons_by_type, WeaponType
+from global_config import name_to_en
+from page_generator.weapons import get_weapons_by_type
 from utils.asset_utils import wav_root_cn
 from utils.general_utils import camp_name_cn
 from utils.json_utils import load_json

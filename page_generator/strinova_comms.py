@@ -1,17 +1,15 @@
 import dataclasses
+import re
 from itertools import takewhile
+from pathlib import Path
 
 from pywikibot import Page
 
-import json
-from pathlib import Path
-import re
-
+from global_config import char_id_mapper
+from utils.asset_utils import csv_root
 from utils.general_utils import make_tab_group
 from utils.json_utils import load_json, get_game_json, get_game_json_cn
-from utils.asset_utils import csv_root
 from utils.wiki_utils import s
-from global_config import char_id_mapper
 
 group_counter = 1
 num = -1

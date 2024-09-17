@@ -1,15 +1,12 @@
-import os
-import re
-import sys
 from dataclasses import dataclass
 
 from pywikibot import Page
-from pywikibot.data.api import APIGenerator, Request, QueryGenerator, PropertyGenerator
+from pywikibot.data.api import Request, PropertyGenerator
 from pywikibot.pagegenerators import GeneratorFactory
 
 from utils.general_utils import get_char_pages
+from utils.lang import Language, LanguageVariants
 from utils.lang_utils import title_to_lang, from_lang_code, get_localized_char_name
-from utils.lang import Language, LanguageVariants, set_language
 from utils.wiki_utils import s
 
 

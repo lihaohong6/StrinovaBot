@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass
 
-from pandas._typing import FilePath
+import wikitextparser as wtp
 from pywikibot import Page, FilePage
 
 from utils.asset_utils import resource_root
@@ -10,8 +10,6 @@ from utils.json_utils import get_game_json
 from utils.lang import Language, ENGLISH
 from utils.upload_utils import UploadRequest, process_uploads
 from utils.wiki_utils import s
-
-import wikitextparser as wtp
 
 
 @dataclass

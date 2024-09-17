@@ -5,8 +5,7 @@ import wikitextparser as wtp
 from pywikibot import Page
 
 from global_config import name_to_cn
-from utils.general_utils import camp_id_to_string, role_id_to_string, \
-    get_weapon_name, \
+from utils.general_utils import get_weapon_name, \
     get_default_weapon_id, get_table, get_char_pages, get_camp, get_role_name
 from utils.json_utils import get_game_json, get_game_json_ja
 from utils.lang import get_language

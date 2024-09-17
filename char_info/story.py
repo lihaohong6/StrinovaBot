@@ -1,10 +1,8 @@
 import wikitextparser as wtp
-from pywikibot import Page
 
-from utils.general_utils import get_char_by_id, get_table, get_char_pages
+from utils.general_utils import get_table, get_char_pages
 from utils.json_utils import get_game_json
 from utils.lang import get_language
-from utils.wiki_utils import s
 
 
 def generate_biography():
