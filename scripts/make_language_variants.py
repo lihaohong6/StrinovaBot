@@ -48,7 +48,7 @@ def make_interlanguage_links():
         neighbors: list["LangPage"]
 
     gen = GeneratorFactory(s)
-    gen.handle_args(['-cat:Main pages'])
+    gen.handle_args(['-cat:Characters', '-cat:Character galleries', '-cat:Main pages'])
     gen = gen.getCombinedGenerator()
     pages: dict[str, LangPage] = dict((p.title(), LangPage(p, title_to_lang(p.title()), [])) for p in gen)
     gen = PropertyGenerator(site=s, prop="langlinks", titles="|".join(p.page.title() for p in pages.values()))
