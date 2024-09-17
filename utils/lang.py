@@ -33,7 +33,7 @@ class LanguageVariants(Enum):
 
 ENGLISH: Language = LanguageVariants.ENGLISH.value
 
-current_language: Language = LanguageVariants.JAPANESE.value
+current_language: Language = LanguageVariants.KOREAN.value
 
 
 def get_language() -> Language:

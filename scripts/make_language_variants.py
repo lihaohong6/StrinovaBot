@@ -9,7 +9,7 @@ from pywikibot.pagegenerators import GeneratorFactory
 
 from utils.general_utils import get_char_pages
 from utils.lang_utils import title_to_lang, from_lang_code, get_localized_char_name
-from utils.lang import Language, LanguageVariants
+from utils.lang import Language, LanguageVariants, set_language
 from utils.wiki_utils import s
 
 
@@ -17,7 +17,7 @@ from utils.wiki_utils import s
 
 
 def make_char_pages():
-    lang = LanguageVariants.JAPANESE.value
+    lang = LanguageVariants.KOREAN.value
 
     for subpage in ['', '/gallery']:
         english_version = dict((char_id, p) for char_id, _, p in get_char_pages(subpage_name=subpage))
@@ -48,7 +48,7 @@ def make_interlanguage_links():
         neighbors: list["LangPage"]
 
     gen = GeneratorFactory(s)
-    gen.handle_args(['-cat:Characters', '-cat:Character galleries'])
+    gen.handle_args(['-cat:Main pages'])
     gen = gen.getCombinedGenerator()
     pages: dict[str, LangPage] = dict((p.title(), LangPage(p, title_to_lang(p.title()), [])) for p in gen)
     gen = PropertyGenerator(site=s, prop="langlinks", titles="|".join(p.page.title() for p in pages.values()))

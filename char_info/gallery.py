@@ -325,4 +325,5 @@ def generate_skins():
 
 
 if __name__ == '__main__':
+    generate_skins()
     generate_emotes()

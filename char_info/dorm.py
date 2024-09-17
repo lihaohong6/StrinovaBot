@@ -102,7 +102,8 @@ def generate_gifts():
                 if t.name.strip() == "CharacterGifts":
                     break
             else:
-                raise RuntimeError("Template not found on " + p.title())
+                print("Template not found on " + p.title())
+                continue
             if t.has_arg("1"):
                 continue
             t.set_arg("1", char_name, positional=True)
@@ -170,4 +171,4 @@ def generate_bond_items():
 
 if __name__ == "__main__":
     generate_gifts()
-    # generate_bond_items()
+    generate_bond_items()
