@@ -32,6 +32,18 @@ class LanguageVariants(Enum):
 
 ENGLISH: Language = LanguageVariants.ENGLISH.value
 
+current_language: Language = LanguageVariants.JAPANESE.value
+
 
 def get_language() -> Language:
-    return LanguageVariants.JAPANESE.value
+    return current_language
+
+
+def set_language(code: str):
+    global current_language
+    for lang in LanguageVariants:
+        if lang.value.code == code:
+            current_language = lang.value
+            break
+    else:
+        raise RuntimeError(f"Fail to set language to {code}")
