@@ -131,8 +131,10 @@ def download_file(url, target: Path):
 def get_cn_wiki_skins():
     from pywikibot import Page
     p = Page(bwiki(), "模块:皮肤/RoleSkinData")
-    matches = re.findall(r'\["([^"]+)"][^"]+Role = "([^"]+)"', p.text)
-    return dict((match[0], match[1]) for match in matches)
+    matches = re.findall(r'"([^"]+)"[^"]+\s+Role = "([^"]+)"', p.text)
+    result = dict((match[0], match[1]) for match in matches)
+    assert len(result) > 100
+    return result
 
 
 def get_weapon_type(weapon_id: int | str) -> str:

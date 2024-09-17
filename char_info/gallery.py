@@ -7,7 +7,7 @@ from pywikibot import Page, FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from utils.asset_utils import portrait_root, skin_back_root, local_asset_root, resource_root
-from utils.lang import get_language
+from utils.lang import get_language, ENGLISH
 from utils.upload_utils import upload_file, UploadRequest, process_uploads
 from utils.general_utils import get_table, zh_name_to_en, get_char_by_id, get_cn_wiki_skins, \
     en_name_to_zh, get_char_pages
@@ -47,7 +47,7 @@ def generate_emotes():
                                              "batch upload emotes"))
     process_uploads(upload_requests)
 
-    for char_id, name, p in get_char_pages("/gallery"):
+    for char_id, name, p in get_char_pages("/gallery", lang=lang):
         emote_list = items[name]
         gallery = ['<gallery mode="packed">']
         for emote in emote_list:
@@ -58,7 +58,13 @@ def generate_emotes():
         parsed = wtp.parse(p.text)
         for section in parsed.sections:
             if section.title is not None and section.title.strip() == "Emotes":
-                section.contents = "\n".join(gallery) + "\n\n"
+                string = "\n".join(gallery) + "\n\n"
+                gallery_tags = section.get_tags('gallery')
+                if len(gallery_tags) > 0:
+                    assert len(gallery_tags) == 1
+                    gallery_tags[0].string = string
+                else:
+                    section.contents = string
                 break
         else:
             continue
@@ -76,9 +82,22 @@ class SkinInfo:
     name_cn: str
     description_cn: str
     name_en: str = ""
-    description_en: str = ""
+    name_local: str = ""
+    description_local: str = ""
     portrait: str = ""
     back: str = ""
+
+    def get_bwiki_screenshot_front_title(self, char_name: str):
+        return f"File:{char_name}时装-{self.name_cn}.png"
+
+    def get_mh_screenshot_front_title(self, char_name: str):
+        return f"File:{char_name} Skin {self.name_cn}.png"
+
+    def get_mh_screenshot_back_title(self, char_name: str):
+        return f"File:{char_name} Skin Back {self.name_cn}.png"
+
+    def get_mh_portrait_title(self, char_name: str):
+        return f"File:{char_name} Skin Portrait {self.name_cn}.png"
 
 
 def parse_skin_tables() -> dict[str, list[SkinInfo]]:
@@ -137,8 +156,8 @@ def upload_skins(char_name: str, skin_list: list[SkinInfo]) -> list[SkinInfo]:
         skin: SkinInfo
 
     name_zh = en_name_to_zh[char_name]
-    skins = [Skin(FilePage(bwiki(), f"File:{name_zh}时装-{skin.name_cn}.png"),
-                  FilePage(s, f"File:{char_name} Skin {skin.name_en}.png"),
+    skins = [Skin(FilePage(bwiki(), skin.get_bwiki_screenshot_front_title(name_zh)),
+                  FilePage(s, skin.get_mh_screenshot_front_title(char_name)),
                   skin)
              for skin in skin_list]
 
@@ -169,9 +188,9 @@ def upload_skins(char_name: str, skin_list: list[SkinInfo]) -> list[SkinInfo]:
     return skin_list
 
 
-def process_portraits(char_name, name_zh, skin_list: list[SkinInfo]):
+def process_portraits(char_name: str, name_zh: str, skin_list: list[SkinInfo]):
     # process portraits
-    targets = [FilePage(s, f"File:{char_name} Skin Portrait {skin.name_en}.png") for skin in skin_list]
+    targets = [FilePage(s, skin.get_mh_portrait_title(char_name)) for skin in skin_list]
     existing_targets = set(p.title()
                            for p in PreloadingGenerator(targets)
                            if p.exists())
@@ -192,12 +211,12 @@ def process_portraits(char_name, name_zh, skin_list: list[SkinInfo]):
                         target=target,
                         summary="upload portrait file",
                         file=source)
-        skin.portrait = skin.name_en
+        skin.portrait = skin.name_cn
 
 
-def process_back_images(char_name, name_zh, skin_list: list[SkinInfo]):
+def process_back_images(char_name: str, name_zh: str, skin_list: list[SkinInfo]):
     # process portraits
-    targets = [FilePage(s, f"File:{char_name} Skin Back {skin.name_en}.png") for skin in skin_list]
+    targets = [FilePage(s, skin.get_mh_screenshot_back_title(char_name)) for skin in skin_list]
     existing_targets = set(p.title()
                            for p in PreloadingGenerator(targets)
                            if p.exists())
@@ -214,32 +233,39 @@ def process_back_images(char_name, name_zh, skin_list: list[SkinInfo]):
                         target=target,
                         summary="upload skin screenshot",
                         file=source)
-        skin.back = skin.name_en
+        skin.back = skin.name_cn
 
 
 def localize_skins(skin_list: list[SkinInfo]):
     lang = get_language()
-    i18n_skin = get_game_json(lang)['RoleSkin']
-    i18n_store = get_game_json(lang)['Goods']
+    i18n_local = get_game_json(lang)['RoleSkin'] | get_game_json(lang)['Goods']
+    i18n_en = get_game_json(ENGLISH)['RoleSkin'] | get_game_json(ENGLISH)['Goods']
     for skin in skin_list:
-        descriptions = []
-        name_en = None
-        for skin_id in skin.id:
-            k1 = f'{skin_id}_NameCn'
-            k2 = f'{skin_id}_Name'
-            if k1 in i18n_skin:
-                name_en = i18n_skin[k1]
-                description = i18n_skin[f'{skin_id}_Description']
-                descriptions.append(description)
-            if k2 in i18n_store:
-                name_en = i18n_store[k2]
-                description = i18n_store.get(f'{skin_id}_Desc', "")
-                descriptions.append(description)
-        if name_en is None:
-            name_en = skin.name_cn
-            descriptions = [skin.description_cn]
+        # get en name and local name
+        names = []
+        for i18n in [i18n_en, i18n_local]:
+            # reset description so that en descriptions will be discarded
+            descriptions = []
+            name = None
+            for skin_id in skin.id:
+                k1 = f'{skin_id}_NameCn'
+                k2 = f'{skin_id}_Name'
+                if k1 in i18n:
+                    name = i18n[k1]
+                    description = i18n[f'{skin_id}_Description']
+                    descriptions.append(description)
+                if k2 in i18n:
+                    name = i18n[k2]
+                    description = i18n.get(f'{skin_id}_Desc', "")
+                    descriptions.append(description)
+            if name is None:
+                name = skin.name_cn
+                descriptions.append(skin.description_cn)
+            names.append(name)
+        name_en, name_local = names
         skin.name_en = name_en
-        skin.description_en = reduce(lambda x, y: x if len(x) > len(y) else y, descriptions, "")
+        skin.name_local = name_local
+        skin.description_local = reduce(lambda x, y: x if len(x) > len(y) else y, descriptions, "")
 
 
 def make_skin_template(t: wtp.Template, char_name: str, skin_list: list[SkinInfo]) -> None:
@@ -255,13 +281,14 @@ def make_skin_template(t: wtp.Template, char_name: str, skin_list: list[SkinInfo
         t.set_arg(name, value + "\n", after=after)
 
     for skin in skin_list:
-        name_en = skin.name_en
-        description = skin.description_en
-        add_arg(f"Name{skin_counter}", name_en)
+        name_local = skin.name_local
+        description = skin.description_local
+        add_arg(f"Name{skin_counter}", name_local)
         add_arg(f"Quality{skin_counter}", str(skin.quality))
         add_arg(f"Description{skin_counter}", description)
         add_arg(f"Back{skin_counter}", skin.back, after=f"Description{skin_counter}")
         add_arg(f"Portrait{skin_counter}", skin.portrait, after=f"Description{skin_counter}")
+        add_arg(f"CNName{skin_counter}", skin.name_cn, after=f"Description{skin_counter}")
         skin_counter += 1
 
 
@@ -287,6 +314,7 @@ def generate_skins():
             print("Template CharacterSkins not found on " + char_name)
             continue
 
+        t.string = "{{CharacterSkins\n}}"
         make_skin_template(t, char_name, skin_list)
 
         if p.text.strip() == str(parsed).strip():

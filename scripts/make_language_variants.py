@@ -37,7 +37,7 @@ def make_char_pages():
                 if localized_name is not None and localized_name.strip() != "":
                     redirect = Page(s, localized_name)
                     if not redirect.exists():
-                        redirect.set_redirect_target(p, create=True)
+                        redirect.set_redirect_target(p, create=True, summary=f"redirect {lang.code} title")
 
 
 def make_interlanguage_links():
@@ -48,7 +48,7 @@ def make_interlanguage_links():
         neighbors: list["LangPage"]
 
     gen = GeneratorFactory(s)
-    gen.handle_args(['-cat:Characters'])
+    gen.handle_args(['-cat:Characters', '-cat:Character galleries'])
     gen = gen.getCombinedGenerator()
     pages: dict[str, LangPage] = dict((p.title(), LangPage(p, title_to_lang(p.title()), [])) for p in gen)
     gen = PropertyGenerator(site=s, prop="langlinks", titles="|".join(p.page.title() for p in pages.values()))

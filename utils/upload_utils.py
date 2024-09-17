@@ -81,8 +81,9 @@ def upload_file(text: str, target: FilePage, summary: str = "batch upload file",
             if "http-timed-out" in str(e):
                 continue
             if "was-deleted" in str(e):
-                force = True
-                continue
+                # force = True
+                # continue
+                return
             assert search is not None, str(e)
             target.set_redirect_target(FilePage(s, f"File:{search.group(1)}"), create=True)
             return

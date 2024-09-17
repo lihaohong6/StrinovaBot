@@ -5,6 +5,7 @@ from enum import Enum
 @dataclass
 class Language:
     code: str
+    name: str
 
     @property
     def page_suffix(self):
@@ -24,10 +25,10 @@ class Language:
 
 
 class LanguageVariants(Enum):
-    ENGLISH = Language('en')
-    JAPANESE = Language('ja')
-    KOREAN = Language('ko')
-    SIMPLIFIED_CHINESE = Language('zh-Hans')
+    ENGLISH = Language('en', 'English')
+    JAPANESE = Language('ja', 'Japanese')
+    KOREAN = Language('ko', 'Korean')
+    SIMPLIFIED_CHINESE = Language('zh-Hans', 'Simplified Chinese')
 
 
 ENGLISH: Language = LanguageVariants.ENGLISH.value
