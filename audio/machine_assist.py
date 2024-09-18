@@ -4,7 +4,7 @@ from time import sleep
 
 import cohere
 
-from audio.audio_utils import get_json_path
+from audio_utils import get_json_path
 from global_config import name_to_en
 from page_generator.weapons import get_weapons_by_type
 from utils.asset_utils import wav_root_cn
@@ -35,14 +35,14 @@ def postprocess_chinese(t: str) -> str:
 
 
 def transcribe():
-    import whisper
-    model = whisper.load_model(name="large-v3", device="cuda", download_root="models")
     char_name = input("Char name?").strip()
     json_path = get_json_path(char_name)
     assert json_path.exists()
     voices = load_json(json_path)
     prompt = ",".join(list(general_prompts.keys()) + list(char_prompts[char_name].keys()))
     print(f"Prompt: {prompt}")
+    import whisper
+    model = whisper.load_model(name="large-v3", device="cuda", download_root="models")
     for voice_id, voice in voices.items():
         if voice['text_cn'] != '':
             continue
@@ -64,6 +64,7 @@ def translate():
     voices = load_json(json_path)
     preamble = ("Translate from Chinese to English. " +
                 " ".join(f"{k} is {v}." for k, v in (general_prompts | weapon_prompts | char_prompts[char_name]).items()))
+    print("Preamble:", preamble)
     index = 0
     for v in voices.values():
         if v['text_en'].strip() != '':
@@ -90,3 +91,6 @@ def translate():
                 json.dump(voices, f, ensure_ascii=False, indent=4)
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(voices, f, ensure_ascii=False, indent=4)
+
+
+transcribe()

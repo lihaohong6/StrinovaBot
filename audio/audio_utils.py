@@ -5,7 +5,7 @@ from typing import Any
 from pywikibot import FilePage
 from pywikibot.pagegenerators import GeneratorFactory
 
-from audio.audio_parser import Voice
+from audio_parser import Voice
 from utils.asset_utils import audio_root
 from utils.json_utils import load_json
 

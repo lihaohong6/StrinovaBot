@@ -10,12 +10,12 @@ import wikitextparser as wtp
 from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
-from audio.audio_parser import VoiceUpgrade, Voice, Trigger, in_game_triggers, in_game_triggers_upgrade, role_voice, \
+from audio_parser import VoiceUpgrade, Voice, Trigger, in_game_triggers, in_game_triggers_upgrade, role_voice, \
     match_custom_triggers
-from audio.audio_utils import pick_string, VoiceJson, get_json_path
-from audio.character_page import make_character_audio_page
-from audio.data.conversion_table import voice_conversion_table
-from audio.machine_assist import transcribe, translate
+from audio_utils import pick_string, VoiceJson, get_json_path
+from character_page import make_character_audio_page
+from data.conversion_table import voice_conversion_table
+from machine_assist import transcribe, translate
 from global_config import char_id_mapper, internal_names
 from utils.asset_utils import audio_root, wav_root_cn
 from utils.general_utils import get_bwiki_char_pages
