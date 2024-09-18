@@ -9,6 +9,7 @@ from global_config import char_id_mapper
 from utils.asset_utils import csv_root
 from utils.general_utils import make_tab_group
 from utils.json_utils import load_json, get_game_json, get_game_json_cn
+from utils.lang import Language, get_language
 from utils.wiki_utils import s
 
 group_counter = 1
@@ -71,18 +72,18 @@ def find_convergence_point(conversations: dict[str, Node], start: Node) -> str |
     return None
 
 
-def get_i18n():
-    en = get_game_json()[""]
+def get_i18n(lang: Language) -> dict[str, str]:
+    local = get_game_json(lang)[""]
     zh = get_game_json_cn()[""]
     result = dict()
     for k, v in zh.items():
-        if k in en:
-            result[v] = en[k]
+        if k in local:
+            result[v] = local[k]
     return result
 
 
-def process_file(p: Path) -> str:
-    i18n = get_i18n()
+def process_file(p: Path, lang: Language) -> str:
+    i18n = get_i18n(lang)
     obj = load_json(p)['Rows']
 
     result = ["{{StrinovaComms"]
@@ -189,6 +190,7 @@ def process_file(p: Path) -> str:
 
 def main():
     # TODO: KaChatOption.json has character favorability boosts
+    lang = get_language()
     ka_phone_root = csv_root.joinpath("KaPhone")
     name_mapper = {
         'Huixing': 'Celestia'
@@ -216,7 +218,7 @@ def main():
                 tab = ("Player birthday " + last_segment, 20 + int(last_segment))
             elif name.lower().startswith("birthday"):
                 tab = (f"{conversation_name} birthday " + last_segment, 10 + int(last_segment))
-            processed = process_file(file)
+            processed = process_file(file, lang)
             if processed != "":
                 x.append((tab[0], processed, tab[1]))
         group_string = f" group=strinova_comms_{make_tab_group(conversation_name)} | "
@@ -226,7 +228,7 @@ def main():
                  "{{Tab/content| " + group_string + "\n\n" + "\n\n|\n\n".join(contents) + "\n\n}}" + \
                  "<noinclude>[[Category:Strinova Comms]]</noinclude>"
 
-        p = Page(s, conversation_name + "/Strinova Comms")
+        p = Page(s, conversation_name + "/Strinova Comms" + lang.page_suffix)
         if p.text.strip() != result:
             p.text = result
             p.save(summary="generate strinova comms")

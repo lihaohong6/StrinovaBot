@@ -95,4 +95,5 @@ def make_interlanguage_links():
                 p.page.save("update ILL")
 
 
-make_interlanguage_links()
+if __name__ == "__main__":
+    make_interlanguage_links()
