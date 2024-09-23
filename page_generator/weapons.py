@@ -10,7 +10,7 @@ from wikitextparser import Template
 from global_config import char_id_mapper
 from utils.general_utils import get_table, get_default_weapon_id
 from utils.json_utils import get_game_json, get_game_json_cn
-from utils.upload_utils import upload_file, upload_item_icons
+from utils.upload_utils import upload_file, upload_item_icons, UploadRequest, process_uploads
 from utils.wiki_utils import bwiki, s
 
 
@@ -35,10 +35,10 @@ class Weapon:
         return f"瞄准镜样式 {self.parent.name_cn}{self.name_cn}.png".replace(" ", "_")
 
     def get_variant_screenshot_name(self):
-        return f"{self.parent.name_en} {self.name_en} screenshot.png".replace(" ", "_")
+        return f"{self.parent.name_cn} {self.name_cn} screenshot.png".replace(" ", "_")
 
     def get_variant_scope_name(self):
-        return f"{self.parent.name_en} {self.name_en} scope.png".replace(" ", "_")
+        return f"{self.parent.name_cn} {self.name_cn} scope.png".replace(" ", "_")
 
     def get_icon_name(self):
         return f"Item Icon {self.id}.png"
@@ -191,28 +191,38 @@ def process_weapon_pages(*args):
 def upload_weapon_variants(weapons: list[Weapon]) -> list[Weapon]:
     failed_uploads = upload_item_icons([w.id for w in weapons], text="[[Category:Weapon icons]]", big=True)
     weapons = [w for w in weapons if w.id not in failed_uploads]
+    bwiki_pages: list[FilePage] = [FilePage(bwiki(), f"File:{w.get_variant_bwiki_screenshot_name()}")
+                                   for w in weapons] + \
+                                  [FilePage(bwiki(), f"File:{w.get_variant_bwiki_scope_name()}")
+                                   for w in weapons]
+    existing: dict[str, FilePage] = dict((p.title(with_ns=False, underscore=True), p)
+                                         for p in PreloadingGenerator(bwiki_pages) if p.exists())
+    upload_requests: list[UploadRequest] = []
+    for w in weapons:
+        # ss_name = w.get_variant_bwiki_screenshot_name()
+        # if ss_name in existing:
+        #     fp = FilePage(s, "File:" + w.get_variant_screenshot_name())
+        #     w.file_screenshot = fp
+        #     bwiki_page = existing[ss_name]
+        #     upload_requests.append(UploadRequest(
+        #         bwiki_page,
+        #         fp,
+        #         f"Image sourced from bwiki under CC BY-NC-SA 4.0. Link: {bwiki_page.title(as_link=True)}\n\n"
+        #         f"[[Category:Weapon screenshots]]"
+        #     ))
+        scope_name = w.get_variant_bwiki_scope_name()
+        if scope_name in existing:
+            fp = FilePage(s, "File:" + w.get_variant_scope_name())
+            w.file_scope = fp
+            bwiki_page = existing[scope_name]
+            upload_requests.append(UploadRequest(
+                bwiki_page,
+                fp,
+                f"Image sourced from bwiki under CC BY-NC-SA 4.0. Link: {bwiki_page.title(as_link=True)}\n\n"
+                f"[[Category:Weapon scopes]]"
+            ))
+    process_uploads(upload_requests)
     return weapons
-    # bwiki_pages: list[FilePage] = [FilePage(bwiki(), f"File:{w.get_variant_bwiki_screenshot_name()}")
-    #                                for w in weapons] + \
-    #                               [FilePage(bwiki(), f"File:{w.get_variant_bwiki_scope_name()}")
-    #                                for w in weapons]
-    # existing: dict[str, FilePage] = dict((p.title(with_ns=False, underscore=True), p)
-    #                                      for p in PreloadingGenerator(bwiki_pages) if p.exists())
-    # upload_requests: list[UploadRequest] = []
-    # for w in weapons:
-    #     if w.get_variant_bwiki_screenshot_name() in existing:
-    #         fp = FilePage(s, "File:" + w.get_variant_screenshot_name())
-    #         w.file_screenshot = fp
-    #         if not fp.exists():
-    #             url = existing[w.get_variant_bwiki_screenshot_name()].get_file_url()
-    #             upload_file(f"Image sourced from bwiki under CC BY-NC-SA 4.0.\n\n[[Category:Weapon screenshots]]", fp, url=url)
-    #     if w.get_variant_bwiki_scope_name() in existing:
-    #         fp = FilePage(s, "File:" + w.get_variant_scope_name())
-    #         w.file_scope = fp
-    #         if not fp.exists():
-    #             url = existing[w.get_variant_bwiki_scope_name()].get_file_url()
-    #             upload_file(f"Image sourced from bwiki under CC BY-NC-SA 4.0.\n\n[[Category:Weapon scopes]]", fp, url=url)
-    # process_uploads(upload_requests)
 
 
 def process_weapon_skins(*args):

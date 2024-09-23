@@ -2,7 +2,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from pywikibot import FilePage
+from pywikibot import FilePage, Page
 from pywikibot.pagegenerators import PreloadingGenerator
 from pywikibot.site._upload import Uploader
 
@@ -85,7 +85,9 @@ def upload_file(text: str, target: FilePage, summary: str = "batch upload file",
                 # continue
                 return
             assert search is not None, str(e)
-            target.set_redirect_target(FilePage(s, f"File:{search.group(1)}"), create=True)
+            FilePage(s, f"File:{search.group(1)}").move(
+                target.title(with_ns=True, underscore=True),
+                reason="rename file")
             return
 
 
@@ -113,7 +115,7 @@ def upload_weapon(char_name: str, weapon_id: int) -> bool:
 
 @dataclass
 class UploadRequest:
-    source: Path | str
+    source: Path | str | FilePage
     target: FilePage
     text: str
     comment: str = "batch upload file"
@@ -126,6 +128,8 @@ def process_uploads(requests: list[UploadRequest]) -> None:
             continue
         if isinstance(r.source, str):
             upload_file(r.text, r.target, r.comment, url=r.source)
-        else:
+        elif isinstance(r.source, FilePage):
+            upload_file(r.text, r.target, r.comment, url=r.source.get_file_url())
+        elif isinstance(r.source, Path):
             assert r.source.exists()
             upload_file(r.text, r.target, r.comment, file=r.source)

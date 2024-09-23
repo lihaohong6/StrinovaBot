@@ -34,6 +34,8 @@ class LanguageVariants(Enum):
 ENGLISH: Language = LanguageVariants.ENGLISH.value
 CHINESE: Language = LanguageVariants.SIMPLIFIED_CHINESE.value
 
+available_variants = [ENGLISH, LanguageVariants.JAPANESE.value, LanguageVariants.KOREAN.value]
+
 current_language: Language = LanguageVariants.JAPANESE.value
 
 
