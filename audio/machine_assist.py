@@ -93,4 +93,5 @@ def translate():
         json.dump(voices, f, ensure_ascii=False, indent=4)
 
 
-transcribe()
+if __name__ == "__main__":
+    transcribe()

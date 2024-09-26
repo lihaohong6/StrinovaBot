@@ -36,7 +36,7 @@ CHINESE: Language = LanguageVariants.SIMPLIFIED_CHINESE.value
 
 available_variants = [ENGLISH, LanguageVariants.JAPANESE.value, LanguageVariants.KOREAN.value]
 
-current_language: Language = LanguageVariants.JAPANESE.value
+current_language: Language = LanguageVariants.ENGLISH.value
 
 
 def get_language() -> Language:

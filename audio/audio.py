@@ -1,5 +1,10 @@
-import json
+import sys
 import os
+
+SCRIPT_DIR = os.path.abspath(__file__)
+sys.path.append(os.path.dirname(SCRIPT_DIR))
+
+import json
 import re
 import subprocess
 from pathlib import Path
@@ -51,7 +56,7 @@ def make_character_json(triggers: list[Trigger], char_id: int):
 
     # TODO: do not simply overwrite json; merge instead
 
-    result: dict[int, [dict[str, Any]]] = {}
+    result: dict[int, dict[str, Any]] = {}
     attributes = ["path", "file_cn", "file_jp", "text_cn", "text_en", "text_jp"]
 
     for t in triggers:

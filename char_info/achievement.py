@@ -12,7 +12,7 @@ def generate_achievements():
         parsed = wtp.parse(p.text)
 
         for section in parsed.sections:
-            if section.title is not None and section.title.strip() in {"Achievements", "Traces"}:
+            if section.title is not None and any(s in section.title.strip() for s in ["Achievements", "Traces"]):
                 target_section = section
                 break
         else:

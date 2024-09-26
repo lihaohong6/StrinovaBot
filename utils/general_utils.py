@@ -24,7 +24,10 @@ def zh_name_to_en(o: str) -> str:
 
 en_name_to_zh: dict[str, str] = dict((v, k) for k, v in name_to_en.items())
 
-name_to_en = name_to_en | dict((k.split('·')[0], v) for k, v in name_to_en.items() if '·' in k)
+
+def cn_name_to_en(cn: str) -> str | None:
+    t = name_to_en | dict((k.split('·')[0], v) for k, v in name_to_en.items() if '·' in k)
+    return t.get(cn, None)
 
 
 def get_char_by_id(char_id: int) -> str:
