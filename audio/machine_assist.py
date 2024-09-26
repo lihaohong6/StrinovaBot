@@ -2,8 +2,6 @@ import json
 import re
 from time import sleep
 
-import cohere
-
 from audio_utils import get_json_path
 from global_config import name_to_en
 from page_generator.weapons import get_weapons_by_type
@@ -57,6 +55,7 @@ def transcribe():
 
 
 def translate():
+    import cohere
     co = cohere.Client(open("models/cohere.txt", "r").read())
     char_name = input("Char name?").strip()
     json_path = get_json_path(char_name)
