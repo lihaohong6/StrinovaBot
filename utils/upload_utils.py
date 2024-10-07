@@ -44,13 +44,17 @@ def upload_skill_demo():
 
 
 def upload_item_icons(items: list[int | str], text: str = "[[Category:Item icons]]",
-                      summary: str = "batch upload item icons", big: bool = False):
+                      summary: str = "batch upload item icons"):
     lst: list[UploadRequest] = []
     fails: set[int | str] = set()
     for item in items:
-        folder = "ItemIcon" if not big else "BigIcon"
-        file_name = "Item" if not big else "BigItem"
-        source = resource_root / f"Item/{folder}/T_Dynamic_{file_name}_{item}.png"
+        # try upload the big version if it exists, otherwise use small version
+        for big in [True, False]:
+            folder = "ItemIcon" if not big else "BigIcon"
+            file_name = "Item" if not big else "BigItem"
+            source = resource_root / f"Item/{folder}/T_Dynamic_{file_name}_{item}.png"
+            if source.exists():
+                break
         if not source.exists():
             print(f"{source} does not exist")
             fails.add(item)
@@ -85,6 +89,7 @@ def upload_file(text: str, target: FilePage, summary: str = "batch upload file",
                 # continue
                 return
             assert search is not None, str(e)
+            raise RuntimeError()
             FilePage(s, f"File:{search.group(1)}").move(
                 target.title(with_ns=True, underscore=True),
                 reason="rename file")
@@ -116,12 +121,15 @@ def upload_weapon(char_name: str, weapon_id: int) -> bool:
 @dataclass
 class UploadRequest:
     source: Path | str | FilePage
-    target: FilePage
+    target: FilePage | str
     text: str
     comment: str = "batch upload file"
 
 
 def process_uploads(requests: list[UploadRequest]) -> None:
+    for r in requests:
+        if isinstance(r.target, str):
+            r.target = FilePage(s, r.target)
     existing = set(p.title() for p in PreloadingGenerator((r.target for r in requests)) if p.exists())
     for r in requests:
         if r.target.title() in existing:

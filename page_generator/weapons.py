@@ -189,7 +189,7 @@ def process_weapon_pages(*args):
 
 
 def upload_weapon_variants(weapons: list[Weapon]) -> list[Weapon]:
-    failed_uploads = upload_item_icons([w.id for w in weapons], text="[[Category:Weapon icons]]", big=True)
+    failed_uploads = upload_item_icons([w.id for w in weapons], text="[[Category:Weapon icons]]")
     weapons = [w for w in weapons if w.id not in failed_uploads]
     bwiki_pages: list[FilePage] = [FilePage(bwiki(), f"File:{w.get_variant_bwiki_screenshot_name()}")
                                    for w in weapons] + \

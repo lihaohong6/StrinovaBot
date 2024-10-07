@@ -56,3 +56,21 @@ def redirect_pages(requests: list[RedirectRequest]):
         if p.exists():
             continue
         p.set_redirect_target(Page(s, f"{request.target}{request.lang.page_suffix}"), create=True, force=True)
+
+
+def get_multilanguage_dict(i18n: dict[str, dict], key: str | list[str], default: str = None) -> dict[str, str]:
+    result: dict[str, str] = {}
+    if isinstance(key, str):
+        key = [key]
+    for lang, v in i18n.items():
+        cur = v
+        for k in key:
+            if cur is None:
+                break
+            cur = cur.get(k, None)
+        if cur is not None:
+            assert isinstance(cur, str)
+            result[lang] = cur
+        elif default is not None:
+            result[lang] = default
+    return result

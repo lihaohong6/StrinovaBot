@@ -1,17 +1,20 @@
-import dataclasses
-import json
 import re
 from dataclasses import dataclass, field
 
 import wikitextparser as wtp
-from pywikibot import Page
+from pywikibot import Page, FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from global_config import characters_with_dorms
-from utils.general_utils import get_table, get_char_by_id, make_tab_group, get_char_pages
-from utils.json_utils import get_game_json
-from utils.lang import LanguageVariants, get_language
-from utils.upload_utils import upload_item_icons
+from page_generator.badges import get_all_badges, Badge
+from page_generator.decal import get_all_decals, Decal
+from page_generator.items import get_all_items, Item
+from utils.asset_utils import resource_root
+from utils.general_utils import get_table, get_char_by_id, make_tab_group, get_char_pages, save_json_page
+from utils.json_utils import get_game_json, get_all_game_json
+from utils.lang import LanguageVariants, get_language, CHINESE
+from utils.lang_utils import get_multilanguage_dict
+from utils.upload_utils import upload_item_icons, UploadRequest, process_uploads
 from utils.wiki_utils import s
 
 
@@ -47,6 +50,7 @@ def generate_gifts():
     gift_dict: dict[int, Gift] = get_gifts()
     item_table = get_table("Item")
     gifts = list(gift_dict.values())
+    i18n = get_all_game_json("Item")
     for gift in gifts:
         g = item_table[gift.id]
         gift.file = re.search(r"_(\d+)$", g['IconItem']['AssetPathName']).group(1)
@@ -80,18 +84,8 @@ def generate_gifts():
     # for g in gifts.values():
     #     g.quality = quality_table[int(g.quality)]
 
-    class EnhancedJSONEncoder(json.JSONEncoder):
-        def default(self, o):
-            if dataclasses.is_dataclass(o):
-                return dataclasses.asdict(o)
-            return super().default(o)
-
     p = Page(s, "Module:CharacterGifts/data2.json")
-    text = json.dumps(gifts, cls=EnhancedJSONEncoder)
-    if p.text.strip() == text:
-        return
-    p.text = text
-    p.save(summary="update gift data")
+    save_json_page(p, gifts)
 
     for lang in LanguageVariants:
         all_recipients = PreloadingGenerator(Page(s, char + lang.value.page_suffix) for char in characters_with_dorms)
@@ -169,6 +163,63 @@ def generate_bond_items():
             p.save("generate bond items")
 
 
+def generate_friendship_gifts():
+    @dataclass
+    class FriendshipReward:
+        name: dict[str, str]
+        quality: int
+        quantity: int
+        image: str
+    table = get_table("RoleFavorabilityEvent")
+    friendship_gifts: dict[int, dict[int, list[FriendshipReward]]] = {}
+    items = get_all_items()
+    badges = get_all_badges()
+    decals = get_all_decals()
+    upload_requests: list[UploadRequest] = []
+    i18n = get_all_game_json("RoleFavorabilityEvent")
+    for v in table.values():
+        role_id = v['RoleId']
+        level = v['FavoLevel']
+        if role_id not in friendship_gifts:
+            friendship_gifts[role_id] = {}
+        if level not in friendship_gifts[role_id]:
+            friendship_gifts[role_id][level] = []
+        emoticon_path = v["EmoticonsPicture"].get("AssetPathName", None)
+        reward: FriendshipReward
+        if emoticon_path is None or emoticon_path == "None":
+            prizes = v['FavoPrize']
+            assert len(prizes) == 1
+            prize: dict = prizes[0]
+            item_id = prize['ItemId']
+            item_amount = prize['ItemAmount']
+            item: Item | Badge | Decal
+            if item_id in items:
+                item = items[item_id]
+            elif item_id in badges:
+                item = badges[item_id]
+            elif item_id in decals:
+                item = decals[item_id]
+            else:
+                raise RuntimeError(f"Item {item_id} not found")
+            reward = FriendshipReward(item.name, item.quality, item_amount, item.file)
+        else:
+            source_name = emoticon_path.split(".")[-1]
+            source = resource_root / "Emote" / "ApartmentEmotePack" / (source_name + ".png")
+            file_name = f"File:Emoticon pack {source_name.split('_')[-1]}"
+            upload_requests.append(UploadRequest(source, FilePage(s, file_name), '[[Category:Emoticon pack icons]]'))
+
+            emoticon_dict = v['FavoPrizeName']
+            reward = FriendshipReward({}, 1, 1, file_name)
+            reward.name = get_multilanguage_dict(i18n, emoticon_dict['Key'])
+            reward.name[CHINESE.code] = emoticon_dict['SourceString']
+        friendship_gifts[role_id][level].append(reward)
+
+    process_uploads(upload_requests)
+    p = Page(s, "Module:FriendshipReward/data.json")
+    save_json_page(p, friendship_gifts)
+
+
 if __name__ == "__main__":
     generate_gifts()
     generate_bond_items()
+    # generate_friendship_gifts()

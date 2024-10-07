@@ -1,3 +1,5 @@
+import dataclasses
+import json
 import re
 from pathlib import Path
 
@@ -170,3 +172,20 @@ def get_bwiki_char_pages() -> list[tuple[int, str, Page]]:
            if t[0] == pages[index].title()]
     assert len(res) == len(char_id_mapper)
     return res
+
+
+def save_json_page(p: Page, obj, summary: str = "update json page"):
+    class EnhancedJSONEncoder(json.JSONEncoder):
+        def default(self, o):
+            if dataclasses.is_dataclass(o):
+                return dataclasses.asdict(o)
+            return super().default(o)
+
+    def dump(o):
+        return json.dumps(obj, indent=4, cls=EnhancedJSONEncoder)
+
+    original = dump(json.loads(p.text))
+    modified = dump(obj)
+    if original != modified:
+        p.text = modified
+        p.save(summary=summary)
