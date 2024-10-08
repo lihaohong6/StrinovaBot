@@ -15,15 +15,6 @@ from utils.lang import Language, ENGLISH
 from utils.wiki_utils import bwiki, s
 
 
-def zh_name_to_en(o: str) -> str:
-    if o in name_to_en:
-        return name_to_en[o]
-    first = o.split("·")[0]
-    if first in name_to_en:
-        return name_to_en[first]
-    return None
-
-
 en_name_to_zh: dict[str, str] = dict((v, k) for k, v in name_to_en.items())
 
 

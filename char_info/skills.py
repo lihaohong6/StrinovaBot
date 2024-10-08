@@ -86,18 +86,17 @@ Growth_Team
     :return:
     """
     lang = get_language()
-    i18n = get_game_json(lang)['Growth_Bomb']
+    i18n = get_game_json(lang)['ST_GrowthDefine']
     i18n_skill = get_game_json(lang)['Skill']
     role_json = get_table("Role")
     skill_json = get_table("Skill")
+    growth_json = get_table("Growth_Bomb")
     for char_id, char_name, p in get_char_pages(lang=lang):
         bwiki_base_page = Page(bwiki(), en_name_to_zh[char_name])
         if bwiki_base_page.isRedirectPage():
             bwiki_base_page = bwiki_base_page.getRedirectTarget()
         bwiki_page = Page(bwiki(), bwiki_base_page.title() + "/弦能增幅网络")
         assert bwiki_page.exists(), char_name
-        char_id = get_id_by_char(char_name)
-        assert char_id is not None
         weapon_name = get_weapon_name(get_default_weapon_id(char_id))
         parsed = wtp.parse(p.text)
         for template in parsed.templates:
@@ -110,6 +109,8 @@ Growth_Team
 
         part: wtp.Template | None = None
 
+        char_growth = growth_json[char_id]
+
         def add_arg(name, value):
             nonlocal part
             value = str(value)
@@ -117,18 +118,30 @@ Growth_Team
                 return
             part.set_arg(" " + name, value + " ")
 
+        def get_formatted_string(growth_dict) -> str:
+            if 'SourceFmt' in growth_dict:
+                formatted = i18n[growth_dict['SourceFmt']['Key']]
+                for arg in growth_dict['Arguments']:
+                    formatted = formatted.replace(f"{{{arg['Type']}}}", str(arg['Value']))
+            else:
+                formatted = i18n[growth_dict['Key']]
+            return formatted
+
         t.set_arg("char", char_name + "\n")
 
         arg_index = 1
         for part_index, part_num in enumerate([1, 2, 4, 5]):
             part = wtp.Template("{{StringEnergyNetwork/group}}")
             add_arg("type", 1)
-            add_arg("name", i18n[f"{char_id}_PartName_Index{part_index}"])
+
+            upgrade_name = i18n[char_growth['PartName'][part_index]['Key']]
+            add_arg("name", upgrade_name)
             add_arg("icon", re.search(rf"icon{part_index + 1}=(\d)+", bwiki_page.text).group(1))
-            add_arg("text1", i18n[f"{char_id}_Part{part_num}Desc_Index0"])
-            add_arg("cost1", 150)
-            add_arg("text2", i18n[f"{char_id}_Part{part_num}Desc_Index1"])
-            add_arg("cost2", 150)
+
+            descriptions = char_growth[f'Part{part_num}Desc']
+            for index, description in enumerate(descriptions, 1):
+                add_arg(f"text{index}", get_formatted_string(description))
+                add_arg(f"cost{index}", 150)
             t.set_arg(f"group{arg_index}", str(part) + "\n")
             arg_index += 1
 
@@ -136,19 +149,15 @@ Growth_Team
         localization_keys = ["QDesc", "PassiveDesc"]
         for skill_index in range(0, len(skills)):
             skill_id = skills[skill_index]
-            localization_key = localization_keys[skill_index]
             skill_info = skill_json[skill_id]
             part = wtp.Template("{{StringEnergyNetwork/group}}")
             add_arg("type", 2)
             add_arg("name", i18n_skill[f"{skill_id}_Name"])
             add_arg("icon", re.search(r"\d+$", skill_info['IconSkill']['AssetPathName']).group(0))
 
-            for index in range(0, 2):
-                text_key = f"{char_id}_{localization_key}_Index{index}"
-                if text_key not in i18n:
-                    break
-                text = i18n[text_key]
-                add_arg(f"text{index + 1}", text)
+            skill_growths = char_growth[localization_keys[skill_index]]
+            for index, skill_growth in enumerate(skill_growths):
+                add_arg(f"text{index + 1}", get_formatted_string(skill_growth))
                 add_arg(f"cost{index + 1}", 250)
             t.set_arg(f"group{arg_index}", str(part) + "\n")
             arg_index += 1
@@ -157,11 +166,12 @@ Growth_Team
         for i, part_index in enumerate([4, 5]):
             part = wtp.Template("{{StringEnergyNetwork/group}}")
             add_arg("type", 3)
-            add_arg("name", i18n[f"{char_id}_PartName_Index{part_index}"])
+            shield_name = i18n[char_growth['PartName'][part_index]['Key']]
+            add_arg("name", shield_name)
 
-            localization_key = localization_keys[i]
-            for index in range(0, 2):
-                add_arg(f"text{index + 1}", i18n[f"{char_id}_{localization_key}_Index{index}"])
+            shield_growths = char_growth[localization_keys[i]]
+            for index, shield_growth in enumerate(shield_growths):
+                add_arg(f"text{index + 1}", get_formatted_string(shield_growth))
                 add_arg(f"cost{index + 1}", 250)
             t.set_arg(f"group{arg_index}", str(part) + "\n")
             arg_index += 1
@@ -188,7 +198,7 @@ Growth_Team
 
 
 def main():
-    generate_skills()
+    # generate_skills()
     generate_string_energy_network()
 
 

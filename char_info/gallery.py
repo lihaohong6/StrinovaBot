@@ -6,8 +6,8 @@ from pywikibot import FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from utils.asset_utils import portrait_root, skin_back_root, local_asset_root, resource_root
-from utils.general_utils import get_table, zh_name_to_en, get_char_by_id, get_cn_wiki_skins, \
-    en_name_to_zh, get_char_pages
+from utils.general_utils import get_table, get_char_by_id, get_cn_wiki_skins, \
+    en_name_to_zh, get_char_pages, cn_name_to_en
 from utils.json_utils import get_game_json
 from utils.lang import get_language, ENGLISH
 from utils.upload_utils import upload_file, UploadRequest, process_uploads
@@ -30,7 +30,7 @@ def generate_emotes():
         if v['ItemType'] != 13:
             continue
         name_chs = v['Name']['SourceString'].split("-")[0]
-        name_en = zh_name_to_en(name_chs)
+        name_en = cn_name_to_en(name_chs)
         if name_en is None:
             print(f"{name_chs} has no EN name")
             continue
@@ -141,7 +141,7 @@ def parse_skin_tables() -> dict[str, list[SkinInfo]]:
         quality = v['Quality']
         if name_cn not in cn_skin_name_to_char_name:
             continue
-        char_name = zh_name_to_en(cn_skin_name_to_char_name[name_cn])
+        char_name = cn_name_to_en(cn_skin_name_to_char_name[name_cn])
         assert char_name is not None
         add_skin(char_name, skin_id, quality, name_cn, v['Desc']['SourceString'])
     return skins
@@ -257,8 +257,10 @@ def localize_skins(skin_list: list[SkinInfo]):
                     name = i18n[k2]
                     description = i18n.get(f'{skin_id}_Desc', "")
                     descriptions.append(description)
-            if name is None:
+            if name is None or name == '!NoTextFound!':
                 name = skin.name_cn
+            descriptions = [d for d in descriptions if d != '!NoTextFound!']
+            if len(descriptions) == 0:
                 descriptions.append(skin.description_cn)
             names.append(name)
         name_en, name_local = names
