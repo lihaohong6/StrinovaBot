@@ -31,8 +31,9 @@ class LanguageVariants(Enum):
     SIMPLIFIED_CHINESE = Language('zh-Hans', 'Simplified Chinese')
 
 
-CHINESE: Language = Language('zh', 'Chinese')
+CHINESE: Language = Language('cn', 'Chinese')
 ENGLISH: Language = LanguageVariants.ENGLISH.value
+JAPANESE: Language = LanguageVariants.JAPANESE.value
 
 available_variants = [ENGLISH, LanguageVariants.JAPANESE.value, LanguageVariants.KOREAN.value]
 

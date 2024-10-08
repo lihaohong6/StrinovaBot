@@ -3,10 +3,14 @@ from dataclasses import dataclass, fields, field
 from enum import Enum
 from pathlib import Path
 
-from data.conversion_table import VoiceType, voice_conversion_table
+from pyreadline3.release import description
+
+from data.conversion_table import VoiceType, voice_conversion_table, table_languages
 from utils.asset_utils import audio_event_root, audio_root, wav_root_cn, wav_root_jp
 from utils.general_utils import get_table
-from utils.json_utils import load_json, get_game_json
+from utils.json_utils import load_json, get_game_json, get_all_game_json
+from utils.lang import CHINESE, ENGLISH, JAPANESE
+from utils.lang_utils import get_multilanguage_dict
 
 
 class VoiceUpgrade(Enum):
@@ -20,20 +24,16 @@ class Voice:
     id: list[int]
     role_id: int = -1
     quality: int = -1
-    title_cn: str = ""
-    title_en: str = ""
-    text_cn: str = ""
-    text_en: str = ""
-    text_jp: str = ""
+    title: dict[str, str] = field(default_factory=dict)
+    transcription: dict[str, str] = field(default_factory=dict)
+    translation: dict[str, dict[str, str]] = field(default_factory=dict)
     path: str = ""
-    file_cn: str = ""
-    file_jp: str = ""
-    file_page_cn: str = ""
-    file_page_jp: str = ""
+    file: dict[str, str] = field(default_factory=dict)
+    file_page: dict[str, str] = field(default_factory=dict)
     upgrade: VoiceUpgrade = VoiceUpgrade.REGULAR
 
     def merge(self, o: "Voice"):
-        assert self.file_cn == o.file_cn and self.path == o.path
+        assert self.file[CHINESE.code] == o.file[CHINESE.code] and self.path == o.path
         assert len(o.id) == 1
         self.id.append(o.id[0])
         for f in fields(self):
@@ -45,19 +45,31 @@ class Voice:
                 if a1 == "":
                     setattr(self, f.name, a2)
                 raise RuntimeError(str(self) + "\n" + str(o))
+            elif f.type == dict:
+                raise RuntimeError("TODO: dict merge unimplemented")
         if self.role_id != o.role_id:
             if self.role_id == 999:
                 self.role_id = o.role_id
+
+    @property
+    def text_cn(self):
+        raise Exception("Do not use this legacy attribute")
+
+    @property
+    def text_en(self):
+        raise Exception("Do not use this legacy attribute")
+
+    @property
+    def text_jp(self):
+        raise Exception("Do not use this legacy attribute")
 
 
 @dataclass
 class Trigger:
     id: int
     type: VoiceType
-    name_cn: str = ""
-    name_en: str = ""
-    description_cn: str = ""
-    description_en: str = ""
+    name: dict[str, str] = field(default_factory=dict)
+    description: dict[str, str] = field(default_factory=dict)
     voice_id: list[int] = field(default_factory=list)
     # 0: applicable for all
     # otherwise: applicable to a single character
@@ -76,6 +88,8 @@ class Trigger:
                 if a1 == "":
                     setattr(self, f.name, a2)
                 raise RuntimeError(str(self) + "\n" + str(o))
+            elif f.type == dict:
+                raise RuntimeError("TODO: dict merge unimplemented")
         if self.role_id != o.role_id:
             if self.role_id == 999:
                 self.role_id = o.role_id
@@ -151,31 +165,27 @@ def map_bank_name_to_files(p: Path) -> dict[str, list[Path]]:
     return table
 
 
-def get_text(i18n, v):
+def get_text(i18n: dict[str, dict], v) -> tuple[dict[str, str], dict[str, str]]:
     name_obj = v['VoiceName']
     key = name_obj.get("Key", None)
-    if key is not None:
-        name_cn = name_obj["SourceString"]
-    else:
-        name_cn = ""
-    name_en = i18n.get(key, "")
+    title: dict[str, str] = {
+        CHINESE.code: "" if key is None else name_obj["SourceString"]
+    } | get_multilanguage_dict(i18n, key, "")
+
     content_obj = v['Content']
     key = content_obj.get("Key", None)
-    if key is not None:
-        content_cn = content_obj["SourceString"]
-    else:
-        content_cn = ""
-    content_en = i18n.get(key, "")
-    return content_cn, content_en, name_cn, name_en
+    content = {
+        CHINESE.code: "" if key is None else content_obj["SourceString"]
+    } | get_multilanguage_dict(i18n, key, "")
+    return title, content
 
 
 def in_game_triggers() -> list[Trigger]:
-    i18n = get_game_json()['InGameVoiceTrigger']
+    i18n = get_all_game_json('InGameVoiceTrigger')
     table = get_table("InGameVoiceTrigger")
     result: list[Trigger] = []
     for k, v in table.items():
-        description_cn = v['Desc']['SourceString']
-        description_en = i18n.get(v['Desc']['Key'], "")
+        description = {CHINESE.code: v['Desc']['SourceString']} | get_multilanguage_dict(i18n, v['Desc']['Key'], "")
         role_id: int = v['RoleId']
         voice_id: list[int] = [v['VoiceId']]
         if "RandomVoiceIds" in v:
@@ -184,7 +194,7 @@ def in_game_triggers() -> list[Trigger]:
                 assert v['IsRandom']
                 voice_id = lst
         result.append(
-            Trigger(k, description_cn=description_cn, description_en=description_en, voice_id=voice_id, role_id=role_id,
+            Trigger(k, description=description, voice_id=voice_id, role_id=role_id,
                     type=VoiceType.BATTLE))
     return result
 
@@ -204,13 +214,13 @@ def role_voice() -> dict[int, Voice]:
     table_cn, table_jp = parse_banks_xml()
     bank_name_to_files_cn = map_bank_name_to_files(wav_root_cn)
     bank_name_to_files_jp = map_bank_name_to_files(wav_root_jp)
-    i18n = get_game_json()['RoleVoice']
+    i18n = get_all_game_json('RoleVoice')
     voice_table = get_table("RoleVoice")
     path_to_voice: dict[str, Voice] = {}
 
     voices = {}
     for k, v in voice_table.items():
-        content_cn, content_en, name_cn, name_en = get_text(i18n, v)
+        title, transcription = get_text(i18n, v)
 
         path = v["AkEvent"]["AssetPathName"].split(".")[-1]
         file_cn = find_audio_file(path, table_cn, bank_name_to_files_cn)
@@ -227,13 +237,11 @@ def role_voice() -> dict[int, Voice]:
         voice = Voice(id=[k],
                       role_id=v['RoleId'],
                       quality=v['Quality'],
-                      title_cn=name_cn.strip(),
-                      title_en=name_en.strip(),
-                      text_cn=content_cn.strip(),
-                      text_en=content_en.strip(),
+                      title=title,
+                      transcription=transcription,
                       path=path.strip(),
-                      file_cn=file_cn.strip(),
-                      file_jp=file_jp.strip(),
+                      file={CHINESE.code: file_cn.strip(),
+                             JAPANESE.code: file_jp.strip()},
                       upgrade=upgrade)
         if path in path_to_voice:
             path_to_voice[path].merge(voice)
@@ -247,20 +255,19 @@ def role_voice() -> dict[int, Voice]:
 def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
     triggers: dict[str, Trigger] = {}
 
-    def make_trigger(key, name_cn, name_en, type: VoiceType):
+    def make_trigger(key, names: dict[str, str], type: VoiceType):
         triggers[key] = Trigger(
             id=int(key),
-            name_cn=name_cn,
-            name_en=name_en,
-            description_cn=name_cn,
-            description_en=name_en,
+            name=names,
+            description=names,
             role_id=0,
             type=type,
         )
 
     for voice_type, table in voice_conversion_table.items():
         for key, names in table.items():
-            make_trigger(key, names[0], names[1], voice_type)
+            names_dict = dict(zip(table_languages, names))
+            make_trigger(key, names_dict, voice_type)
 
     voice_found: set[tuple] = set()
 

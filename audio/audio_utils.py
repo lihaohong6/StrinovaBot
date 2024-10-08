@@ -8,6 +8,7 @@ from pywikibot.pagegenerators import GeneratorFactory
 from audio_parser import Voice
 from utils.asset_utils import audio_root
 from utils.json_utils import load_json
+from utils.lang import CHINESE
 
 from utils.upload_utils import upload_file
 from utils.wiki_utils import s
@@ -51,7 +52,7 @@ def upload_audio(source: Path, target: FilePage, text: str):
 
 def upload_audio_file(voices: list[Voice], char_name: str):
     for v in voices:
-        path_cn = audio_root.joinpath("Chinese").joinpath(f"{v.file_cn}")
+        path_cn = audio_root.joinpath("Chinese").joinpath(f"{v.file[CHINESE.code]}")
         assert path_cn.exists(), f"{path_cn} does not exist"
         v.file_page_cn = f"CN_{v.path}.ogg"
         path_jp = audio_root.joinpath("Japanese").joinpath(f"{v.file_jp}")
@@ -65,7 +66,7 @@ def upload_audio_file(voices: list[Voice], char_name: str):
     for v in voices:
         assert v.file_page_cn != ""
         if v.file_page_cn not in existing:
-            path = audio_root.joinpath("Chinese").joinpath(f"{v.file_cn}")
+            path = audio_root.joinpath("Chinese").joinpath(f"{v.file[CHINESE.code]}")
             upload_audio(path, FilePage(s, "File:" + v.file_page_cn), text)
         # FIXME: Vox_SelectCharacter-0208-event.wav is for Michele in CN but for Yvette in JP;
         #  do not upload Japanese files for now

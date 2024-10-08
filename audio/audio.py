@@ -1,6 +1,8 @@
 import sys
 import os
 
+from utils.lang import CHINESE, ENGLISH
+
 SCRIPT_DIR = os.path.abspath(__file__)
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
@@ -40,6 +42,7 @@ def audio_convert():
 
 
 def merge_results(previous: VoiceJson, current: VoiceJson) -> VoiceJson:
+    # TODO: merging needs more nesting to take language into consideration
     for vid, voice in previous.items():
         vid = int(vid)
         assert vid in current, f"{vid} not in current"
@@ -54,18 +57,18 @@ def make_character_json(triggers: list[Trigger], char_id: int):
     def voice_filter(v: Voice):
         return v.role_id == 0 or v.role_id == char_id
 
-    # TODO: do not simply overwrite json; merge instead
-
     result: dict[int, dict[str, Any]] = {}
-    attributes = ["path", "file_cn", "file_jp", "text_cn", "text_en", "text_jp"]
+    attributes = ["path", "file", "transcription", "translation"]
 
     for t in triggers:
         for v in t.voices:
             if not voice_filter(v):
                 continue
-            title_cn = pick_string([t.name_cn, v.title_cn, t.description_cn])
-            title_en = pick_string([t.name_en, v.title_en, t.description_en])
-            obj = {"id": v.id[0], 'title_cn': '', 'title_en': '', '__title_hint': title_cn + "/" + title_en}
+            titles = v.title.copy()
+            titles.update(t.name)
+            obj = {"id": v.id[0],
+                   'title': titles,
+                   '__title_hint': titles[CHINESE.code] + "/" + titles[ENGLISH.code]}
             for attribute in attributes:
                 obj[attribute] = getattr(v, attribute)
             result[obj['id']] = obj
@@ -200,8 +203,8 @@ def test_audio():
                 if v.path in exists:
                     continue
                 exists.add(v.path)
-                print(v.path + "    " + v.file_cn)
-                os.startfile(wav_root_cn / v.file_cn)
+                print(v.path + "    " + v.file[CHINESE.code])
+                os.startfile(wav_root_cn / v.file[CHINESE.code])
 
 
 def make_character_audio_pages():
