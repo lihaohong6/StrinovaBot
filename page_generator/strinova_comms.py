@@ -83,7 +83,7 @@ def get_i18n(lang: Language) -> dict[str, str]:
 
 
 def process_file(p: Path, lang: Language) -> str:
-    i18n = get_i18n(lang)
+    i18n = get_game_json(lang)
     obj = load_json(p)['Rows']
 
     result = ["{{StrinovaComms"]
@@ -137,8 +137,10 @@ def process_file(p: Path, lang: Language) -> str:
             text = [value['TextContent']]
         new_text = []
         for t in text:
-            source = t.get('SourceString', "PLACEHOLDER")
-            translated = i18n.get(source, source)
+            namespace = t.get('Namespace', None)
+            key = t.get('Key', None)
+            source = t.get("SourceString", "PLACEHOLDER")
+            translated = i18n.get(namespace, {}).get(key, source)
             if "NoTextFound" in translated:
                 translated = source
             if "PLACEHOLDER" == translated:
