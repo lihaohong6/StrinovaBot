@@ -5,8 +5,7 @@ import wikitextparser as wtp
 from pywikibot import Page
 
 from global_config import name_to_cn
-from utils.general_utils import get_weapon_name, \
-    get_default_weapon_id, get_table, get_char_pages, get_camp, get_role_name
+from utils.general_utils import get_table, get_char_pages, get_camp, get_role_name
 from utils.json_utils import get_game_json, get_game_json_ja
 from utils.lang import get_language
 
@@ -81,7 +80,6 @@ def make_infobox(char_id, char_name, p: Page, save=True) -> dict:
         add_arg("CampText", get_camp(char_profile['Team'], lang=lang))
         add_arg("Role", get_role_name(char_profile['Profession']))
         add_arg("RoleText", get_role_name(char_profile['Profession'], lang=lang))
-        add_arg("Weapon", get_weapon_name(get_default_weapon_id(char_id), lang=lang))
     except Exception as e:
         print("Insufficient info for " + char_name)
         print(e)

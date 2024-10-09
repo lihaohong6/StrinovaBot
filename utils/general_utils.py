@@ -96,8 +96,11 @@ def get_default_weapon_id(char_id: int | str) -> int:
     return get_default_weapon_id.dict.get(char_id, -1)
 
 
-def get_weapon_name(weapon_id: int, lang: Language = ENGLISH) -> str:
-    return get_game_json(lang)['Weapon'].get(f"{weapon_id}_Name", "")
+def get_weapon_name(weapon_id: int, lang: Language = ENGLISH) -> str | None:
+    r = get_game_json(lang)['Weapon'].get(f"{weapon_id}_Name", None)
+    if r is not None and r == '!NoTextFound!':
+        r = None
+    return r
 
 
 def get_quality_table() -> dict[int, str]:
@@ -173,10 +176,34 @@ def save_json_page(p: Page, obj, summary: str = "update json page"):
             return super().default(o)
 
     def dump(o):
-        return json.dumps(obj, indent=4, cls=EnhancedJSONEncoder)
+        return json.dumps(o, indent=4, cls=EnhancedJSONEncoder)
 
     original = dump(json.loads(p.text))
     modified = dump(obj)
     if original != modified:
         p.text = modified
         p.save(summary=summary)
+
+
+def pick_two(a: str, b: str) -> str:
+    """
+    Pick a string. Prefer the first one but use the second one if the first is empty.
+    :param a:
+    :param b:
+    :return:
+    """
+    if "NoTextFound" in a:
+        a = ""
+    if "NoTextFound" in b:
+        b = ""
+    if a.strip() in {"", "?", "彩蛋"}:
+        return b
+    return a
+
+
+def pick_string(strings: list[str]) -> str:
+    i = len(strings) - 2
+    while i >= 0:
+        strings[i] = pick_two(strings[i], strings[i + 1])
+        i -= 1
+    return strings[0]

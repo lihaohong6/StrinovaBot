@@ -8,7 +8,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 from wikitextparser import Template
 
 from global_config import char_id_mapper
-from utils.general_utils import get_table, get_default_weapon_id
+from utils.general_utils import get_table, get_default_weapon_id, pick_string
 from utils.json_utils import get_game_json, get_game_json_cn
 from utils.upload_utils import upload_file, upload_item_icons, UploadRequest, process_uploads
 from utils.wiki_utils import bwiki, s
@@ -47,7 +47,6 @@ class Weapon:
 def get_weapons_by_type(weapon_type: str) -> list[Weapon]:
     i18n = get_game_json()['Weapon']
     i18n = get_game_json()['Goods'] | i18n
-    i18n_cn = get_game_json_cn()['Weapon']
     weapons = get_table("Weapon")
     result = []
     weapon_dict: dict[int, Weapon] = {}
@@ -58,11 +57,11 @@ def get_weapons_by_type(weapon_type: str) -> list[Weapon]:
         try:
             weapon_id = k
             name_key = f"{weapon_id}_Name"
-            name = i18n.get(name_key, "")
             name_cn = v['Name']['SourceString']
+            name = pick_string([i18n.get(name_key, ""), name_cn])
             quality = v['Quality']
             unlock = i18n.get(f"{weapon_id}_GainParam2", "" if v['Default'] != 1 else "Available by default")
-            description = i18n.get(f"{weapon_id}_Desc", i18n.get(f"{weapon_id}_Tips", v['Tips']['SourceString']))
+            description = pick_string([i18n.get(f"{weapon_id}_Desc", ""), i18n.get(f"{weapon_id}_Tips", ""), v['Tips']['SourceString']])
             parent = v['SubType']
             parent_dict[weapon_id] = parent
             w = Weapon(weapon_id, name, name_cn, quality, unlock, description)
@@ -169,21 +168,13 @@ def process_weapon_pages(*args):
 
     for i, weapon_type in enumerate(types):
         weapons = get_weapons_by_type(strings[i])
-        cn_name_to_bwiki_page = {}
-        pages = [Page(bwiki(), w.name_cn) for w in weapons]
-        gen = PreloadingGenerator(pages)
-        for page in gen:
-            cn_name_to_bwiki_page[page.title()] = page
         for w in weapons:
-            if w.parent.id != w.id or w.name_en == "":
-                print(f"Skipping {w.name_en} ({w.name_cn})")
+            if w.parent.id != w.id or w.name_en == "" or w.name_en == "!NoTextFound!":
                 continue
             w.type = weapon_type.value
             p = Page(s, w.name_en)
             original = p.text
-            # process_infobox(p, w, weapon_id_to_char_name, weapon_type)
-            bwiki_page = cn_name_to_bwiki_page[w.name_cn]
-            make_damage_section(p, bwiki_page)
+            process_infobox(p, w, weapon_id_to_char_name, weapon_type)
             if p.text.strip() != original:
                 p.save(summary="weapon page")
 
@@ -279,6 +270,7 @@ def make_weapon_skins_template(t: wtp.Template, weapon_list: list[Weapon]):
 
 
 def main():
+    # process_weapon_pages()
     process_weapon_skins()
 
 

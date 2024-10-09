@@ -14,30 +14,6 @@ from utils.upload_utils import upload_file
 from utils.wiki_utils import s
 
 
-def pick_two(a: str, b: str) -> str:
-    """
-    Pick a string. Prefer the first one but use the second one if the first is empty.
-    :param a:
-    :param b:
-    :return:
-    """
-    if "NoTextFound" in a:
-        a = ""
-    if "NoTextFound" in b:
-        b = ""
-    if a.strip() in {"", "?", "彩蛋"}:
-        return b
-    return a
-
-
-def pick_string(strings: list[str]) -> str:
-    i = len(strings) - 2
-    while i >= 0:
-        strings[i] = pick_two(strings[i], strings[i + 1])
-        i -= 1
-    return strings[0]
-
-
 def upload_audio(source: Path, target: FilePage, text: str):
     assert source.exists()
     temp_file = Path("temp.ogg")

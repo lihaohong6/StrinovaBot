@@ -36,6 +36,7 @@ def generate_weapons():
             weapon_type = get_weapon_type(weapon_id)
 
             weapon_name_en = get_weapon_name(weapon_id, ENGLISH)
+            assert weapon_name is not None and weapon_name_en is not None
             if weapon_name_en != weapon_name:
                 redirect_requests.append(RedirectRequest(lang, weapon_name, weapon_name_en))
         except Exception as e:

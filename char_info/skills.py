@@ -97,7 +97,6 @@ Growth_Team
             bwiki_base_page = bwiki_base_page.getRedirectTarget()
         bwiki_page = Page(bwiki(), bwiki_base_page.title() + "/弦能增幅网络")
         assert bwiki_page.exists(), char_name
-        weapon_name = get_weapon_name(get_default_weapon_id(char_id))
         parsed = wtp.parse(p.text)
         for template in parsed.templates:
             if template.name.strip() == "StringEnergyNetwork":
