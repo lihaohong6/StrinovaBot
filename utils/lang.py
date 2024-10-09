@@ -23,6 +23,17 @@ class Language:
     def game_json_dir(self):
         return self.code
 
+    @property
+    def audio_code(self):
+        if self.code == JAPANESE.code:
+            return 'jp'
+        return self.code
+
+
+    @property
+    def audio_dir_name(self):
+        return self.name
+
 
 class LanguageVariants(Enum):
     ENGLISH = Language('en', 'English')

@@ -8,7 +8,7 @@ from pywikibot.pagegenerators import GeneratorFactory
 from audio_parser import Voice
 from utils.asset_utils import audio_root
 from utils.json_utils import load_json
-from utils.lang import CHINESE
+from utils.lang import CHINESE, JAPANESE, ENGLISH
 
 from utils.upload_utils import upload_file
 from utils.wiki_utils import s
@@ -30,25 +30,23 @@ def upload_audio_file(voices: list[Voice], char_name: str):
     for v in voices:
         path_cn = audio_root.joinpath("Chinese").joinpath(f"{v.file[CHINESE.code]}")
         assert path_cn.exists(), f"{path_cn} does not exist"
-        v.file_page_cn = f"CN_{v.path}.ogg"
-        path_jp = audio_root.joinpath("Japanese").joinpath(f"{v.file_jp}")
-        if v.file_jp != "" and path_jp.exists():
-            v.file_page_jp = f"JP_{v.path}.ogg"
+        v.set_file_page(CHINESE)
+        path_jp = audio_root.joinpath("Japanese").joinpath(f"{v.file[JAPANESE.code]}")
+        if v.file[JAPANESE.code] != "" and path_jp.exists():
+            v.set_file_page(JAPANESE)
     gen = GeneratorFactory()
     gen.handle_args([f"-cat:{char_name} voice lines", "-ns:File"])
     gen = gen.getCombinedGenerator()
     existing: set[str] = set(p.title(underscore=True, with_ns=False) for p in gen)
     text = f"[[Category:{char_name} voice lines]]"
     for v in voices:
-        assert v.file_page_cn != ""
-        if v.file_page_cn not in existing:
-            path = audio_root.joinpath("Chinese").joinpath(f"{v.file[CHINESE.code]}")
-            upload_audio(path, FilePage(s, "File:" + v.file_page_cn), text)
-        # FIXME: Vox_SelectCharacter-0208-event.wav is for Michele in CN but for Yvette in JP;
-        #  do not upload Japanese files for now
-        if v.file_page_jp not in existing and v.file_page_jp != "":
-            path = audio_root.joinpath("Japanese").joinpath(f"{v.file_jp}")
-            upload_audio(path, FilePage(s, "File:" + v.file_page_jp), text)
+        assert v.file_page[CHINESE.code] != ""
+        for lang in [CHINESE, JAPANESE, ENGLISH]:
+            file_page = v.file_page.get(lang.code, "")
+            if file_page not in existing and file_page != "":
+                path = audio_root / lang.audio_dir_name / v.file[lang.code]
+                assert path.exists()
+                upload_audio(path, FilePage(s, "File:" + file_page), text)
 
 
 VoiceJson = dict[int, dict[str, Any]]

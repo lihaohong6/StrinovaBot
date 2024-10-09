@@ -1,6 +1,7 @@
 import sys
 import os
 
+from audio.character_page import make_character_audio_pages
 from utils.lang import CHINESE, ENGLISH
 
 SCRIPT_DIR = os.path.abspath(__file__)
@@ -20,12 +21,11 @@ from pywikibot.pagegenerators import PreloadingGenerator
 from audio_parser import VoiceUpgrade, Voice, Trigger, in_game_triggers, in_game_triggers_upgrade, role_voice, \
     match_custom_triggers
 from audio_utils import VoiceJson, get_json_path
-from character_page import make_character_audio_page
 from data.conversion_table import voice_conversion_table
 from machine_assist import transcribe, translate
 from global_config import char_id_mapper, internal_names
 from utils.asset_utils import audio_root, wav_root_cn
-from utils.general_utils import get_bwiki_char_pages, pick_string
+from utils.general_utils import get_bwiki_char_pages
 from utils.json_utils import load_json
 from utils.wiki_utils import s, bwiki
 
@@ -205,12 +205,6 @@ def test_audio():
                 exists.add(v.path)
                 print(v.path + "    " + v.file[CHINESE.code])
                 os.startfile(wav_root_cn / v.file[CHINESE.code])
-
-
-def make_character_audio_pages():
-    for char_id, char_name in char_id_mapper.items():
-        if char_name in {"Michele", "Fuchsia"}:
-            make_character_audio_page(char_id)
 
 
 def pull_from_miraheze():

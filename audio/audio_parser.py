@@ -9,7 +9,7 @@ from data.conversion_table import VoiceType, voice_conversion_table, table_langu
 from utils.asset_utils import audio_event_root, audio_root, wav_root_cn, wav_root_jp
 from utils.general_utils import get_table
 from utils.json_utils import load_json, get_game_json, get_all_game_json
-from utils.lang import CHINESE, ENGLISH, JAPANESE
+from utils.lang import CHINESE, ENGLISH, JAPANESE, Language
 from utils.lang_utils import get_multilanguage_dict
 
 
@@ -51,17 +51,11 @@ class Voice:
             if self.role_id == 999:
                 self.role_id = o.role_id
 
-    @property
-    def text_cn(self):
-        raise Exception("Do not use this legacy attribute")
+    def get_file_page(self, lang: Language):
+        return f"{lang.audio_code.upper()}_{self.path}.ogg"
 
-    @property
-    def text_en(self):
-        raise Exception("Do not use this legacy attribute")
-
-    @property
-    def text_jp(self):
-        raise Exception("Do not use this legacy attribute")
+    def set_file_page(self, lang: Language):
+        self.file_page[lang.code] = self.get_file_page(lang)
 
 
 @dataclass
