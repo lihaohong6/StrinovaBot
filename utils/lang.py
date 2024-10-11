@@ -63,3 +63,7 @@ def set_language(code: str):
             break
     else:
         raise RuntimeError(f"Fail to set language to {code}")
+
+
+def languages_with_audio() -> list[Language]:
+    return [CHINESE, JAPANESE, ENGLISH]

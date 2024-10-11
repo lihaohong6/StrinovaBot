@@ -1,6 +1,6 @@
 import sys
 
-from audio.audio import audio_main
+from audio.audio_main import audio_main
 from page_generator.achievements import generate_achievement_page
 from page_generator.weapons import process_weapon_pages, process_weapon_skins
 from utils.bwiki_downloader import bwiki_downloader_main

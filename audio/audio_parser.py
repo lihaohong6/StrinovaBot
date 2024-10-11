@@ -57,6 +57,16 @@ class Voice:
     def set_file_page(self, lang: Language):
         self.file_page[lang.code] = self.get_file_page(lang)
 
+    def path_digits(self) -> str | None:
+        return get_voice_path_digits(self.path)
+
+
+def get_voice_path_digits(path: str) -> str | None:
+    r = re.search(r"(\d{3})(_|$)", path)
+    if r is None:
+        return None
+    return r.group(1)
+
 
 @dataclass
 class Trigger:
@@ -270,10 +280,9 @@ def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
         if ids in voice_found:
             continue
         voice_found.add(ids)
-        digits = re.search(r"(\d{3})(_|$)", v.path)
+        digits = v.path_digits()
         if digits is None:
             continue
-        digits = digits.group(1)
         if digits in triggers:
             triggers[digits].voices.append(v)
     return list(triggers.values())

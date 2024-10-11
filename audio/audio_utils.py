@@ -8,7 +8,7 @@ from pywikibot.pagegenerators import GeneratorFactory
 from audio_parser import Voice
 from utils.asset_utils import audio_root
 from utils.json_utils import load_json
-from utils.lang import CHINESE, JAPANESE, ENGLISH
+from utils.lang import CHINESE, JAPANESE, ENGLISH, languages_with_audio
 
 from utils.upload_utils import upload_file
 from utils.wiki_utils import s
@@ -41,7 +41,7 @@ def upload_audio_file(voices: list[Voice], char_name: str):
     text = f"[[Category:{char_name} voice lines]]"
     for v in voices:
         assert v.file_page[CHINESE.code] != ""
-        for lang in [CHINESE, JAPANESE, ENGLISH]:
+        for lang in languages_with_audio():
             file_page = v.file_page.get(lang.code, "")
             if file_page not in existing and file_page != "":
                 path = audio_root / lang.audio_dir_name / v.file[lang.code]

@@ -5,7 +5,7 @@ from utils.general_utils import pick_string
 from audio_parser import Trigger, match_custom_triggers
 from data.conversion_table import VoiceType
 from global_config import char_id_mapper
-from utils.lang import JAPANESE, ENGLISH, CHINESE, Language, get_language
+from utils.lang import JAPANESE, ENGLISH, CHINESE, Language, get_language, languages_with_audio
 from utils.wiki_utils import s
 
 
@@ -26,7 +26,7 @@ def make_table(triggers: list[Trigger], lang: Language):
             if 'red' in voice.path:
                 args.append(('Type', 'red'))
 
-            transcription_languages = [CHINESE, JAPANESE, ENGLISH]
+            transcription_languages = languages_with_audio()
             for transcription_language in transcription_languages:
                 lang_code = transcription_language.code
                 lang_name = lang_code.upper()

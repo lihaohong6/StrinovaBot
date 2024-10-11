@@ -1,11 +1,12 @@
 import sys
 import os
 
-from audio.character_page import make_character_audio_pages
-from utils.lang import CHINESE, ENGLISH
-
 SCRIPT_DIR = os.path.abspath(__file__)
 sys.path.append(os.path.dirname(SCRIPT_DIR))
+
+from audio.make_character_page import make_character_audio_pages
+from audio.pull_from_miraheze import pull_from_miraheze
+from utils.lang import CHINESE, ENGLISH
 
 import json
 import re
@@ -14,9 +15,7 @@ from pathlib import Path
 from sys import argv
 from typing import Any
 
-import wikitextparser as wtp
 from pywikibot import Page
-from pywikibot.pagegenerators import PreloadingGenerator
 
 from audio_parser import VoiceUpgrade, Voice, Trigger, in_game_triggers, in_game_triggers_upgrade, role_voice, \
     match_custom_triggers
@@ -27,7 +26,7 @@ from global_config import char_id_mapper, internal_names
 from utils.asset_utils import audio_root, wav_root_cn
 from utils.general_utils import get_bwiki_char_pages
 from utils.json_utils import load_json
-from utils.wiki_utils import s, bwiki
+from utils.wiki_utils import bwiki
 
 
 def audio_convert():
@@ -205,56 +204,6 @@ def test_audio():
                 exists.add(v.path)
                 print(v.path + "    " + v.file[CHINESE.code])
                 os.startfile(wav_root_cn / v.file[CHINESE.code])
-
-
-def pull_from_miraheze():
-    pages = PreloadingGenerator(generator=(Page(s, f"{char_name}/audio") for char_name in char_id_mapper.values()))
-    for page in pages:
-        if not page.exists():
-            print(page.title() + " does not exist")
-            continue
-        char_name = page.title().split("/")[0]
-        json_file = get_json_path(char_name)
-        assert json_file.exists(), f"{json_file} does not exist"
-        existing = load_json(json_file)
-        path_to_voice: dict[str, dict] = {}
-        for v in existing.values():
-            path_to_voice[v['path']] = v
-        parsed = wtp.parse(page.text)
-        templates = []
-        for t in parsed.templates:
-            if t.name.strip().lower() == "voice/row":
-                templates.append(t)
-        changed = False
-        for t in templates:
-            path = t.get_arg("FileCN").value.replace("CN_", "").replace(".ogg", "").strip()
-            assert path in path_to_voice
-            voice = path_to_voice[path]
-            mapping = {
-                "TextCN": "text_cn",
-                "TextEN": "text_en",
-                "TextJP": "text_jp",
-                "Title": "title_en"
-            }
-            regular_title = voice['__title_hint'].split("/")[1]
-            for k, v in mapping.items():
-                arg = t.get_arg(k)
-                if arg is None:
-                    continue
-                arg = arg.value.strip()
-                if arg != "" and arg != voice[v]:
-                    if k == "Title" and (
-                            arg == regular_title or
-                            (arg.startswith(regular_title) and
-                             arg.replace(regular_title, "").strip().startswith("("))):
-                        continue
-                    voice[v] = arg
-                    changed = True
-        if not changed:
-            print("No change for " + char_name)
-            continue
-        json.dump(existing, open(json_file, "w", encoding="utf-8"), ensure_ascii=False, indent=4)
-        print("Overwriting " + char_name)
 
 
 def audio_main(args=None):
