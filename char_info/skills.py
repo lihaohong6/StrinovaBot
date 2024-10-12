@@ -197,7 +197,7 @@ Growth_Team
 
 
 def main():
-    # generate_skills()
+    generate_skills()
     generate_string_energy_network()
 
 

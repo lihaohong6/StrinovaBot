@@ -190,7 +190,7 @@ def process_file(p: Path, lang: Language) -> str:
     return "\n\n".join(result)
 
 
-def main():
+def strinova_comms_main():
     # TODO: KaChatOption.json has character favorability boosts
     lang = get_language()
     ka_phone_root = csv_root.joinpath("KaPhone")
@@ -239,4 +239,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    strinova_comms_main()

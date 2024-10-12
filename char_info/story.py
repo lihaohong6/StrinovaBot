@@ -1,3 +1,5 @@
+import re
+
 import wikitextparser as wtp
 
 from utils.general_utils import get_table, get_char_pages
@@ -43,9 +45,10 @@ def generate_biography():
                 valid = False
                 print(f"Failed to generate biography for {char_name} due to missing i18n")
                 break
-            add_arg(f"Title{story_count}", title)
-            add_arg(f"Unlock{story_count}", unlock)
-            add_arg(f"Content{story_count}", content.replace("\n", "\n\n"))
+            add_arg(f"Title{story_count}", title.strip())
+            add_arg(f"Unlock{story_count}", unlock.strip())
+            content, _ = re.subn(f"\s*\n\s*", "\n\n", content)
+            add_arg(f"Content{story_count}", content.strip())
         if not valid:
             continue
 

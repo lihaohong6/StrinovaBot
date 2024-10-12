@@ -57,7 +57,8 @@ def generate_weapons():
         p.text = str(parsed)
         p.save(summary="generate weapon", minor=True)
 
-    redirect_pages(redirect_requests)
+    # Do NOT redirect: weapon pages are not yet ready
+    # redirect_pages(redirect_requests)
 
 
 if __name__ == '__main__':

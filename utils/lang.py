@@ -46,7 +46,7 @@ CHINESE: Language = Language('cn', 'Chinese')
 ENGLISH: Language = LanguageVariants.ENGLISH.value
 JAPANESE: Language = LanguageVariants.JAPANESE.value
 
-available_variants = [ENGLISH, LanguageVariants.JAPANESE.value, LanguageVariants.KOREAN.value]
+available_variants = [ENGLISH, JAPANESE, LanguageVariants.KOREAN.value]
 
 current_language: Language = LanguageVariants.ENGLISH.value
 
@@ -55,8 +55,11 @@ def get_language() -> Language:
     return current_language
 
 
-def set_language(code: str):
+def set_language(code: str | Language) -> None:
     global current_language
+    if isinstance(code, Language):
+        current_language = code
+        return
     for lang in LanguageVariants:
         if lang.value.code == code:
             current_language = lang.value

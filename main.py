@@ -1,21 +1,44 @@
 import sys
 
 from audio.audio_main import audio_main
+from char_info.achievement import generate_achievements
+from char_info.char_infobox import generate_infobox
+from char_info.dorm import generate_bond_items, generate_gifts
+from char_info.gallery import generate_skins, generate_emotes
+from char_info.skills import generate_string_energy_network, generate_skills
+from char_info.story import generate_return_letter, generate_biography
+from char_info.weapons import generate_weapons
 from page_generator.achievements import generate_achievement_page
+from page_generator.strinova_comms import strinova_comms_main
 from page_generator.weapons import process_weapon_pages, process_weapon_skins
-from utils.bwiki_downloader import bwiki_downloader_main
+from utils.lang import LanguageVariants, available_variants, set_language
 
 
 def main():
     commands = {
         "audio": audio_main,
         "achievements": generate_achievement_page,
-        "bwiki_downloader": bwiki_downloader_main,
         "weapons": process_weapon_pages,
         "weapon_variant": process_weapon_skins
     }
     commands[sys.argv[1]](sys.argv[:1] + sys.argv[2:])
 
 
+def multilanguage():
+    for lang in available_variants:
+        set_language(lang)
+        generate_infobox()
+        generate_achievements()
+        generate_bond_items()
+        generate_skins()
+        generate_emotes()
+        generate_skills()
+        generate_biography()
+        generate_string_energy_network()
+        generate_return_letter()
+        generate_weapons()
+        strinova_comms_main()
+
+
 if __name__ == "__main__":
-    main()
+    multilanguage()
