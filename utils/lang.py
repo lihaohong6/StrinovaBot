@@ -21,7 +21,10 @@ class Language:
 
     @property
     def game_json_dir(self):
-        return self.code
+        special = {
+            'es': 'es-419'
+        }
+        return special.get(self.code, self.code)
 
     @property
     def audio_code(self):
@@ -39,6 +42,11 @@ class LanguageVariants(Enum):
     ENGLISH = Language('en', 'English')
     JAPANESE = Language('ja', 'Japanese')
     KOREAN = Language('ko', 'Korean')
+    SPANISH = Language('es', 'Spanish')
+    FRENCH = Language('fr', 'French')
+    GERMAN = Language('de', 'German')
+    RUSSIAN = Language('ru', 'Russian')
+    PORTUGUESE = Language('pt-BR', 'Portuguese')
     SIMPLIFIED_CHINESE = Language('zh-Hans', 'Simplified Chinese')
 
 
