@@ -150,6 +150,9 @@ def make_json():
         match_role_voice_with_bwiki(list(voices.values())) # Do not call this function: CC BY-NC-SA 4.0
     triggers = match_custom_triggers(list(voices.values()))
     for char_id, char_name in char_id_mapper.items():
+        if char_name == "Fragrans":
+            # Fragrans' English voice lines are identical to Chinese ones; disable for now
+            continue
         make_character_json(triggers, char_id)
 
 

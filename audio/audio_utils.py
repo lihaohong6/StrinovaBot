@@ -29,7 +29,7 @@ def upload_audio(source: Path, target: FilePage, text: str):
 def upload_audio_file(voices: list[Voice], char_name: str):
     for v in voices:
         for lang in languages_with_audio():
-            file_name = v.file[lang.code]
+            file_name = v.file.get(lang.code, '')
             audio_path = audio_root / lang.audio_dir_name / f"{file_name}"
             if file_name != '' and audio_path.exists():
                 v.set_file_page(lang)
