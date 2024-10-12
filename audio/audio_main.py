@@ -24,7 +24,7 @@ from data.conversion_table import voice_conversion_table
 from machine_assist import transcribe, translate
 from global_config import char_id_mapper, internal_names
 from utils.asset_utils import audio_root, wav_root_cn
-from utils.general_utils import get_bwiki_char_pages
+from utils.general_utils import get_bwiki_char_pages, merge_dict
 from utils.json_utils import load_json
 from utils.wiki_utils import bwiki
 
@@ -33,6 +33,7 @@ def audio_convert():
     output_root = Path("files/audio")
     output_root.mkdir(exist_ok=True, parents=True)
     for file in audio_root.rglob("*.txtp"):
+        file: Path
         file_name = file.name
         out_path = output_root.joinpath(file.relative_to(audio_root))
         out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -41,13 +42,16 @@ def audio_convert():
 
 
 def merge_results(previous: VoiceJson, current: VoiceJson) -> VoiceJson:
-    # TODO: merging needs more nesting to take language into consideration
+    """
+    Goal: use current as base and override certain attributes with previous
+    :return: merged dict
+    """
     for vid, voice in previous.items():
         vid = int(vid)
         assert vid in current, f"{vid} not in current"
         for k, v in voice.items():
-            if k.startswith("text") or k.startswith("title"):
-                current[vid][k] = v
+            if k in {'transcription', 'title', 'translation'}:
+                current[vid][k] = merge_dict(v, current[vid][k])
         assert current[vid]['path'] == voice['path'], f"Path does not match: {current[vid]['path']} != {voice['path']}"
     return current
 
@@ -66,8 +70,7 @@ def make_character_json(triggers: list[Trigger], char_id: int):
             titles = v.title.copy()
             titles.update(t.name)
             obj = {"id": v.id[0],
-                   'title': titles,
-                   '__title_hint': titles[CHINESE.code] + "/" + titles[ENGLISH.code]}
+                   'title': titles}
             for attribute in attributes:
                 obj[attribute] = getattr(v, attribute)
             result[obj['id']] = obj
@@ -95,6 +98,7 @@ def parse_system_voice():
 
 
 def match_role_voice_with_bwiki(voices: list[Voice]):
+    raise RuntimeError("Do not call this function: CC BY-NC-SA 4.0.")
     import wikitextparser as wtp
     for char_id, char_name, page in get_bwiki_char_pages():
         parsed = wtp.parse(page.text)
@@ -141,7 +145,9 @@ def match_role_voice_with_bwiki(voices: list[Voice]):
 
 def make_json():
     voices = role_voice()
-    match_role_voice_with_bwiki(list(voices.values()))
+    # noinspection PyUnreachableCode
+    if False:
+        match_role_voice_with_bwiki(list(voices.values())) # Do not call this function: CC BY-NC-SA 4.0
     triggers = match_custom_triggers(list(voices.values()))
     for char_id, char_name in char_id_mapper.items():
         make_character_json(triggers, char_id)

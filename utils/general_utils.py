@@ -1,9 +1,11 @@
 import dataclasses
 import json
 import re
+from copy import deepcopy
 from pathlib import Path
 
 import requests
+from numba.cuda.cudadrv.runtime import Runtime
 
 from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
@@ -207,3 +209,25 @@ def pick_string(strings: list[str]) -> str:
         strings[i] = pick_two(strings[i], strings[i + 1])
         i -= 1
     return strings[0]
+
+
+def merge_dict(a: dict, b: dict) -> dict:
+    """
+    Use b as the base dict and override with a whenever there's a conflict
+    :param a:
+    :param b:
+    :return:
+    """
+    result = deepcopy(b)
+    for k, v in a.items():
+        if isinstance(v, dict):
+            if result.get(k) is None:
+                result[k] = v
+            else:
+                result[k] = merge_dict(v, result[k])
+        elif isinstance(v, str):
+            result[k] = v
+        else:
+            raise RuntimeError("Unexpected type")
+    return result
+

@@ -58,8 +58,10 @@ def redirect_pages(requests: list[RedirectRequest]):
         p.set_redirect_target(Page(s, f"{request.target}{request.lang.page_suffix}"), create=True, force=True)
 
 
-def get_multilanguage_dict(i18n: dict[str, dict], key: str | list[str], default: str = None) -> dict[str, str]:
+def get_multilanguage_dict(i18n: dict[str, dict], key: str | list[str] | None, default: str = None) -> dict[str, str]:
     result: dict[str, str] = {}
+    if key is None:
+        return {}
     if isinstance(key, str):
         key = [key]
     for lang, v in i18n.items():

@@ -9,7 +9,7 @@ from data.conversion_table import VoiceType, voice_conversion_table, table_langu
 from utils.asset_utils import audio_event_root, audio_root, wav_root_cn, wav_root_jp
 from utils.general_utils import get_table
 from utils.json_utils import load_json, get_game_json, get_all_game_json
-from utils.lang import CHINESE, ENGLISH, JAPANESE, Language
+from utils.lang import CHINESE, ENGLISH, JAPANESE, Language, languages_with_audio
 from utils.lang_utils import get_multilanguage_dict
 
 
@@ -149,14 +149,11 @@ def parse_bank(bank_file: Path, table: dict[str, str]):
                 table[sid] = ix
 
 
-def parse_banks_xml():
-    sid_to_ix_cn = {}
-    cn_bank_file = audio_root / "banks/cn_banks.xml"
-    parse_bank(cn_bank_file, sid_to_ix_cn)
-    sid_to_ix_ja = {}
-    jp_bank_file = audio_root / "banks/ja_banks.xml"
-    parse_bank(jp_bank_file, sid_to_ix_ja)
-    return sid_to_ix_cn, sid_to_ix_ja
+def parse_banks_xml(lang: Language):
+    sid_to_ix = {}
+    bank_file = audio_root / f"banks/{lang.code}_banks.xml"
+    parse_bank(bank_file, sid_to_ix)
+    return sid_to_ix
 
 
 def map_bank_name_to_files(p: Path) -> dict[str, list[Path]]:
@@ -169,19 +166,28 @@ def map_bank_name_to_files(p: Path) -> dict[str, list[Path]]:
     return table
 
 
-def get_text(i18n: dict[str, dict], v) -> tuple[dict[str, str], dict[str, str]]:
+def get_text(i18n: dict[str, dict], v) -> tuple[dict[str, str], dict[str, str], dict[str, dict[str, str]]]:
     name_obj = v['VoiceName']
     key = name_obj.get("Key", None)
     title: dict[str, str] = {
         CHINESE.code: "" if key is None else name_obj["SourceString"]
     } | get_multilanguage_dict(i18n, key, "")
+    # forbid in-game titles from showing up in order to maintain uniformity on the wiki
+    for k, _ in title.items():
+        title[k] = ""
 
     content_obj = v['Content']
     key = content_obj.get("Key", None)
     content = {
         CHINESE.code: "" if key is None else content_obj["SourceString"]
     } | get_multilanguage_dict(i18n, key, "")
-    return title, content
+
+    language_codes_with_audio = set(l.code for l in languages_with_audio())
+
+    transcriptions = dict((k, v) for k, v in content.items() if k in language_codes_with_audio)
+    translations = {}
+    translations.update(dict((k, v) for k, v in content.items() if k not in language_codes_with_audio))
+    return title, transcriptions, {CHINESE.code: translations}
 
 
 def in_game_triggers() -> list[Trigger]:
@@ -215,24 +221,32 @@ def in_game_triggers_upgrade() -> list[UpgradeTrigger]:
 
 
 def role_voice() -> dict[int, Voice]:
-    table_cn, table_jp = parse_banks_xml()
-    bank_name_to_files_cn = map_bank_name_to_files(wav_root_cn)
-    bank_name_to_files_jp = map_bank_name_to_files(wav_root_jp)
+    tables: dict[str, dict] = {}
+    bank_name_to_files: dict[str, dict[str, list[Path]]] = {}
+    for lang in languages_with_audio():
+        tables[lang.code] = parse_banks_xml(lang)
+        bank_name_to_files[lang.code] = map_bank_name_to_files(audio_root / lang.audio_dir_name)
     i18n = get_all_game_json('RoleVoice')
     voice_table = get_table("RoleVoice")
     path_to_voice: dict[str, Voice] = {}
 
     voices = {}
     for k, v in voice_table.items():
-        title, transcription = get_text(i18n, v)
+        title, transcription, translation = get_text(i18n, v)
 
         path = v["AkEvent"]["AssetPathName"].split(".")[-1]
-        file_cn = find_audio_file(path, table_cn, bank_name_to_files_cn)
-        if file_cn is None:
+        files: dict[str, str] = {}
+        failed = False
+        for lang in languages_with_audio():
+            audio_file = find_audio_file(path, tables[lang.code], bank_name_to_files[lang.code])
+            if lang == CHINESE and audio_file is None:
+                failed = True
+                break
+            if audio_file is None:
+                audio_file = ""
+            files[lang.code] = audio_file
+        if failed:
             continue
-        file_jp = find_audio_file(path, table_jp, bank_name_to_files_jp)
-        if file_jp is None:
-            file_jp = ""
         upgrade = VoiceUpgrade.REGULAR
         if "org" in path:
             upgrade = VoiceUpgrade.ORG
@@ -243,9 +257,9 @@ def role_voice() -> dict[int, Voice]:
                       quality=v['Quality'],
                       title=title,
                       transcription=transcription,
+                      translation=translation,
                       path=path.strip(),
-                      file={CHINESE.code: file_cn.strip(),
-                             JAPANESE.code: file_jp.strip()},
+                      file=files,
                       upgrade=upgrade)
         if path in path_to_voice:
             path_to_voice[path].merge(voice)
