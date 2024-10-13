@@ -12,8 +12,8 @@ from page_generator.items import get_all_items, Item
 from utils.asset_utils import resource_root
 from utils.general_utils import get_table, get_char_by_id, make_tab_group, get_char_pages, save_json_page
 from utils.json_utils import get_game_json, get_all_game_json
-from utils.lang import LanguageVariants, get_language, CHINESE
-from utils.lang_utils import get_multilanguage_dict
+from utils.lang import LanguageVariants, get_language, CHINESE, available_languages
+from utils.lang_utils import get_multilanguage_dict, StringConverters, compose
 from utils.upload_utils import upload_item_icons, UploadRequest, process_uploads
 from utils.wiki_utils import s
 
@@ -105,62 +105,40 @@ def generate_gifts():
             p.save("enable character gift")
 
 
+@dataclass
+class PledgeItem:
+    id: int
+    file: str
+    name: dict[str, str]
+    description: dict[str, str]
+    story: dict[str, str]
+
+
 def generate_bond_items():
-    @dataclass
-    class PledgeItem:
-        id: int
-        file: str
-        name: str
-        description: str
-        story: str
-
-        def to_template(self):
-            return f"{{{{ BondItem | file={self.file} " \
-                   f"| description={self.description} | story={self.story} }}}}"
-
-    lang = get_language()
-    i18n = get_game_json(lang)['PledgeItem']
+    i18n = get_all_game_json("PledgeItem")
     items_table = get_table("PledgeItem")
-    id_to_items: dict[int, list[PledgeItem]] = {}
+    items: dict[str, list[PledgeItem]] = {}
     upload_lst: list[int | str] = []
     for k, v in items_table.items():
         role_id = v['OwnerRoleId']
+        char_name = get_char_by_id(role_id)
         try:
+            name = get_multilanguage_dict(i18n, f"{k}_Name", extra=v['Name']['SourceString'])
+            desc = get_multilanguage_dict(i18n, f"{k}_Desc", extra=v['Desc']['SourceString'])
+            story = get_multilanguage_dict(i18n, f"{k}_ItemStory", extra=v['ItemStory']['SourceString'],
+                                           converter=StringConverters.long_text)
             item = PledgeItem(v['Id'], v['ItemIcon']['AssetPathName'].split("_")[-1],
-                              i18n.get(f"{k}_Name", v['Name']['SourceString']),
-                              i18n.get(f"{k}_Desc", v['Desc']['SourceString']),
-                              i18n.get(f"{k}_ItemStory", v['ItemStory']['SourceString']))
-            if "NoTextFound" in item.name:
-                continue
-            if role_id not in id_to_items:
-                id_to_items[role_id] = []
-            id_to_items[role_id].append(item)
+                              name,
+                              desc,
+                              story)
+            if char_name not in items:
+                items[char_name] = []
+            items[char_name].append(item)
             upload_lst.append(item.file)
         except KeyError:
             continue
     upload_item_icons(upload_lst, "[[Category:Bond item icons]]", "batch upload bond item icons")
-    for role_id, char_name, p in get_char_pages(lang=lang):
-        if role_id not in id_to_items:
-            continue
-        items = id_to_items[role_id]
-        parsed = wtp.parse(p.text)
-        for t in parsed.templates:
-            if t.name.strip() == "BondItems":
-                break
-        else:
-            raise RuntimeError("Template not found on " + char_name)
-        tabs = wtp.Template("{{Tab/tabs}}")
-        contents = wtp.Template("{{Tab/content}}")
-        group_name = make_tab_group(f"BondItems{char_name}")
-        tabs.set_arg("group", group_name)
-        contents.set_arg("group", group_name)
-        for item in items:
-            tabs.set_arg("", item.name, positional=True)
-            contents.set_arg("", item.to_template() + "\n", positional=True)
-        t.set_arg("1", "\n" + str(tabs) + "\n" + str(contents) + "\n", positional=True)
-        if p.text.strip() != str(parsed).strip():
-            p.text = str(parsed)
-            p.save("generate bond items")
+    save_json_page("Module:BondItems/data.json", items, summary="update bond items")
 
 
 def generate_friendship_gifts():
@@ -220,6 +198,7 @@ def generate_friendship_gifts():
 
 
 if __name__ == "__main__":
-    generate_gifts()
+    # generate_gifts()
     generate_bond_items()
+    # Not ready yet
     # generate_friendship_gifts()

@@ -54,7 +54,7 @@ CHINESE: Language = Language('cn', 'Chinese')
 ENGLISH: Language = LanguageVariants.ENGLISH.value
 JAPANESE: Language = LanguageVariants.JAPANESE.value
 
-available_variants = [ENGLISH, JAPANESE, LanguageVariants.KOREAN.value]
+available_languages = [ENGLISH, JAPANESE, LanguageVariants.KOREAN.value]
 
 current_language: Language = LanguageVariants.ENGLISH.value
 

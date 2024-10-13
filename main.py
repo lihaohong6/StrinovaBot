@@ -11,7 +11,7 @@ from char_info.weapons import generate_weapons
 from page_generator.achievements import generate_achievement_page
 from page_generator.strinova_comms import strinova_comms_main
 from page_generator.weapons import process_weapon_pages, process_weapon_skins
-from utils.lang import LanguageVariants, available_variants, set_language
+from utils.lang import LanguageVariants, available_languages, set_language
 
 
 def main():
@@ -24,16 +24,16 @@ def main():
     commands[sys.argv[1]](sys.argv[:1] + sys.argv[2:])
 
 
-def multilanguage():
-    for lang in available_variants:
+def make_everything():
+    generate_biography()
+    generate_bond_items()
+    for lang in available_languages:
         set_language(lang)
         generate_infobox()
         generate_achievements()
-        generate_bond_items()
         generate_skins()
         generate_emotes()
         generate_skills()
-        generate_biography()
         generate_string_energy_network()
         generate_return_letter()
         generate_weapons()
@@ -41,4 +41,4 @@ def multilanguage():
 
 
 if __name__ == "__main__":
-    multilanguage()
+    make_everything()

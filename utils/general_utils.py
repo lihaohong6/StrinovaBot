@@ -167,7 +167,7 @@ def get_bwiki_char_pages() -> list[tuple[int, str, Page]]:
     return res
 
 
-def save_json_page(p: Page, obj, summary: str = "update json page"):
+def save_json_page(page: Page | str, obj, summary: str = "update json page"):
     class EnhancedJSONEncoder(json.JSONEncoder):
         def default(self, o):
             if dataclasses.is_dataclass(o):
@@ -177,14 +177,17 @@ def save_json_page(p: Page, obj, summary: str = "update json page"):
     def dump(o):
         return json.dumps(o, indent=4, cls=EnhancedJSONEncoder)
 
-    if p.text != "":
-        original = dump(json.loads(p.text))
+    if isinstance(page, str):
+        page = Page(s, page)
+
+    if page.text != "":
+        original = dump(json.loads(page.text))
     else:
         original = ""
     modified = dump(obj)
     if original != modified:
-        p.text = modified
-        p.save(summary=summary)
+        page.text = modified
+        page.save(summary=summary)
 
 
 def pick_two(a: str, b: str) -> str:

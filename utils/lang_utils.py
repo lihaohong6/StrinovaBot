@@ -5,7 +5,7 @@ from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from utils.json_utils import get_game_json
-from utils.lang import Language, LanguageVariants, ENGLISH, get_language
+from utils.lang import Language, LanguageVariants, ENGLISH, get_language, CHINESE
 from utils.wiki_utils import s
 
 print(f"Current language: {get_language().code}")
@@ -59,11 +59,27 @@ def redirect_pages(requests: list[RedirectRequest]):
         p.set_redirect_target(Page(s, f"{request.target}{request.lang.page_suffix}"), create=True, force=True)
 
 
+StringConverter = Callable[[str], str]
+
+
+def compose(f1: StringConverter, f2: StringConverter) -> StringConverter:
+    return lambda x: f2(f1(x))
+
+
+class StringConverters:
+    no_text_found: StringConverter = lambda x: x if "NoTextFound" not in x else ""
+    remove_extra_line_space: StringConverter = lambda string: "\n".join(x.strip() for x in string.split("\n"))
+    long_text: StringConverter = compose(no_text_found, remove_extra_line_space)
+
+
 def get_multilanguage_dict(i18n: dict[str, dict], key: str | list[str] | None, default: str = None,
-                           converter: Callable[[str], str] = lambda x: x) -> dict[str, str]:
+                           converter: StringConverter = StringConverters.no_text_found,
+                           extra: str | None = None) -> dict[str, str]:
     result: dict[str, str] = {}
+    if extra is not None:
+        result[CHINESE.code] = extra
     if key is None:
-        return {}
+        return result
     if isinstance(key, str):
         key = [key]
     for lang, v in i18n.items():
