@@ -3,7 +3,7 @@ import sys
 from audio.audio_main import audio_main
 from char_info.achievement import generate_achievements
 from char_info.char_infobox import generate_infobox
-from char_info.dorm import generate_bond_items, generate_gifts
+from char_info.dorm import generate_bond_items
 from char_info.gallery import generate_skins, generate_emotes
 from char_info.skills import generate_string_energy_network, generate_skills
 from char_info.story import generate_return_letter, generate_biography
@@ -11,7 +11,7 @@ from char_info.weapons import generate_weapons
 from page_generator.achievements import generate_achievement_page
 from page_generator.strinova_comms import strinova_comms_main
 from page_generator.weapons import process_weapon_pages, process_weapon_skins
-from utils.lang import LanguageVariants, available_languages, set_language
+from utils.lang import available_languages, set_language
 
 
 def main():
@@ -27,6 +27,7 @@ def main():
 def make_everything():
     generate_biography()
     generate_bond_items()
+    generate_return_letter()
     for lang in available_languages:
         set_language(lang)
         generate_infobox()
@@ -35,7 +36,6 @@ def make_everything():
         generate_emotes()
         generate_skills()
         generate_string_energy_network()
-        generate_return_letter()
         generate_weapons()
         strinova_comms_main()
 
