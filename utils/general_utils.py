@@ -5,17 +5,14 @@ from copy import deepcopy
 from pathlib import Path
 
 import requests
-from numba.cuda.cudadrv.runtime import Runtime
-
 from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
-from utils.asset_utils import csv_root, en_csv_root
 from global_config import name_to_en, char_id_mapper, internal_names
+from utils.asset_utils import csv_root, en_csv_root
 from utils.json_utils import load_json, get_game_json
 from utils.lang import Language, ENGLISH
 from utils.wiki_utils import bwiki, s
-
 
 en_name_to_zh: dict[str, str] = dict((v, k) for k, v in name_to_en.items())
 
@@ -180,7 +177,10 @@ def save_json_page(p: Page, obj, summary: str = "update json page"):
     def dump(o):
         return json.dumps(o, indent=4, cls=EnhancedJSONEncoder)
 
-    original = dump(json.loads(p.text))
+    if p.text != "":
+        original = dump(json.loads(p.text))
+    else:
+        original = ""
     modified = dump(obj)
     if original != modified:
         p.text = modified

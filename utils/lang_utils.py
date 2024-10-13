@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Callable
 
 from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
@@ -58,7 +59,8 @@ def redirect_pages(requests: list[RedirectRequest]):
         p.set_redirect_target(Page(s, f"{request.target}{request.lang.page_suffix}"), create=True, force=True)
 
 
-def get_multilanguage_dict(i18n: dict[str, dict], key: str | list[str] | None, default: str = None) -> dict[str, str]:
+def get_multilanguage_dict(i18n: dict[str, dict], key: str | list[str] | None, default: str = None,
+                           converter: Callable[[str], str] = lambda x: x) -> dict[str, str]:
     result: dict[str, str] = {}
     if key is None:
         return {}
@@ -70,9 +72,9 @@ def get_multilanguage_dict(i18n: dict[str, dict], key: str | list[str] | None, d
             if cur is None:
                 break
             cur = cur.get(k, None)
-        if cur is not None:
+        if cur is not None and "NoTextFound" not in cur:
             assert isinstance(cur, str)
-            result[lang] = cur
+            result[lang] = converter(cur.strip())
         elif default is not None:
             result[lang] = default
     return result
