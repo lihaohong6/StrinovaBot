@@ -5,10 +5,10 @@ import wikitextparser as wtp
 from pywikibot import Page
 
 from global_config import char_id_mapper
-from utils.general_utils import get_table, get_char_pages, save_json_page
+from utils.general_utils import get_table, get_char_pages, save_json_page, get_char_by_id
 from utils.json_utils import get_game_json, get_all_game_json
-from utils.lang import get_language
-from utils.lang_utils import get_multilanguage_dict
+from utils.lang import get_language, JAPANESE, LanguageVariants
+from utils.lang_utils import get_multilanguage_dict, compose, StringConverters, StringConverter
 from utils.wiki_utils import s
 
 
@@ -41,48 +41,21 @@ def generate_biography():
 
 
 def generate_return_letter():
-    lang = get_language()
-    char_stories = {}
+    letters: dict[str, dict[str, str]] = {}
+    i18n = get_all_game_json('ReturnLetterCfg')
     for k, v in get_table("ReturnLetterCfg").items():
         char_id = v['RoleId']
-        lst = char_stories.get(char_id, [])
-        lst.append(k)
-        char_stories[char_id] = lst
-    i18n = get_game_json(lang)['ReturnLetterCfg']
-    for char_id, char_name, p in get_char_pages(lang=lang):
-        if char_id not in char_stories:
-            continue
-        story_list = char_stories[char_id]
-        parsed = wtp.parse(p.text)
-        for t in parsed.templates:
-            if t.name.strip() == "ReturnLetter":
-                result = t
-                break
-        else:
-            print(char_name + " has no template")
-            return
-        t = result
-
-        def add_arg(name, value):
-            if (t.has_arg(name) and value.strip() == "") or value.strip() == "!NoTextFound!":
-                return
-            t.set_arg(name, value + "\n")
-
-        assert len(story_list) == 1
-        story = story_list[0]
-        content = (i18n.get(f'{story}_LetterTitle', "!NoTextFound!") +
-                   "\n\n" +
-                   i18n.get(f'{story}_LetterTitleTwo', "!NoTextFound!"))
-        if "!NoTextFound!" in content:
-            print(f"Can't generate return letter for {char_name} due to missing i18n")
-            continue
-        add_arg(f"Content", content.replace("\n", "<br/>"))
-
-        if p.text.strip() == str(parsed).strip():
-            continue
-        p.text = str(parsed)
-        p.save(summary="generate return letter", minor=False)
-    print("Return letter done")
+        char_name = get_char_by_id(char_id)
+        converter = compose(StringConverters.basic_converter,
+                            StringConverters.newline_to_br)
+        part1 = get_multilanguage_dict(i18n, f'{k}_LetterTitle', default="",
+                                       converter=converter)
+        part2 = get_multilanguage_dict(i18n, f'{k}_LetterTitleTwo', default="",
+                                       converter=converter)
+        letters[char_name] = {}
+        for lang_code in part1.keys():
+            letters[char_name][lang_code] = (part1[lang_code] + "\n\n" + part2[lang_code]).strip()
+    save_json_page("Module:ReturnLetter/data.json", letters)
 
 
 if __name__ == "__main__":

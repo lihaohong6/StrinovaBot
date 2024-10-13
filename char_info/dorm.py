@@ -125,8 +125,7 @@ def generate_bond_items():
         try:
             name = get_multilanguage_dict(i18n, f"{k}_Name", extra=v['Name']['SourceString'])
             desc = get_multilanguage_dict(i18n, f"{k}_Desc", extra=v['Desc']['SourceString'])
-            story = get_multilanguage_dict(i18n, f"{k}_ItemStory", extra=v['ItemStory']['SourceString'],
-                                           converter=StringConverters.long_text)
+            story = get_multilanguage_dict(i18n, f"{k}_ItemStory", extra=v['ItemStory']['SourceString'])
             item = PledgeItem(v['Id'], v['ItemIcon']['AssetPathName'].split("_")[-1],
                               name,
                               desc,

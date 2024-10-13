@@ -25,8 +25,7 @@ class Decal:
 
 
 def localize_decals(decals: list[Decal]):
-    table_name = "Decal"
-    i18n = get_all_game_json(table_name)
+    i18n = get_all_game_json("Decal")
     for decal in decals:
         decal.name |= get_multilanguage_dict(i18n, f"{decal.id}_Name")
         decal.description |= get_multilanguage_dict(i18n, f"{decal.id}_Desc")

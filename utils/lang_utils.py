@@ -69,11 +69,13 @@ def compose(f1: StringConverter, f2: StringConverter) -> StringConverter:
 class StringConverters:
     no_text_found: StringConverter = lambda x: x if "NoTextFound" not in x else ""
     remove_extra_line_space: StringConverter = lambda string: "\n".join(x.strip() for x in string.split("\n"))
-    long_text: StringConverter = compose(no_text_found, remove_extra_line_space)
+    basic_converter: StringConverter = compose(no_text_found, remove_extra_line_space)
+    newline_to_br: StringConverter = lambda x: x.replace("\n", "<br>")
+    double_newline: StringConverter = lambda x: x.replace("\n", "\n\n")
 
 
 def get_multilanguage_dict(i18n: dict[str, dict], key: str | list[str] | None, default: str = None,
-                           converter: StringConverter = StringConverters.no_text_found,
+                           converter: StringConverter = StringConverters.basic_converter,
                            extra: str | None = None) -> dict[str, str]:
     result: dict[str, str] = {}
     if extra is not None:
