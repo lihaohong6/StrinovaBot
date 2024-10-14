@@ -26,21 +26,6 @@ class Achievement:
     unlock: dict[str, str]
     description: dict[str, str]
 
-    def to_gallery_string(self) -> str:
-        return f"File:Achievement {self.id}.png|" + \
-            '<span style="font-size: larger">' + f"'''{self.name}'''</span><br/>" + \
-            f"'''Unlock''': {self.unlock}<br/>" + \
-            f"<small>{self.description}</small>" + \
-            f"|alt=Icon of achievement {self.name}"
-
-
-def achievements_to_gallery(achievements: list[Achievement]) -> str:
-    gallery = ["<gallery mode=packed>"]
-    for achievement in achievements:
-        gallery.append(achievement.to_gallery_string())
-    gallery.append("</gallery>")
-    return "\n".join(gallery)
-
 
 def get_i18n() -> dict:
     i18n = get_all_game_json('Achievement')
@@ -86,27 +71,6 @@ def get_achievements(upload: bool = True) -> list[Achievement]:
                                           'Batch upload achievement icons'))
         process_uploads(requests)
     return achievements
-
-
-def get_achievements_by_level(a_list: list[Achievement]) -> dict[int, list[Achievement]]:
-    levels: dict[int, list[Achievement]] = {}
-    for achievement in a_list:
-        level = achievement.level
-        if level not in levels:
-            levels[level] = []
-        levels[level].append(achievement)
-    return levels
-
-
-def achievements_to_tabs(achievements: list[Achievement], group: str) -> str:
-    levels = get_achievements_by_level(achievements)
-    group = make_tab_group(group)
-    tabs = "{{Tab/tabs | " + f"group={group} | " + " | ".join(f"Level {k}" for k in levels.keys()) + " }}"
-    contents = []
-    for a_list in levels.values():
-        contents.append(achievements_to_gallery(a_list))
-    return "\n{{Achievements|\n" + tabs + "\n" + "{{Tab/content | " + f"group={group} |\n" + \
-        "\n\n|\n\n".join(contents) + "}}\n}}\n\n"
 
 
 def generate_all_achievements(*args):

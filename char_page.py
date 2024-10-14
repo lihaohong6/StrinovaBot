@@ -1,11 +1,8 @@
-from char_info.achievement import generate_achievements
 from char_info.char_infobox import generate_infobox
-from char_info.character_selector import generate_character_selector
-from char_info.gallery import generate_emotes, generate_skins
 from char_info.dorm import generate_gifts, generate_bond_items
+from char_info.gallery import generate_emotes, generate_skins
 from char_info.skills import generate_skills, generate_string_energy_network
 from char_info.story import generate_biography, generate_return_letter
-
 from char_info.weapons import generate_weapons
 
 
@@ -34,7 +31,6 @@ def main():
         "string_energy_network": generate_string_energy_network,
         "bond_items": generate_bond_items,
         "gifts": generate_gifts,
-        "achievements": generate_achievements
     }
     from sys import argv
     assert len(argv) == 2, ", ".join(f.keys())

@@ -1,7 +1,6 @@
 import sys
 
 from audio.audio_main import audio_main
-from char_info.achievement import generate_achievements
 from char_info.char_infobox import generate_infobox
 from char_info.dorm import generate_bond_items
 from char_info.gallery import generate_skins, generate_emotes
