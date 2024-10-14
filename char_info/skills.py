@@ -92,11 +92,12 @@ Growth_Team
     skill_json = get_table("Skill")
     growth_json = get_table("Growth_Bomb")
     for char_id, char_name, p in get_char_pages(lang=lang):
-        bwiki_base_page = Page(bwiki(), en_name_to_zh[char_name])
-        if bwiki_base_page.isRedirectPage():
-            bwiki_base_page = bwiki_base_page.getRedirectTarget()
-        bwiki_page = Page(bwiki(), bwiki_base_page.title() + "/弦能增幅网络")
-        assert bwiki_page.exists(), char_name
+        # FIXME: bwiki api is too slow
+        # bwiki_base_page = Page(bwiki(), en_name_to_zh[char_name])
+        # if bwiki_base_page.isRedirectPage():
+        #     bwiki_base_page = bwiki_base_page.getRedirectTarget()
+        # bwiki_page = Page(bwiki(), bwiki_base_page.title() + "/弦能增幅网络")
+        # assert bwiki_page.exists(), char_name
         parsed = wtp.parse(p.text)
         for template in parsed.templates:
             if template.name.strip() == "StringEnergyNetwork":
@@ -135,7 +136,9 @@ Growth_Team
 
             upgrade_name = i18n[char_growth['PartName'][part_index]['Key']]
             add_arg("name", upgrade_name)
-            add_arg("icon", re.search(rf"icon{part_index + 1}=(\d)+", bwiki_page.text).group(1))
+            # FIXME: bwiki api is too slow
+            # add_arg("icon", re.search(rf"icon{part_index + 1}=(\d)+", bwiki_page.text).group(1))
+            add_arg("icon", re.search(rf"group{arg_index}=.*icon=(\d)", p.text).group(1))
 
             descriptions = char_growth[f'Part{part_num}Desc']
             for index, description in enumerate(descriptions, 1):

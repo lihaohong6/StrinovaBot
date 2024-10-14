@@ -10,10 +10,13 @@ from utils.wiki_utils import s
 
 print(f"Current language: {get_language().code}")
 
-char_name_table = {
+char_name_table: dict[str, dict[int, str]] = {
     LanguageVariants.JAPANESE.value.code: {
         120: 'フラグランス',
-        205: 'ガラテア'
+        110: '白墨',
+        137: '香奈美',
+        205: 'ガラテア',
+        132: '明'
     }
 }
 

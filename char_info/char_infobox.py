@@ -57,6 +57,8 @@ def make_infobox(char_id, char_name, p: Page, save=True) -> dict:
         value = str(value)
         if t.has_arg(name) and value.strip() == "":
             return
+        if "NoTextFound" in value:
+            value = ""
         t.set_arg(name, value + "\n")
         data[name] = value
 

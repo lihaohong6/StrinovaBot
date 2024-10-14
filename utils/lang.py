@@ -22,7 +22,9 @@ class Language:
     @property
     def game_json_dir(self):
         special = {
-            'es': 'es-419'
+            'es': 'es-419',
+            'zh-hans': 'zh-Hans',
+            'pt-br': 'pt-BR',
         }
         return special.get(self.code, self.code)
 
@@ -37,6 +39,10 @@ class Language:
     def audio_dir_name(self):
         return self.name
 
+    @property
+    def mw_code(self):
+        return self.code
+
 
 class LanguageVariants(Enum):
     ENGLISH = Language('en', 'English')
@@ -46,15 +52,15 @@ class LanguageVariants(Enum):
     FRENCH = Language('fr', 'French')
     GERMAN = Language('de', 'German')
     RUSSIAN = Language('ru', 'Russian')
-    PORTUGUESE = Language('pt-BR', 'Portuguese')
-    SIMPLIFIED_CHINESE = Language('zh-Hans', 'Simplified Chinese')
+    PORTUGUESE = Language('pt-br', 'Portuguese')
+    SIMPLIFIED_CHINESE = Language('zh-hans', 'Simplified Chinese')
 
 
 CHINESE: Language = Language('cn', 'Chinese')
 ENGLISH: Language = LanguageVariants.ENGLISH.value
 JAPANESE: Language = LanguageVariants.JAPANESE.value
 
-available_languages = [ENGLISH, JAPANESE, LanguageVariants.KOREAN.value]
+available_languages = [l.value for l in LanguageVariants]
 
 current_language: Language = LanguageVariants.ENGLISH.value
 

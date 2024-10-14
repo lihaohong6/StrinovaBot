@@ -5,7 +5,7 @@ from pywikibot.data.api import Request, PropertyGenerator
 from pywikibot.pagegenerators import GeneratorFactory
 
 from utils.general_utils import get_char_pages
-from utils.lang import Language, LanguageVariants
+from utils.lang import Language, LanguageVariants, ENGLISH, JAPANESE
 from utils.lang_utils import title_to_lang, from_lang_code, get_localized_char_name
 from utils.wiki_utils import s
 
@@ -14,27 +14,29 @@ from utils.wiki_utils import s
 
 
 def make_char_pages():
-    lang = LanguageVariants.KOREAN.value
-
-    for subpage in ['', '/gallery']:
-        english_version = dict((char_id, p) for char_id, _, p in get_char_pages(subpage_name=subpage))
-        for char_id, char_name, p in get_char_pages(subpage_name=subpage, lang=lang):
-            if not p.exists():
-                p_original = english_version[char_id]
-                p.text = p_original.text + f"\n[[en:{p_original.title()}]]"
-                p.save(f"new {lang.code} page")
-                try:
-                    r = Request(s, parameters={"action": "setpagelanguage", "title": p.title(), "lang": lang.code,
-                                               "token": getattr(s, 'tokens')['csrf']})
-                    r.submit()
-                except Exception as e:
-                    print(e)
-            if subpage == '':
-                localized_name = get_localized_char_name(char_id, lang)
-                if localized_name is not None and localized_name.strip() != "":
-                    redirect = Page(s, localized_name)
-                    if not redirect.exists():
-                        redirect.set_redirect_target(p, create=True, summary=f"redirect {lang.code} title")
+    languages = [l.value
+                 for l in LanguageVariants
+                 if l.value not in [ENGLISH, JAPANESE, LanguageVariants.KOREAN.value]]
+    for lang in languages:
+        for subpage in ['']:
+            english_version = dict((char_id, p) for char_id, _, p in get_char_pages(subpage_name=subpage))
+            for char_id, char_name, p in get_char_pages(subpage_name=subpage, lang=lang):
+                if not p.exists():
+                    p_original = english_version[char_id]
+                    p.text = p_original.text + f"\n[[en:{p_original.title()}]]"
+                    p.save(f"new {lang.name} page")
+                    try:
+                        r = Request(s, parameters={"action": "setpagelanguage", "title": p.title(), "lang": lang.mw_code,
+                                                   "token": getattr(s, 'tokens')['csrf']})
+                        r.submit()
+                    except Exception as e:
+                        print(e)
+                if subpage == '':
+                    localized_name = get_localized_char_name(char_id, lang)
+                    if localized_name is not None and localized_name.strip() != "":
+                        redirect = Page(s, localized_name)
+                        if not redirect.exists():
+                            redirect.set_redirect_target(p, create=True, summary=f"redirect {lang.code} title")
 
 
 def make_interlanguage_links():
@@ -45,7 +47,7 @@ def make_interlanguage_links():
         neighbors: list["LangPage"]
 
     gen = GeneratorFactory(s)
-    gen.handle_args(['-cat:Characters', '-cat:Character galleries', '-cat:Main pages'])
+    gen.handle_args(['-cat:Main pages'])
     gen = gen.getCombinedGenerator()
     pages: dict[str, LangPage] = dict((p.title(), LangPage(p, title_to_lang(p.title()), [])) for p in gen)
     gen = PropertyGenerator(site=s, prop="langlinks", titles="|".join(p.page.title() for p in pages.values()))

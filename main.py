@@ -2,7 +2,7 @@ import sys
 
 from audio.audio_main import audio_main
 from char_info.char_infobox import generate_infobox
-from char_info.dorm import generate_bond_items
+from char_info.dorm import generate_bond_items, generate_gifts
 from char_info.gallery import generate_skins, generate_emotes
 from char_info.skills import generate_string_energy_network, generate_skills
 from char_info.story import generate_return_letter, generate_biography
@@ -28,15 +28,17 @@ def make_everything():
     generate_bond_items()
     generate_return_letter()
     generate_all_achievements()
+    generate_gifts()
     for lang in available_languages:
         set_language(lang)
         generate_infobox()
-        generate_skins()
-        generate_emotes()
         generate_skills()
         generate_string_energy_network()
         generate_weapons()
-        strinova_comms_main()
+        # need transition to lua
+        # generate_skins()
+        # generate_emotes()
+        # strinova_comms_main()
 
 
 if __name__ == "__main__":

@@ -214,7 +214,7 @@ def pick_string(strings: list[str]) -> str:
     return strings[0]
 
 
-def merge_dict(a: dict, b: dict) -> dict:
+def merge_dict(a: dict, b: dict, check: bool = False) -> dict:
     """
     Use b as the base dict and override with a whenever there's a conflict
     :param a:
@@ -229,7 +229,8 @@ def merge_dict(a: dict, b: dict) -> dict:
             else:
                 result[k] = merge_dict(v, result[k])
         elif isinstance(v, str):
-            result[k] = v
+            if not check or (v != "" and "NoTextFound" not in v):
+                result[k] = v
         else:
             raise RuntimeError("Unexpected type")
     return result

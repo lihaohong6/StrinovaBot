@@ -55,16 +55,10 @@ def generate_gifts():
         g = item_table[gift.id]
         gift.file = re.search(r"_(\d+)$", g['IconItem']['AssetPathName']).group(1)
         gift.quality = g['Quality']
-        for lang in LanguageVariants:
-            lang_code = lang.value.code
-            gift.name[lang_code] = g['Name']['SourceString']
-            gift.description[lang_code] = g['Desc']['SourceString']
-
-            i18n = get_game_json(lang.value)['Item']
-            key = f"{gift.id}_Name"
-            if key in i18n:
-                gift.name[lang_code] = i18n[key]
-                gift.description[lang_code] = i18n[f"{gift.id}_Desc"]
+        name_cn = g['Name']['SourceString']
+        gift.name = get_multilanguage_dict(i18n, f"{gift.id}_Name", extra=name_cn)
+        desc_cn = g['Desc']['SourceString']
+        gift.description = get_multilanguage_dict(i18n, f"{gift.id}_Desc", extra=desc_cn)
 
     gifts = [g
              for g in sorted(gifts, key=lambda t: t.quality, reverse=True)
@@ -197,7 +191,7 @@ def generate_friendship_gifts():
 
 
 if __name__ == "__main__":
-    # generate_gifts()
+    generate_gifts()
     generate_bond_items()
     # Not ready yet
     # generate_friendship_gifts()
