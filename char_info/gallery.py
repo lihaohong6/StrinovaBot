@@ -1,15 +1,18 @@
+import re
 from dataclasses import dataclass
 from functools import reduce
 
 import wikitextparser as wtp
 from pywikibot import FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
+from sympy.benchmarks.bench_meijerint import bench
 
 from utils.asset_utils import portrait_root, skin_back_root, local_asset_root, resource_root
 from utils.general_utils import get_table, get_char_by_id, get_cn_wiki_skins, \
-    en_name_to_zh, get_char_pages, cn_name_to_en
-from utils.json_utils import get_game_json
-from utils.lang import get_language, ENGLISH
+    en_name_to_zh, get_char_pages, cn_name_to_en, save_json_page
+from utils.json_utils import get_game_json, get_all_game_json
+from utils.lang import get_language, ENGLISH, JAPANESE, LanguageVariants
+from utils.lang_utils import get_multilanguage_dict
 from utils.upload_utils import upload_file, UploadRequest, process_uploads
 from utils.wiki_utils import bwiki, s
 
@@ -18,12 +21,11 @@ def generate_emotes():
     @dataclass
     class Emote:
         id: int
-        name: str
-        text: str
+        name: dict[str, str]
+        text: dict[str, str]
 
-    lang = get_language()
     goods_table = get_table("Goods")
-    i18n = get_game_json(lang)['Goods']
+    i18n = get_all_game_json('Goods')
     items: dict[str, list[Emote]] = {}
     upload_requests: list[UploadRequest] = []
     for k, v in goods_table.items():
@@ -36,8 +38,8 @@ def generate_emotes():
             continue
         lst = items.get(name_en, [])
         emote = Emote(k,
-                      i18n.get(f'{k}_Name', v['Name']['SourceString']),
-                      i18n.get(f'{k}_Desc', v['Desc']['SourceString']))
+                      get_multilanguage_dict(i18n, f'{k}_Name', extra=v['Name']['SourceString']),
+                      get_multilanguage_dict(i18n, f'{k}_Desc', extra=v['Desc']['SourceString']))
         lst.append(emote)
         items[name_en] = lst
         upload_requests.append(UploadRequest(resource_root / "Emote" / f"T_Dynamic_Emote_{emote.id}.png",
@@ -45,33 +47,7 @@ def generate_emotes():
                                              '[[Category:Emotes]]',
                                              "batch upload emotes"))
     process_uploads(upload_requests)
-
-    for char_id, name, p in get_char_pages("/gallery", lang=lang):
-        emote_list = items[name]
-        gallery = ['<gallery mode="packed">']
-        for emote in emote_list:
-            split = emote.name.split("-")
-            emote_name = "-".join(split[1:]).strip()
-            gallery.append(f"Emote_{emote.id}.png|'''{emote_name}'''<br/>{emote.text}")
-        gallery.append("</gallery>")
-        parsed = wtp.parse(p.text)
-        for section in parsed.sections:
-            if section.title is not None and section.title.strip() == "Emotes":
-                string = "\n".join(gallery) + "\n\n"
-                gallery_tags = section.get_tags('gallery')
-                if len(gallery_tags) > 0:
-                    assert len(gallery_tags) == 1
-                    gallery_tags[0].string = string
-                else:
-                    section.contents = string
-                break
-        else:
-            continue
-        if p.text.strip() == str(parsed).strip():
-            continue
-        p.text = str(parsed)
-        p.save(summary="generate emotes", minor=False)
-    print("Emotes done.")
+    save_json_page("Module:Emote/data.json", items)
 
 
 @dataclass
