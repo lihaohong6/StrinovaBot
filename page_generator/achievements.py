@@ -4,10 +4,12 @@ from dataclasses import dataclass
 import wikitextparser as wtp
 from pywikibot import Page, FilePage
 
+from scripts.rename_images import char_name
 from utils.asset_utils import resource_root
-from utils.general_utils import get_table, make_tab_group
-from utils.json_utils import get_game_json
+from utils.general_utils import get_table, make_tab_group, get_char_by_id, save_json_page
+from utils.json_utils import get_game_json, get_all_game_json
 from utils.lang import Language, ENGLISH
+from utils.lang_utils import get_multilanguage_dict, StringConverters, compose
 from utils.upload_utils import UploadRequest, process_uploads
 from utils.wiki_utils import s
 
@@ -18,10 +20,11 @@ class Achievement:
     level: int
     type: int
     quality: int
-    role: int
-    name: str
-    unlock: str
-    description: str
+    role_id: int
+    role_name: str
+    name: dict[str, str]
+    unlock: dict[str, str]
+    description: dict[str, str]
 
     def to_gallery_string(self) -> str:
         return f"File:Achievement {self.id}.png|" + \
@@ -39,22 +42,22 @@ def achievements_to_gallery(achievements: list[Achievement]) -> str:
     return "\n".join(gallery)
 
 
-def get_i18n(lang: Language) -> dict:
-    i18n = get_game_json(lang)['Achievement']
-    for k, v in get_game_json(lang)['Badge'].items():
+def get_i18n() -> dict:
+    i18n = get_all_game_json('Achievement')
+    for k, v in get_all_game_json('Badge').items():
         if k not in i18n:
             i18n[k] = v
     return i18n
 
 
-def get_achievements(upload: bool = True, lang: Language = ENGLISH) -> list[Achievement]:
-    i18n = get_i18n(lang)
+def get_achievements(upload: bool = True) -> list[Achievement]:
+    i18n = get_i18n()
     achievement_table = get_table("Achievement")
     achievements = []
     for key, value in achievement_table.items():
         try:
-            name = i18n.get(f'{key}_Name', value['Name']['SourceString'])
-            unlock: str = i18n.get(f'{key}_Explain', value['Explain']['SourceString'])
+            role_id: int = value['Role']
+            role_name = get_char_by_id(role_id)
 
             def sub_condition(string: str):
                 if "{0}" in string:
@@ -62,11 +65,15 @@ def get_achievements(upload: bool = True, lang: Language = ENGLISH) -> list[Achi
                     return re.sub(r"<Chat-Self>(\d+)</>", lambda match: match.group(1), string)
                 return string
 
-            name = sub_condition(name)
-            unlock = sub_condition(unlock)
-            description = i18n.get(f'{key}_Details', value['Details']['SourceString'])
-            achievement = Achievement(key, value['Level'], value['Type'], value['Quality'], value['Role'],
-                                      name, unlock, description)
+            converter = compose(StringConverters.basic_converter, sub_condition)
+            name = get_multilanguage_dict(i18n, f"{key}_Name", converter=converter,
+                                          extra=value['Name']['SourceString'])
+            unlock = get_multilanguage_dict(i18n, f"{key}_Explain", converter=converter,
+                                            extra=value['Explain']['SourceString'])
+            details = get_multilanguage_dict(i18n, f"{key}_Details", converter=converter,
+                                             extra=value['Details']['SourceString'])
+            achievement = Achievement(key, value['Level'], value['Type'], value['Quality'], role_id, role_name,
+                                      name, unlock, details)
             achievements.append(achievement)
         except KeyError:
             pass
@@ -102,22 +109,13 @@ def achievements_to_tabs(achievements: list[Achievement], group: str) -> str:
         "\n\n|\n\n".join(contents) + "}}\n}}\n\n"
 
 
-def generate_achievement_page(*args):
+def generate_all_achievements(*args):
     achievements = get_achievements()
-    p = Page(s, "Achievements")
-    parsed = wtp.parse(p.text)
-    type_nums = [1, 3, 4]
-    for index, section in enumerate(section for section in parsed.sections if section.level == 2):
-        type_num = type_nums[index]
-        a_list = [a for a in achievements if a.type == type_num]
-        section.contents = achievements_to_tabs(a_list, f"type{type_num}")
-    if p.text.strip() != str(parsed).strip():
-        p.text = str(parsed)
-        p.save(summary="generate achievement page")
+    save_json_page("Module:Achievement/data.json", achievements)
 
 
 def main():
-    generate_achievement_page()
+    generate_all_achievements()
 
 
 if __name__ == '__main__':

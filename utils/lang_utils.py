@@ -79,7 +79,7 @@ def get_multilanguage_dict(i18n: dict[str, dict], key: str | list[str] | None, d
                            extra: str | None = None) -> dict[str, str]:
     result: dict[str, str] = {}
     if extra is not None:
-        result[CHINESE.code] = extra
+        result[CHINESE.code] = converter(extra)
     if key is None:
         return result
     if isinstance(key, str):
@@ -94,5 +94,5 @@ def get_multilanguage_dict(i18n: dict[str, dict], key: str | list[str] | None, d
             assert isinstance(cur, str)
             result[lang] = converter(cur.strip())
         elif default is not None:
-            result[lang] = default
+            result[lang] = converter(default)
     return result
