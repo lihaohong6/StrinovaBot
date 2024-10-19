@@ -1,14 +1,11 @@
 import re
 from dataclasses import dataclass
 
-import wikitextparser as wtp
-from pywikibot import Page, FilePage
+from pywikibot import FilePage
 
-from scripts.rename_images import char_name
 from utils.asset_utils import resource_root
-from utils.general_utils import get_table, make_tab_group, get_char_by_id, save_json_page
-from utils.json_utils import get_game_json, get_all_game_json
-from utils.lang import Language, ENGLISH
+from utils.general_utils import get_table, get_char_by_id, save_json_page
+from utils.json_utils import get_all_game_json
 from utils.lang_utils import get_multilanguage_dict, StringConverters, compose
 from utils.upload_utils import UploadRequest, process_uploads
 from utils.wiki_utils import s

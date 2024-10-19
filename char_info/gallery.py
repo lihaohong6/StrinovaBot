@@ -255,7 +255,7 @@ def generate_skins():
         skin_list.clear()
         skin_list.extend(skin_list2)
 
-    save_json_page("CharacterSkins/data.json", skins)
+    save_json_page("Module:CharacterSkins/data.json", skins)
     print("Skins done")
 
 

@@ -18,12 +18,12 @@ def make_char_pages():
                  for l in LanguageVariants
                  if l.value not in [ENGLISH, JAPANESE, LanguageVariants.KOREAN.value]]
     for lang in languages:
-        for subpage in ['']:
+        for subpage in ['/gallery']:
             english_version = dict((char_id, p) for char_id, _, p in get_char_pages(subpage_name=subpage))
             for char_id, char_name, p in get_char_pages(subpage_name=subpage, lang=lang):
                 if not p.exists():
                     p_original = english_version[char_id]
-                    p.text = p_original.text + f"\n[[en:{p_original.title()}]]"
+                    p.text = p_original.text
                     p.save(f"new {lang.name} page")
                     try:
                         r = Request(s, parameters={"action": "setpagelanguage", "title": p.title(), "lang": lang.mw_code,
@@ -47,7 +47,7 @@ def make_interlanguage_links():
         neighbors: list["LangPage"]
 
     gen = GeneratorFactory(s)
-    gen.handle_args(['-cat:Main pages'])
+    gen.handle_args(['-cat:Main pages', '-cat:Character galleries'])
     gen = gen.getCombinedGenerator()
     pages: dict[str, LangPage] = dict((p.title(), LangPage(p, title_to_lang(p.title()), [])) for p in gen)
     gen = PropertyGenerator(site=s, prop="langlinks", titles="|".join(p.page.title() for p in pages.values()))
