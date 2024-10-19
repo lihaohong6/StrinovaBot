@@ -3,6 +3,7 @@ import json
 import re
 from copy import deepcopy
 from pathlib import Path
+from typing import Callable
 
 import requests
 from pywikibot import Page
@@ -214,12 +215,19 @@ def pick_string(strings: list[str]) -> str:
     return strings[0]
 
 
-def merge_dict(a: dict, b: dict, check: bool = False) -> dict:
+def pick_string_length(strings: list[str]) -> str:
+    best: str | None = None
+    for string in strings:
+        if string is None or "NoTextFound" in string:
+            continue
+        if (best is None or len(string) > len(best)) and len(string) > 0:
+            best = string
+    return best
+
+
+def merge_dict(a: dict, b: dict, check: bool = False, merge: Callable[[list[str]], str] = None) -> dict:
     """
     Use b as the base dict and override with a whenever there's a conflict
-    :param a:
-    :param b:
-    :return:
     """
     result = deepcopy(b)
     for k, v in a.items():
@@ -229,9 +237,29 @@ def merge_dict(a: dict, b: dict, check: bool = False) -> dict:
             else:
                 result[k] = merge_dict(v, result[k])
         elif isinstance(v, str):
+            if merge is not None:
+                result[k] = merge([result.get(k, None), v])
             if not check or (v != "" and "NoTextFound" not in v):
                 result[k] = v
         else:
+            raise RuntimeError("Unexpected type")
+    return result
+
+
+def merge_dict2(a: dict, b: dict, merge: Callable[[list[str]], str] = pick_string_length) -> dict:
+    """
+    Use b as the base dict and override with a whenever there's a conflict
+    """
+    result = deepcopy(b)
+    for k, v in a.items():
+        if isinstance(v, dict):
+            if result.get(k) is None:
+                result[k] = v
+            else:
+                result[k] = merge_dict2(v, result[k])
+        elif isinstance(v, str):
+            result[k] = merge([result.get(k, None), v])
+        elif v is not None:
             raise RuntimeError("Unexpected type")
     return result
 

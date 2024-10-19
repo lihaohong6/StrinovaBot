@@ -30,6 +30,7 @@ def make_everything():
     generate_all_achievements()
     generate_gifts()
     generate_emotes()
+    generate_skins()
     for lang in available_languages:
         set_language(lang)
         generate_infobox()
@@ -37,7 +38,6 @@ def make_everything():
         generate_string_energy_network()
         generate_weapons()
         # need transition to lua
-        # generate_skins()
         # strinova_comms_main()
 
 

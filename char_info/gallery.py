@@ -1,17 +1,14 @@
-import re
 from dataclasses import dataclass
-from functools import reduce
 
 import wikitextparser as wtp
 from pywikibot import FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
-from sympy.benchmarks.bench_meijerint import bench
 
 from utils.asset_utils import portrait_root, skin_back_root, local_asset_root, resource_root
 from utils.general_utils import get_table, get_char_by_id, get_cn_wiki_skins, \
-    en_name_to_zh, get_char_pages, cn_name_to_en, save_json_page
-from utils.json_utils import get_game_json, get_all_game_json
-from utils.lang import get_language, ENGLISH, JAPANESE, LanguageVariants
+    en_name_to_zh, cn_name_to_en, save_json_page, pick_string_length, merge_dict2
+from utils.json_utils import get_all_game_json
+from utils.lang import CHINESE
 from utils.lang_utils import get_multilanguage_dict
 from utils.upload_utils import upload_file, UploadRequest, process_uploads
 from utils.wiki_utils import bwiki, s
@@ -54,13 +51,14 @@ def generate_emotes():
 class SkinInfo:
     id: list[int]
     quality: int
-    name_cn: str
-    description_cn: str
-    name_en: str = ""
-    name_local: str = ""
-    description_local: str = ""
+    name: dict[str, str]
+    description: dict[str, str]
     portrait: str = ""
     back: str = ""
+
+    @property
+    def name_cn(self) -> str:
+        return self.name[CHINESE.code]
 
     def get_bwiki_screenshot_front_title(self, char_name: str):
         return f"File:{char_name}时装-{self.name_cn}.png"
@@ -80,10 +78,10 @@ def parse_skin_tables() -> dict[str, list[SkinInfo]]:
     store_skins_table = get_table("Goods")
     skins: dict[str, list[SkinInfo]] = {}
 
-    def add_skin(char_name, skin_id, quality, name_cn, description_cn):
+    def add_skin(char_name, skin_id, quality, name, description):
         lst = skins.get(char_name, [])
         # avoid dups
-        duplicates = [s for s in lst if s.name_cn == name_cn]
+        duplicates = [skin for skin in lst if skin.name[CHINESE.code] == name[CHINESE.code]]
         if len(duplicates) > 0:
             assert len(duplicates) == 1
             d = duplicates[0]
@@ -91,22 +89,20 @@ def parse_skin_tables() -> dict[str, list[SkinInfo]]:
             if d.quality != quality:
                 print(f"Quality mismatch for {char_name}: {skin_id} and {d.id}")
                 d.quality = 0 if min(quality, d.quality) == 0 else max(quality, d.quality)
-                if len(description_cn) > len(d.description_cn):
-                    d.description_cn = description_cn
+                d.description = merge_dict2(d.description, description, merge=pick_string_length)
             return
-        lst.append(SkinInfo([skin_id], quality, name_cn, description_cn))
+        lst.append(SkinInfo([skin_id], quality, name, description))
         skins[char_name] = lst
 
     for k, v in skins_table.items():
         skin_id = k
-        name_cn = v['NameCn']['SourceString']
+        name = {CHINESE.code: v['NameCn']['SourceString']}
         quality = v['Quality']
         char_name = get_char_by_id(v['RoleId'])
         if char_name is None:
             continue
-        if 'SourceString' not in v['Description']:
-            continue
-        add_skin(char_name, skin_id, quality, name_cn, v['Description']['SourceString'])
+        description = {CHINESE.code: v['Description'].get("SourceString", "")}
+        add_skin(char_name, skin_id, quality, name, description)
     cn_skin_name_to_char_name = get_cn_wiki_skins()
     for k, v in store_skins_table.items():
         # 4: skin; 8: IDCard
@@ -119,7 +115,9 @@ def parse_skin_tables() -> dict[str, list[SkinInfo]]:
             continue
         char_name = cn_name_to_en(cn_skin_name_to_char_name[name_cn])
         assert char_name is not None
-        add_skin(char_name, skin_id, quality, name_cn, v['Desc']['SourceString'])
+        add_skin(char_name, skin_id, quality,
+                 {CHINESE.code: name_cn},
+                 {CHINESE.code: v['Desc'].get('SourceString', "")})
     return skins
 
 
@@ -212,42 +210,21 @@ def process_back_images(char_name: str, name_zh: str, skin_list: list[SkinInfo])
 
 
 def localize_skins(skin_list: list[SkinInfo]):
-    lang = get_language()
-    i18n_local = get_game_json(lang)['RoleSkin'] | get_game_json(lang)['Goods']
-    i18n_en = get_game_json(ENGLISH)['RoleSkin'] | get_game_json(ENGLISH)['Goods']
+    i18n = merge_dict2(get_all_game_json('RoleSkin'), get_all_game_json('Goods'), merge=pick_string_length)
     for skin in skin_list:
-        # get en name and local name
-        names = []
-        for i18n in [i18n_en, i18n_local]:
-            # reset description so that en descriptions will be discarded
-            descriptions = []
-            name = None
-            for skin_id in skin.id:
-                k1 = f'{skin_id}_NameCn'
-                k2 = f'{skin_id}_Name'
-                if k1 in i18n:
-                    name = i18n[k1]
-                    description = i18n[f'{skin_id}_Description']
-                    descriptions.append(description)
-                if k2 in i18n:
-                    name = i18n[k2]
-                    description = i18n.get(f'{skin_id}_Desc', "")
-                    descriptions.append(description)
-            if name is None or name == '!NoTextFound!':
-                name = skin.name_cn
-            descriptions = [d for d in descriptions if d != '!NoTextFound!']
-            if len(descriptions) == 0:
-                descriptions.append(skin.description_cn)
-            names.append(name)
-        name_en, name_local = names
-        skin.name_en = name_en
-        skin.name_local = name_local
-        skin.description_local = reduce(lambda x, y: x if len(x) > len(y) else y, descriptions, "")
+        name = skin.name
+        description = skin.description
+        for skin_id in skin.id:
+            name = merge_dict2(name, get_multilanguage_dict(i18n, key=f'{skin_id}_NameCn'))
+            name = merge_dict2(name, get_multilanguage_dict(i18n, key=f'{skin_id}_Name'))
+            description = merge_dict2(description, get_multilanguage_dict(i18n, key=f'{skin_id}_Description'))
+            description = merge_dict2(description, get_multilanguage_dict(i18n, key=f'{skin_id}_Desc'))
+        skin.name = name
+        skin.description = description
 
 
 def make_skin_template(t: wtp.Template, char_name: str, skin_list: list[SkinInfo]) -> None:
     skin_list.sort(key=lambda x: x.quality if x.quality != 0 else 100, reverse=True)
-    localize_skins(skin_list)
     skin_list: list[SkinInfo] = upload_skins(char_name, skin_list)
 
     skin_counter = 1
@@ -270,34 +247,15 @@ def make_skin_template(t: wtp.Template, char_name: str, skin_list: list[SkinInfo
 
 
 def generate_skins():
-    lang = get_language()
     skins = parse_skin_tables()
+    for char_name, skin_list in skins.items():
+        localize_skins(skin_list)
+        skin_list.sort(key=lambda x: x.quality if x.quality != 0 else 100, reverse=True)
+        skin_list2: list[SkinInfo] = upload_skins(char_name, skin_list)
+        skin_list.clear()
+        skin_list.extend(skin_list2)
 
-    for char_id, char_name, p in get_char_pages("/gallery", lang=lang):
-        if char_name not in skins:
-            print("No skin found for " + char_name)
-            continue
-        skin_list = skins[char_name]
-        if char_name not in en_name_to_zh:
-            print("Skipping character " + char_name + " due to lack of en-zh name mapping")
-            continue
-
-        parsed = wtp.parse(p.text)
-        for template in parsed.templates:
-            if template.name.strip() == "CharacterSkins":
-                t = template
-                break
-        else:
-            print("Template CharacterSkins not found on " + char_name)
-            continue
-
-        t.string = "{{CharacterSkins\n}}"
-        make_skin_template(t, char_name, skin_list)
-
-        if p.text.strip() == str(parsed).strip():
-            continue
-        p.text = str(parsed)
-        p.save(summary="generate skins", minor=True)
+    save_json_page("CharacterSkins/data.json", skins)
     print("Skins done")
 
 

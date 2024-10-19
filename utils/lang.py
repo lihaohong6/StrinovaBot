@@ -59,6 +59,7 @@ class LanguageVariants(Enum):
 CHINESE: Language = Language('cn', 'Chinese')
 ENGLISH: Language = LanguageVariants.ENGLISH.value
 JAPANESE: Language = LanguageVariants.JAPANESE.value
+KOREAN: Language = LanguageVariants.KOREAN.value
 
 available_languages = [l.value for l in LanguageVariants]
 
