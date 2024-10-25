@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
 
+from utils.asset_utils import string_table_root
 from utils.general_utils import get_table, get_table_en
-from utils.json_utils import get_game_json
+from utils.json_utils import get_game_json, load_json
 
 
 @dataclass
@@ -14,7 +15,8 @@ class Setting:
 
 def get_settings():
     settings = get_table_en("Setting")
-    i18n = get_game_json()['Setting']
+    i18n = get_game_json()['ST_Setting']
+    string_table = load_json(string_table_root / "ST_Setting.json")['StringTable']['KeysToMetaData']
     current_type = ""
     current_title = ""
     result: dict[str, dict[str, list[Setting]]] = {}
@@ -31,14 +33,16 @@ def get_settings():
             current_title = i18n.get(title_key, v['Title'].get('SourceString'))
             if current_title not in result[current_type]:
                 result[current_type][current_title] = []
-        tips = "" if 'Key' not in v['Tips'] else i18n.get(v['Tips']['Key'], v['Tips']['SourceString'])
-        setting = Setting(v['Name']['SourceString'],
-                          i18n.get(v['Name']['Key'], ""),
+        tips_key = v['Tips']['Key']
+        tips = "" if 'Key' not in v['Tips'] else i18n.get(tips_key, string_table[tips_key])
+        name_key = v['Name']['Key']
+        setting = Setting(string_table[name_key],
+                          i18n.get(name_key, ""),
                           tips)
         if len(v['Options']) > 0:
             options = []
             for o in v['Options']:
-                options.append(i18n.get(o['Key'], o['SourceString']))
+                options.append(i18n.get(o['Key'], string_table[o['Key']]))
             setting.options = options
         result[current_type][current_title].append(setting)
     return result
