@@ -3,13 +3,11 @@ from dataclasses import dataclass, fields, field
 from enum import Enum
 from pathlib import Path
 
-from pyreadline3.release import description
-
 from data.conversion_table import VoiceType, voice_conversion_table, table_languages
-from utils.asset_utils import audio_event_root, audio_root, wav_root_cn, wav_root_jp
+from utils.asset_utils import audio_event_root, audio_root
 from utils.general_utils import get_table
-from utils.json_utils import load_json, get_game_json, get_all_game_json
-from utils.lang import CHINESE, ENGLISH, JAPANESE, Language, languages_with_audio
+from utils.json_utils import load_json, get_all_game_json
+from utils.lang import CHINESE, Language, languages_with_audio
 from utils.lang_utils import get_multilanguage_dict
 
 

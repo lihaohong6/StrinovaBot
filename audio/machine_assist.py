@@ -2,8 +2,6 @@ import json
 import re
 from time import sleep
 
-from whisper import Whisper
-
 from audio_utils import get_json_path
 from global_config import name_to_en
 from page_generator.weapons import get_weapons_by_type
@@ -44,7 +42,7 @@ def load_whisper_model():
     return model
 
 
-def transcribe_char(char_name: str, model: Whisper | None = None):
+def transcribe_char(char_name: str, model = None):
     json_path = get_json_path(char_name)
     assert json_path.exists()
     voices = load_json(json_path)
