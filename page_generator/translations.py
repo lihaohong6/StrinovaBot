@@ -17,7 +17,11 @@ def generate_translations():
             internal_name = internal_name[0]
         translated_names = get_multilanguage_dict(i18n_1, internal_name, default="")
         translated_names2 = get_multilanguage_dict(i18n_2, f"{char_id}_Name", default="")
-        result[char_name] = merge_dict(translated_names, translated_names2, check=True)
+        merged = merge_dict(translated_names, translated_names2, check=True)
+        for lang, val in merged.items():
+            if val.strip() == "":
+                merged[lang] = char_name
+        result[char_name] = merged
     for lang, overrides in char_name_table.items():
         for char_id, localized_name in overrides.items():
             result[char_id_mapper[char_id]][lang] = localized_name

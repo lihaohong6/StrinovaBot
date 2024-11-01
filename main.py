@@ -11,7 +11,7 @@ from page_generator.achievements import generate_all_achievements
 from page_generator.strinova_comms import strinova_comms_main
 from page_generator.translations import generate_translations
 from page_generator.weapons import process_weapon_pages, process_weapon_skins
-from utils.lang import available_languages, set_language
+from utils.lang import available_languages, set_language, LanguageVariants
 
 
 def main():
@@ -31,9 +31,11 @@ def make_everything():
     generate_all_achievements()
     generate_gifts()
     generate_emotes()
-    generate_skins()
+    # generate_skins()
     generate_translations()
     for lang in available_languages:
+        if lang == LanguageVariants.RUSSIAN.value:
+            continue
         set_language(lang)
         generate_infobox()
         generate_skills()

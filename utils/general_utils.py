@@ -225,7 +225,7 @@ def pick_string_length(strings: list[str]) -> str:
     return best
 
 
-def merge_dict(a: dict, b: dict, check: bool = False, merge: Callable[[list[str]], str] = None) -> dict:
+def merge_dict[K, V](a: dict[K, V], b: dict[K, V], check: bool = False, merge: Callable[[list[str]], str] = None) -> dict[K, V]:
     """
     Use b as the base dict and override with a whenever there's a conflict
     """

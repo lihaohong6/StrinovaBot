@@ -46,9 +46,11 @@ def generate_skills():
             key = char_id * 10 + skill_num
 
             try:
-                add_arg(f"Name{skill_num}", skill_texts[f"{key}_Name"])
-                add_arg(f"DisplayName{skill_num}", skill_texts[f"{key}_DisplayName"])
-                add_arg(f"Description{skill_num}", skill_texts[f"{key}_Intro"])
+                name_cn = skill_table[key]['Name']['SourceString']
+                description_cn = skill_table[key]['Intro']['SourceString']
+                add_arg(f"Name{skill_num}", skill_texts.get(f"{key}_Name", name_cn))
+                add_arg(f"DisplayName{skill_num}", skill_texts.get(f"{key}_DisplayName", ""))
+                add_arg(f"Description{skill_num}", skill_texts.get(f"{key}_Intro", description_cn))
             except Exception:
                 valid = False
                 break
@@ -63,6 +65,8 @@ def generate_skills():
 
 
 def generate_string_energy_network():
+    print("String energy network doesn't work right now!")
+    return None
     """
 Growth_Bomb
 
