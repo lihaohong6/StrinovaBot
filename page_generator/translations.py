@@ -1,10 +1,10 @@
 from global_config import char_id_mapper, internal_names
 from utils.general_utils import save_json_page, merge_dict, camp_id_to_string
 from utils.json_utils import get_all_game_json
-from utils.lang_utils import get_localized_char_name, get_multilanguage_dict, char_name_table
+from utils.lang_utils import get_multilanguage_dict, char_name_table
 
 
-def generate_translations():
+def get_translations() -> dict[str, dict[str, str]]:
     result: dict[str, dict[str, str]] = {}
     i18n_1 = get_all_game_json("ST_RoleName")
     i18n_2 = get_all_game_json("Goods")
@@ -30,7 +30,11 @@ def generate_translations():
     i18n = get_all_game_json("RoleTeam")
     for camp_id, camp_name in camp_id_to_string.items():
         result[camp_name] = get_multilanguage_dict(i18n, f"{camp_id}_NameCn", default=camp_name)
+    return result
 
+
+def generate_translations():
+    result = get_translations()
     save_json_page("Module:Translate/data.json", result)
 
 

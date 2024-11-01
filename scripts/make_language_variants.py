@@ -4,13 +4,32 @@ from pywikibot import Page
 from pywikibot.data.api import Request, PropertyGenerator
 from pywikibot.pagegenerators import GeneratorFactory
 
+from global_config import char_id_mapper
+from page_generator.translations import get_translations
+
 from utils.general_utils import get_char_pages
-from utils.lang import Language, LanguageVariants, ENGLISH, JAPANESE
-from utils.lang_utils import title_to_lang, from_lang_code, get_localized_char_name
+from utils.lang import Language, LanguageVariants, ENGLISH, JAPANESE, get_language
+from utils.lang_utils import title_to_lang, from_lang_code
 from utils.wiki_utils import s
 
 
 # sys.path.insert(1, os.path.join(sys.path[0], '..'))
+
+def get_localized_char_name(char_id: int, lang: Language = get_language()) -> str | None:
+    char_id = int(char_id)
+    translations = get_translations()
+    char_name = char_id_mapper[char_id]
+    translation = translations[char_name].get(lang.code, None)
+    if translation is not None:
+        return translation
+    print(f"Translation not found for {char_name}")
+    return None
+    # Legacy translation generation method
+    # if lang.code in char_name_table:
+    #     t = char_name_table[lang.code]
+    #     if char_id in t:
+    #         return t[char_id]
+    # return get_game_json(language=lang)['RoleProfile'].get(f'{char_id}_NameEn', None)
 
 
 def make_char_pages():
@@ -18,7 +37,8 @@ def make_char_pages():
                  for l in LanguageVariants
                  if l.value not in [ENGLISH, JAPANESE, LanguageVariants.KOREAN.value]]
     for lang in languages:
-        for subpage in ['/gallery']:
+        print(f"Current language: {lang.code}")
+        for subpage in ['', '/gallery']:
             english_version = dict((char_id, p) for char_id, _, p in get_char_pages(subpage_name=subpage))
             for char_id, char_name, p in get_char_pages(subpage_name=subpage, lang=lang):
                 if not p.exists():
@@ -98,4 +118,5 @@ def make_interlanguage_links():
 
 
 if __name__ == "__main__":
-    make_interlanguage_links()
+    make_char_pages()
+
