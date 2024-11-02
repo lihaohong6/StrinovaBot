@@ -8,8 +8,10 @@ from pywikibot.pagegenerators import PreloadingGenerator
 from wikitextparser import Template
 
 from global_config import char_id_mapper
-from utils.general_utils import get_table, get_default_weapon_id, pick_string
-from utils.json_utils import get_game_json, get_game_json_cn
+from utils.general_utils import get_table, get_default_weapon_id, save_json_page
+from utils.json_utils import get_all_game_json
+from utils.lang import CHINESE, ENGLISH
+from utils.lang_utils import get_multilanguage_dict
 from utils.upload_utils import upload_file, upload_item_icons, UploadRequest, process_uploads
 from utils.wiki_utils import bwiki, s
 
@@ -17,36 +19,47 @@ from utils.wiki_utils import bwiki, s
 @dataclass
 class Weapon:
     id: int
-    name_en: str
-    name_cn: str
+    name: dict[str, str]
     quality: int
-    unlock: str
-    description: str
+    unlock: dict[str, str]
+    description: dict[str, str]
     parent: "Weapon" = None
     type: str = ""
     file: str = ""
     file_scope: FilePage | None = None
     file_screenshot: FilePage | None = None
 
+    @property
+    def name_cn(self):
+        return self.name[CHINESE.code]
+
+    @property
+    def name_en(self):
+        return self.name.get(ENGLISH.code)
+
     def get_variant_bwiki_screenshot_name(self):
         return f"{self.parent.name_cn}-{self.name_cn}.png".replace(" ", "_")
 
     def get_variant_bwiki_scope_name(self):
-        return f"瞄准镜样式 {self.parent.name_cn}{self.name_cn}.png".replace(" ", "_")
+        if self.parent is not None:
+            return f"瞄准镜样式 {self.parent.name_cn}{self.name_cn}.png".replace(" ", "_")
+        return f"瞄准镜样式 {self.name_cn}.png".replace(" ", "_")
 
     def get_variant_screenshot_name(self):
         return f"{self.parent.name_cn} {self.name_cn} screenshot.png".replace(" ", "_")
 
     def get_variant_scope_name(self):
-        return f"{self.parent.name_cn} {self.name_cn} scope.png".replace(" ", "_")
+        if self.parent is not None:
+            return f"{self.parent.name_cn} {self.name_cn} scope.png".replace(" ", "_")
+        return f"{self.name_cn} scope.png".replace(" ", "_")
 
     def get_icon_name(self):
         return f"Item Icon {self.id}.png"
 
 
 def get_weapons_by_type(weapon_type: str) -> list[Weapon]:
-    i18n = get_game_json()['Weapon']
-    i18n = get_game_json()['Goods'] | i18n
+    i18n = get_all_game_json('Weapon')
+    i18n = get_all_game_json('Goods') | i18n
     weapons = get_table("Weapon")
     result = []
     weapon_dict: dict[int, Weapon] = {}
@@ -57,14 +70,15 @@ def get_weapons_by_type(weapon_type: str) -> list[Weapon]:
         try:
             weapon_id = k
             name_key = f"{weapon_id}_Name"
-            name_cn = v['Name']['SourceString']
-            name = pick_string([i18n.get(name_key, ""), name_cn])
+            name = get_multilanguage_dict(i18n, name_key, extra=v['Name']['SourceString'])
             quality = v['Quality']
-            unlock = i18n.get(f"{weapon_id}_GainParam2", "" if v['Default'] != 1 else "Available by default")
-            description = pick_string([i18n.get(f"{weapon_id}_Desc", ""), i18n.get(f"{weapon_id}_Tips", ""), v['Tips']['SourceString']])
+            unlock = get_multilanguage_dict(i18n, f"{weapon_id}_GainParam2",
+                                            default=None if v['Default'] != 1 else "Available by default")
+            description = get_multilanguage_dict(i18n, f"{weapon_id}_Tips",
+                                                 extra=v.get('Tips', {}).get('LocalizedString', None))
             parent = v['SubType']
             parent_dict[weapon_id] = parent
-            w = Weapon(weapon_id, name, name_cn, quality, unlock, description)
+            w = Weapon(weapon_id, name, quality, unlock, description)
             result.append(w)
             weapon_dict[w.id] = w
         except KeyError:
@@ -182,10 +196,11 @@ def process_weapon_pages(*args):
 def upload_weapon_variants(weapons: list[Weapon]) -> list[Weapon]:
     failed_uploads = upload_item_icons([w.id for w in weapons], text="[[Category:Weapon icons]]")
     weapons = [w for w in weapons if w.id not in failed_uploads]
-    bwiki_pages: list[FilePage] = [FilePage(bwiki(), f"File:{w.get_variant_bwiki_screenshot_name()}")
-                                   for w in weapons] + \
-                                  [FilePage(bwiki(), f"File:{w.get_variant_bwiki_scope_name()}")
-                                   for w in weapons]
+    bwiki_pages: list[FilePage] = (
+            # [FilePage(bwiki(), f"File:{w.get_variant_bwiki_screenshot_name()}")
+            #  for w in weapons] +
+            [FilePage(bwiki(), f"File:{w.get_variant_bwiki_scope_name()}")
+             for w in weapons])
     existing: dict[str, FilePage] = dict((p.title(with_ns=False, underscore=True), p)
                                          for p in PreloadingGenerator(bwiki_pages) if p.exists())
     upload_requests: list[UploadRequest] = []
@@ -228,26 +243,29 @@ def process_weapon_skins(*args):
             children[parent.id] = []
         children[parent.id].append(w)
     uploaded_weapons = set(w.id for w in upload_weapon_variants([w for w in weapons.values() if w.id != w.parent.id]))
+    result: dict[str, list[dict]] = {}
     for weapon_id, variants in children.items():
         variants = [v for v in variants if v.id in uploaded_weapons]
+        variants.sort(key=lambda x: x.quality, reverse=True)
         weapon = weapons[weapon_id]
-        if weapon.name_en == "":
+        name_en = weapon.name_en
+        if name_en is None or name_en == "":
             print(f'{weapon.name_cn} does not have a EN name')
             continue
-        p = Page(s, weapon.name_en)
-        parsed = wtp.parse(p.text)
-        for t in parsed.templates:
-            if t.name.strip() == "WeaponSkins":
-                break
-        else:
-            print(f"{weapon.name_en} does not have skin template")
-            continue
-        t.string = "{{WeaponSkins\n}}"
-        make_weapon_skins_template(t, list(sorted(variants, key=lambda x: x.quality, reverse=True)))
-        text = str(parsed)
-        if p.text.strip() != text.strip():
-            p.text = text
-            p.save("update weapon skins")
+        lst = []
+        result[name_en] = lst
+        for v in variants:
+            lst.append({
+                'id': v.id,
+                'name': v.name,
+                'quality': v.quality,
+                'unlock': v.unlock,
+                'description': v.description,
+                'icon': v.get_icon_name(),
+                'scope': v.get_variant_scope_name() if v.file_scope is not None else "",
+                'parent': -1 if v.parent is None else v.parent.id
+            })
+    save_json_page("Module:WeaponSkins/data.json", result)
 
 
 def make_weapon_skins_template(t: wtp.Template, weapon_list: list[Weapon]):

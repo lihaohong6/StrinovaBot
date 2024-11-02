@@ -4,7 +4,7 @@ from pywikibot import Site, FilePage
 from pywikibot.pagegenerators import GeneratorFactory
 from pywikibot.site._upload import Uploader
 
-from utils.general_utils import zh_name_to_en, download_file
+from utils.general_utils import download_file
 
 bwiki = Site(code="bwiki")
 s = Site()

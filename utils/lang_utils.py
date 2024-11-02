@@ -70,6 +70,15 @@ class StringConverters:
 def get_multilanguage_dict(i18n: dict[str, dict], key: str | list[str] | None, default: str = None,
                            converter: StringConverter = StringConverters.basic_converter,
                            extra: str | None = None) -> dict[str, str]:
+    """
+
+    :param i18n:
+    :param key: For multi-level keys
+    :param default: Default string value when no localization is found
+    :param converter: Postprocessor for the resulting string
+    :param extra: Chinese text extracted directly from game files
+    :return:
+    """
     result: dict[str, str] = {}
     if extra is not None:
         result[CHINESE.code] = converter(extra)
