@@ -168,7 +168,7 @@ def get_bwiki_char_pages() -> list[tuple[int, str, Page]]:
     return res
 
 
-def save_json_page(page: Page | str, obj, summary: str = "update json page"):
+def save_json_page(page: Page | str, obj, summary: str = "update json page", merge: bool = False):
     class EnhancedJSONEncoder(json.JSONEncoder):
         def default(self, o):
             if dataclasses.is_dataclass(o):
@@ -182,9 +182,25 @@ def save_json_page(page: Page | str, obj, summary: str = "update json page"):
         page = Page(s, page)
 
     if page.text != "":
-        original = dump(json.loads(page.text))
+        original_json = json.loads(page.text)
+        original = dump(original_json)
     else:
+        original_json = {}
         original = ""
+    if merge:
+        def merge_function(s1: str | None, s2: str | None) -> str:
+            if s1 is None:
+                return s2
+            if s2 is None:
+                return s1
+            def check_no_bot(string: str) -> bool:
+                return re.search(r"nobot", string, re.IGNORECASE) is not None
+            if check_no_bot(s1):
+                return s1
+            if check_no_bot(s2):
+                return s2
+            return s1
+        obj = merge_dict2(json.loads(dump(obj)), original_json, merge=merge_function)
     modified = dump(obj)
     if original != modified:
         page.text = modified
@@ -246,9 +262,11 @@ def merge_dict[K, V](a: dict[K, V], b: dict[K, V], check: bool = False, merge: C
     return result
 
 
-def merge_dict2(a: dict, b: dict, merge: Callable[[list[str]], str] = pick_string_length) -> dict:
+def merge_dict2(a: dict, b: dict, merge: Callable[[str | None, str | None], str] = lambda x, y: pick_string_length([x, y])) -> dict:
     """
-    Use b as the base dict and override with a whenever there's a conflict
+    Use b as the base dict and override with a whenever there's a conflict (i.e. prioritize a)
+
+    @:param merge: A function that prefers the first parameter
     """
     result = deepcopy(b)
     for k, v in a.items():
@@ -258,7 +276,7 @@ def merge_dict2(a: dict, b: dict, merge: Callable[[list[str]], str] = pick_strin
             else:
                 result[k] = merge_dict2(v, result[k])
         elif isinstance(v, str):
-            result[k] = merge([result.get(k, None), v])
+            result[k] = merge(result.get(k, None), v)
         elif v is not None:
             raise RuntimeError("Unexpected type")
     return result

@@ -1,7 +1,9 @@
+import json
 from dataclasses import dataclass
+from heapq import merge
 
 import wikitextparser as wtp
-from pywikibot import FilePage
+from pywikibot import FilePage, Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from utils.asset_utils import portrait_root, skin_back_root, local_asset_root, resource_root
@@ -28,10 +30,11 @@ def generate_emotes():
     for k, v in goods_table.items():
         if v['ItemType'] != 13:
             continue
-        name_chs = v['Name']['SourceString'].split("-")[0]
+        name_source = v['Name']['SourceString']
+        name_chs = name_source.split("-")[0]
         name_en = cn_name_to_en(name_chs)
         if name_en is None:
-            print(f"{name_chs} has no EN name")
+            print(f"{name_source} has no EN character name")
             continue
         lst = items.get(name_en, [])
         emote = Emote(k,
@@ -89,7 +92,7 @@ def parse_skin_tables() -> dict[str, list[SkinInfo]]:
             if d.quality != quality:
                 print(f"Quality mismatch for {char_name}: {skin_id} and {d.id}")
                 d.quality = 0 if min(quality, d.quality) == 0 else max(quality, d.quality)
-                d.description = merge_dict2(d.description, description, merge=pick_string_length)
+                d.description = merge_dict2(d.description, description)
             return
         lst.append(SkinInfo([skin_id], quality, name, description))
         skins[char_name] = lst
@@ -210,7 +213,7 @@ def process_back_images(char_name: str, name_zh: str, skin_list: list[SkinInfo])
 
 
 def localize_skins(skin_list: list[SkinInfo]):
-    i18n = merge_dict2(get_all_game_json('RoleSkin'), get_all_game_json('Goods'), merge=pick_string_length)
+    i18n = merge_dict2(get_all_game_json('RoleSkin'), get_all_game_json('Goods'))
     for skin in skin_list:
         name = skin.name
         description = skin.description
@@ -224,6 +227,7 @@ def localize_skins(skin_list: list[SkinInfo]):
 
 
 def make_skin_template(t: wtp.Template, char_name: str, skin_list: list[SkinInfo]) -> None:
+    raise RuntimeError("This function is obsolete")
     skin_list.sort(key=lambda x: x.quality if x.quality != 0 else 100, reverse=True)
     skin_list: list[SkinInfo] = upload_skins(char_name, skin_list)
 
@@ -254,6 +258,20 @@ def generate_skins():
         skin_list2: list[SkinInfo] = upload_skins(char_name, skin_list)
         skin_list.clear()
         skin_list.extend(skin_list2)
+
+    p = Page(s, "Module:CharacterSkins/data.json")
+    original_json = json.loads(p.text)
+
+    for char_name, skin_list in skins.items():
+        name_cn_to_localization: dict[str, tuple[dict, dict]] = {}
+        for skin in original_json.get(char_name, []):
+            name_cn_to_localization[skin['name']['cn']] = (skin['name'], skin['description'])
+        for skin in skin_list:
+            if skin.name_cn not in name_cn_to_localization:
+                continue
+            original_names, original_descriptions = name_cn_to_localization[skin.name_cn]
+            skin.name = merge_dict2(skin.name, original_names)
+            skin.description = merge_dict2(skin.description, original_descriptions)
 
     save_json_page("Module:CharacterSkins/data.json", skins)
     print("Skins done")
