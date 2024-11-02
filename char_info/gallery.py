@@ -63,17 +63,23 @@ class SkinInfo:
     def name_cn(self) -> str:
         return self.name[CHINESE.code]
 
-    def get_bwiki_screenshot_front_title(self, char_name: str):
-        return f"File:{char_name}时装-{self.name_cn}.png"
-
     def get_mh_screenshot_front_title(self, char_name: str):
         return f"File:{char_name} Skin {self.name_cn}.png"
+
+    def get_bwiki_screenshot_front_title(self, char_name: str):
+        return f"File:{char_name}时装-{self.name_cn}.png"
 
     def get_mh_screenshot_back_title(self, char_name: str):
         return f"File:{char_name} Skin Back {self.name_cn}.png"
 
+    def get_bwiki_screenshot_back_title(self, char_name: str):
+        return f"File:{char_name}时装背面-{self.name_cn}.png"
+
     def get_mh_portrait_title(self, char_name: str):
         return f"File:{char_name} Skin Portrait {self.name_cn}.png"
+
+    def get_bwiki_portrait_title(self, char_name: str):
+        return f"File:{char_name}-{self.name_cn}立绘.png"
 
 
 def parse_skin_tables() -> dict[str, list[SkinInfo]]:
@@ -124,92 +130,69 @@ def parse_skin_tables() -> dict[str, list[SkinInfo]]:
     return skins
 
 
+@dataclass
+class SkinUpload:
+    source: FilePage
+    target: FilePage
+    skin: SkinInfo
+
+
 def upload_skins(char_name: str, skin_list: list[SkinInfo]) -> list[SkinInfo]:
-    @dataclass
-    class Skin:
-        source: FilePage
-        target: FilePage
-        skin: SkinInfo
-
     name_zh = en_name_to_zh[char_name]
-    skins = [Skin(FilePage(bwiki(), skin.get_bwiki_screenshot_front_title(name_zh)),
-                  FilePage(s, skin.get_mh_screenshot_front_title(char_name)),
-                  skin)
-             for skin in skin_list]
+    skin_uploads = [SkinUpload(FilePage(bwiki(), skin.get_bwiki_screenshot_front_title(name_zh)),
+                               FilePage(s, skin.get_mh_screenshot_front_title(char_name)),
+                               skin)
+                    for skin in skin_list]
 
+    skin_list = process_skin_upload_requests(char_name, skin_uploads)
+
+    skin_uploads = [SkinUpload(FilePage(bwiki(), skin.get_bwiki_screenshot_back_title(name_zh)),
+                               FilePage(s, skin.get_mh_screenshot_back_title(char_name)),
+                               skin)
+                    for skin in skin_list]
+    for skin in process_skin_upload_requests(char_name, skin_uploads,
+                                             cat="Skin back screenshots"):
+        skin.back = skin.name_cn
+
+    skin_uploads = [SkinUpload(FilePage(bwiki(), skin.get_mh_portrait_title(name_zh)),
+                               FilePage(s, skin.get_mh_portrait_title(char_name)),
+                               skin)
+                    for skin in skin_list]
+    for skin in process_skin_upload_requests(char_name, skin_uploads,
+                                             cat="Skin portraits"):
+        skin.portrait = skin.name_cn
+
+    return skin_list
+
+
+def process_skin_upload_requests(char_name: str, skins: list[SkinUpload],
+                                 default_text: str = None,
+                                 cat: str = "Skin screenshots",
+                                 summary: str = "upload file from bwiki") -> list[SkinInfo]:
     existing_source = set(p.title()
                           for p in PreloadingGenerator(skin.source for skin in skins)
                           if p.exists())
     existing_targets = set(p.title()
                            for p in PreloadingGenerator(skin.target for skin in skins)
                            if p.exists())
-
     skin_list: list[SkinInfo] = []
     for skin in skins:
         if skin.target.title() not in existing_targets:
             if skin.source.title() not in existing_source:
                 continue
-            upload_file(text=f"Taken from [https://wiki.biligame.com/klbq/"
-                             f"{skin.source.title(with_ns=True, underscore=True)} bwiki], "
-                             f"this image is licensed under CC BY-NC-SA 4.0."
-                             f"[[Category:Skin screenshots]]\n[[Category:{char_name} images]]",
+            text = default_text \
+                if default_text is not None \
+                else (f"Taken from [https://wiki.biligame.com/klbq/"
+                      f"{skin.source.title(with_ns=True, underscore=True)} bwiki], "
+                      f"this image is licensed under CC BY-NC-SA 4.0."
+                      f"[[Category:{char_name} images]]")
+            text += f"\n[[Category:{cat}]]"
+            upload_file(text=text,
                         target=skin.target,
-                        summary="upload file from bwiki",
+                        summary=summary,
                         url=skin.source.get_file_url())
         skin_list.append(skin.skin)
-
-    process_portraits(char_name, name_zh, skin_list)
-    process_back_images(char_name, name_zh, skin_list)
-
     return skin_list
-
-
-def process_portraits(char_name: str, name_zh: str, skin_list: list[SkinInfo]):
-    # process portraits
-    targets = [FilePage(s, skin.get_mh_portrait_title(char_name)) for skin in skin_list]
-    existing_targets = set(p.title()
-                           for p in PreloadingGenerator(targets)
-                           if p.exists())
-    for index, skin in enumerate(skin_list):
-        target = targets[index]
-        if target.title() not in existing_targets:
-            possible_sources = [
-                portrait_root / f"{name_zh}时装立绘-{skin.name_cn}.png",
-                portrait_root / f"{name_zh.split('·')[0]}时装立绘-{skin.name_cn}.png",
-                local_asset_root / f"{char_name} Skin Portrait {skin.name_cn}.png",
-            ]
-            for source in possible_sources:
-                if source.exists():
-                    break
-            else:
-                continue
-            upload_file(text="[[Category:Skin portraits]]",
-                        target=target,
-                        summary="upload portrait file",
-                        file=source)
-        skin.portrait = skin.name_cn
-
-
-def process_back_images(char_name: str, name_zh: str, skin_list: list[SkinInfo]):
-    # process portraits
-    targets = [FilePage(s, skin.get_mh_screenshot_back_title(char_name)) for skin in skin_list]
-    existing_targets = set(p.title()
-                           for p in PreloadingGenerator(targets)
-                           if p.exists())
-    for index, skin in enumerate(skin_list):
-        target = targets[index]
-        if target.title() not in existing_targets:
-            source = skin_back_root / f"{name_zh}时装背面-{skin.name_cn}.png"
-            if not source.exists():
-                source = skin_back_root / f"{name_zh.split('·')[0]}时装背面-{skin.name_cn}.png"
-                if not source.exists():
-                    print(source.name + " not found!!!")
-                    continue
-            upload_file(text="[[Category:Skin back screenshots]]",
-                        target=target,
-                        summary="upload skin screenshot",
-                        file=source)
-        skin.back = skin.name_cn
 
 
 def localize_skins(skin_list: list[SkinInfo]):
@@ -224,30 +207,6 @@ def localize_skins(skin_list: list[SkinInfo]):
             description = merge_dict2(description, get_multilanguage_dict(i18n, key=f'{skin_id}_Desc'))
         skin.name = name
         skin.description = description
-
-
-def make_skin_template(t: wtp.Template, char_name: str, skin_list: list[SkinInfo]) -> None:
-    raise RuntimeError("This function is obsolete")
-    skin_list.sort(key=lambda x: x.quality if x.quality != 0 else 100, reverse=True)
-    skin_list: list[SkinInfo] = upload_skins(char_name, skin_list)
-
-    skin_counter = 1
-
-    def add_arg(name, value, after: str = None):
-        # if (t.has_arg(name) and value.strip() == "") or value.strip() == "!NoTextFound!":
-        #     return
-        t.set_arg(name, value + "\n", after=after)
-
-    for skin in skin_list:
-        name_local = skin.name_local
-        description = skin.description_local
-        add_arg(f"Name{skin_counter}", name_local)
-        add_arg(f"Quality{skin_counter}", str(skin.quality))
-        add_arg(f"Description{skin_counter}", description)
-        add_arg(f"Back{skin_counter}", skin.back, after=f"Description{skin_counter}")
-        add_arg(f"Portrait{skin_counter}", skin.portrait, after=f"Description{skin_counter}")
-        add_arg(f"CNName{skin_counter}", skin.name_cn, after=f"Description{skin_counter}")
-        skin_counter += 1
 
 
 def generate_skins():
