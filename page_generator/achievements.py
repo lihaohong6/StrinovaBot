@@ -45,6 +45,9 @@ def get_achievements(upload: bool = True) -> list[Achievement]:
                 if "{0}" in string:
                     string = string.format(value['Param2'][0])
                     return re.sub(r"<Chat-Self>(\d+)</>", lambda match: match.group(1), string)
+                if "[1]" in string:
+                    string = string.replace("[1]", str(value['Param2'][0]))
+                    return string
                 return string
 
             converter = compose(StringConverters.basic_converter, sub_condition)
