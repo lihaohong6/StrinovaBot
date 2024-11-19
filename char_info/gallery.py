@@ -1,14 +1,12 @@
 import json
 from dataclasses import dataclass
-from heapq import merge
 
-import wikitextparser as wtp
 from pywikibot import FilePage, Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
-from utils.asset_utils import portrait_root, skin_back_root, local_asset_root, resource_root
+from utils.asset_utils import resource_root
 from utils.general_utils import get_table, get_char_by_id, get_cn_wiki_skins, \
-    en_name_to_zh, cn_name_to_en, save_json_page, pick_string_length, merge_dict2
+    en_name_to_zh, cn_name_to_en, save_json_page, merge_dict2
 from utils.json_utils import get_all_game_json
 from utils.lang import CHINESE
 from utils.lang_utils import get_multilanguage_dict
@@ -154,7 +152,7 @@ def upload_skins(char_name: str, skin_list: list[SkinInfo]) -> list[SkinInfo]:
                                              cat="Skin back screenshots"):
         skin.back = skin.name_cn
 
-    skin_uploads = [SkinUpload(FilePage(bwiki(), skin.get_mh_portrait_title(name_zh)),
+    skin_uploads = [SkinUpload(FilePage(bwiki(), skin.get_bwiki_portrait_title(name_zh)),
                                FilePage(s, skin.get_mh_portrait_title(char_name)),
                                skin)
                     for skin in skin_list]
@@ -218,8 +216,8 @@ def generate_skins():
         skin_list.clear()
         skin_list.extend(skin_list2)
 
-    p = Page(s, "Module:CharacterSkins/data.json")
-    original_json = json.loads(p.text)
+    skin_data_page = Page(s, "Module:CharacterSkins/data.json")
+    original_json = json.loads(skin_data_page.text)
 
     for char_name, skin_list in skins.items():
         name_cn_to_localization: dict[str, tuple[dict, dict]] = {}
@@ -232,7 +230,7 @@ def generate_skins():
             skin.name = merge_dict2(skin.name, original_names)
             skin.description = merge_dict2(skin.description, original_descriptions)
 
-    save_json_page("Module:CharacterSkins/data.json", skins)
+    save_json_page(skin_data_page, skins)
     print("Skins done")
 
 

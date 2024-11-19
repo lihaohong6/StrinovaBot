@@ -231,14 +231,22 @@ def pick_string(strings: list[str]) -> str:
     return strings[0]
 
 
-def pick_string_length(strings: list[str]) -> str:
-    best: str | None = None
-    for string in strings:
-        if string is None or "NoTextFound" in string:
-            continue
-        if (best is None or len(string) > len(best)) and len(string) > 0:
-            best = string
-    return best
+def pick_string_length(a: str, b: str) -> str:
+    if a is None:
+        return b
+    if b is None:
+        return a
+    if "NoTextFound" in a:
+        return b
+    if "NoTextFound" in b:
+        return a
+    if "nobot" in a.lower():
+        return a
+    if "nobot" in b.lower():
+        return b
+    if len(a) > len(b):
+        return a
+    return b
 
 
 def merge_dict[K, V](a: dict[K, V], b: dict[K, V], check: bool = False, merge: Callable[[list[str]], str] = None) -> dict[K, V]:
@@ -262,7 +270,7 @@ def merge_dict[K, V](a: dict[K, V], b: dict[K, V], check: bool = False, merge: C
     return result
 
 
-def merge_dict2(a: dict, b: dict, merge: Callable[[str | None, str | None], str] = lambda x, y: pick_string_length([x, y])) -> dict:
+def merge_dict2(a: dict, b: dict, merge: Callable[[str | None, str | None], str] = pick_string_length) -> dict:
     """
     Use b as the base dict and override with a whenever there's a conflict (i.e. prioritize a)
 

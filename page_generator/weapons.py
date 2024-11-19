@@ -23,6 +23,7 @@ class Weapon:
     quality: int
     unlock: dict[str, str]
     description: dict[str, str]
+    char: str = None
     parent: "Weapon" = None
     type: str = ""
     file: str = ""
@@ -183,7 +184,7 @@ def process_weapon_pages(*args):
     for i, weapon_type in enumerate(types):
         weapons = get_weapons_by_type(strings[i])
         for w in weapons:
-            if w.parent.id != w.id or w.name_en == "" or w.name_en == "!NoTextFound!":
+            if w.parent.id != w.id or w.name_en is None or w.name_en == "":
                 continue
             w.type = weapon_type.value
             p = Page(s, w.name_en)
@@ -288,7 +289,7 @@ def make_weapon_skins_template(t: wtp.Template, weapon_list: list[Weapon]):
 
 
 def main():
-    # process_weapon_pages()
+    process_weapon_pages()
     process_weapon_skins()
 
 
