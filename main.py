@@ -34,8 +34,6 @@ def make_everything():
     generate_skins()
     generate_translations()
     for lang in available_languages:
-        if lang == LanguageVariants.RUSSIAN.value:
-            continue
         set_language(lang)
         generate_infobox()
         generate_skills()

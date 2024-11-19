@@ -48,7 +48,7 @@ def make_infobox(char_id, char_name, p: Page, save=True) -> dict:
                 t = template
                 break
         else:
-            print("Template not found on " + char_name)
+            print("Infobox template not found on " + p.title())
             return data
     else:
         t = wtp.Template("{{CharacterInfobox}}")
@@ -63,10 +63,6 @@ def make_infobox(char_id, char_name, p: Page, save=True) -> dict:
         data[name] = value
 
     add_arg("Id", char_id)
-    add_arg("Name", i18n.get(f'{char_id}_NameCn', ''))
-    add_arg("NameEN", char_name)
-    add_arg("NameCN", name_to_cn[char_name])
-    add_arg("NameJP", get_game_json_ja()['RoleProfile'].get(f'{char_id}_NameCn', ''))
     for args, key, mapper in infobox_args:
         def get_arg(arg: str) -> str:
             k = f"{char_id}_{arg}"

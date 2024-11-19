@@ -90,7 +90,7 @@ def generate_gifts():
                 if t.name.strip() == "CharacterGifts":
                     break
             else:
-                print("Template not found on " + p.title())
+                print("Gift template not found on " + p.title())
                 continue
             if t.has_arg("1"):
                 continue

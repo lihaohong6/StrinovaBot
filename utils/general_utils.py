@@ -214,6 +214,10 @@ def pick_two(a: str, b: str) -> str:
     :param b:
     :return:
     """
+    if a is None:
+        return b
+    if b is None:
+        return a
     if "NoTextFound" in a:
         a = ""
     if "NoTextFound" in b:

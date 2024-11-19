@@ -6,7 +6,7 @@ from pywikibot import Page, FilePage
 from global_config import char_id_mapper
 from utils.asset_utils import resource_root
 from utils.general_utils import get_table, en_name_to_zh, get_id_by_char, \
-    get_weapon_name, get_default_weapon_id, get_char_pages
+    get_weapon_name, get_default_weapon_id, get_char_pages, pick_string, pick_two
 from utils.json_utils import get_game_json
 from utils.lang import get_language
 from utils.upload_utils import UploadRequest, process_uploads
@@ -48,9 +48,9 @@ def generate_skills():
             try:
                 name_cn = skill_table[key]['Name']['SourceString']
                 description_cn = skill_table[key]['Intro']['SourceString']
-                add_arg(f"Name{skill_num}", skill_texts.get(f"{key}_Name", name_cn))
-                add_arg(f"DisplayName{skill_num}", skill_texts.get(f"{key}_DisplayName", ""))
-                add_arg(f"Description{skill_num}", skill_texts.get(f"{key}_Intro", description_cn))
+                add_arg(f"Name{skill_num}", pick_two(skill_texts.get(f"{key}_Name"), name_cn))
+                add_arg(f"DisplayName{skill_num}", pick_two(skill_texts.get(f"{key}_DisplayName"),  ""))
+                add_arg(f"Description{skill_num}", pick_two(skill_texts.get(f"{key}_Intro"), description_cn))
             except Exception:
                 valid = False
                 break
