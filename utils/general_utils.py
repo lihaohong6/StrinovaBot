@@ -2,6 +2,7 @@ import dataclasses
 import json
 import re
 from copy import deepcopy
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Callable
 
@@ -10,7 +11,7 @@ from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from global_config import name_to_en, char_id_mapper, internal_names
-from utils.asset_utils import csv_root, en_csv_root
+from utils.asset_utils import csv_root, global_csv_root
 from utils.json_utils import load_json, get_game_json
 from utils.lang import Language, ENGLISH
 from utils.wiki_utils import bwiki, s
@@ -77,11 +78,11 @@ def get_table(file_name: str) -> dict[int, dict]:
     return table
 
 
-def get_table_en(file_name: str) -> dict[int, dict]:
+def get_table_global(file_name: str) -> dict[int, dict]:
     table_entry = "EN" + file_name
     if table_entry in table_cache:
         return table_cache[file_name]
-    table = dict((int(k), v) for k, v in load_json(en_csv_root / f"{file_name}.json")['Rows'].items())
+    table = dict((int(k), v) for k, v in load_json(global_csv_root / f"{file_name}.json")['Rows'].items())
     table_cache[table_entry] = table
     return table
 
@@ -293,3 +294,8 @@ def merge_dict2(a: dict, b: dict, merge: Callable[[str | None, str | None], str]
             raise RuntimeError("Unexpected type")
     return result
 
+
+def parse_ticks(ts: int) -> datetime:
+    t_0 = datetime(2023, 8, 3)
+    seconds_passed = (ts - 638266176000000000) / 10000000
+    return t_0 + timedelta(seconds=seconds_passed)

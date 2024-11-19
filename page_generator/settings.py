@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 from utils.asset_utils import string_table_root
-from utils.general_utils import get_table, get_table_en
+from utils.general_utils import get_table, get_table_global
 from utils.json_utils import get_game_json, load_json
 
 
@@ -14,7 +14,7 @@ class Setting:
 
 
 def get_settings():
-    settings = get_table_en("Setting")
+    settings = get_table_global("Setting")
     i18n = get_game_json()['ST_Setting']
     string_table = load_json(string_table_root / "ST_Setting.json")['StringTable']['KeysToMetaData']
     current_type = ""

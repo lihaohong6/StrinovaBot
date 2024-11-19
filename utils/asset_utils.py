@@ -12,8 +12,8 @@ wav_root_jp = audio_root / "Japanese"
 wav_root_en = audio_root / "English"
 
 # global export
-en_export_root = Path(r"D:\Strinova\AutoUnpack\GLExport")
-en_csv_root = Path(r"D:\Strinova\Strinova-data\Global\CSV")
+global_export_root = Path(r"D:\Strinova\AutoUnpack\GLExport")
+global_csv_root = Path(r"D:\Strinova\Strinova-data\Global\CSV")
 localization_root = Path("D:/Strinova/Strinova-data/Global/Localization/Game")
 
 # non-exported assets
