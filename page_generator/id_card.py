@@ -20,7 +20,7 @@ class IdCard:
     quality: int = -1
 
     @property
-    def icon_file(self):
+    def icon(self):
         return f"File:Item Icon {self.id}.png"
 
     @property
@@ -64,7 +64,7 @@ def upload_all_id_cards():
         if not source_full.exists() or not source_icon.exists():
             continue
         requests.append(UploadRequest(source_icon,
-                                      d.icon_file,
+                                      d.icon,
                                       '[[Category:Item icons]]'))
         requests.append(UploadRequest(source_full,
                                       d.full_file,

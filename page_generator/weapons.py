@@ -57,8 +57,12 @@ class Weapon:
     def get_icon_name(self):
         return f"Item Icon {self.id}.png"
 
+    @property
+    def icon(self):
+        return self.get_icon_name()
 
-def get_weapons_by_type(weapon_type: str) -> list[Weapon]:
+
+def get_weapons_by_type(weapon_type: str = None) -> list[Weapon]:
     i18n = get_all_game_json('Weapon')
     i18n = get_all_game_json('Goods') | i18n
     weapons = get_table("Weapon")
@@ -66,7 +70,7 @@ def get_weapons_by_type(weapon_type: str) -> list[Weapon]:
     weapon_dict: dict[int, Weapon] = {}
     parent_dict: dict[int, int] = {}
     for k, v in weapons.items():
-        if weapon_type not in v['Slot']:
+        if weapon_type is not None and weapon_type not in v['Slot']:
             continue
         try:
             weapon_id = k
@@ -85,7 +89,7 @@ def get_weapons_by_type(weapon_type: str) -> list[Weapon]:
         except KeyError:
             continue
     for w in result:
-        w.parent = weapon_dict[parent_dict[w.id]]
+        w.parent = weapon_dict.get(parent_dict.get(w.id, None), None)
     return result
 
 

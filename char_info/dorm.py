@@ -8,7 +8,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 from global_config import characters_with_dorms
 from page_generator.badges import get_all_badges, Badge
 from page_generator.decal import get_all_decals, Decal
-from page_generator.items import get_all_items, Item
+from page_generator.items import parse_items, Item
 from utils.asset_utils import resource_root
 from utils.general_utils import get_table, get_char_by_id, make_tab_group, get_char_pages, save_json_page
 from utils.json_utils import get_game_json, get_all_game_json
@@ -143,7 +143,7 @@ def generate_friendship_gifts():
         image: str
     table = get_table("RoleFavorabilityEvent")
     friendship_gifts: dict[int, dict[int, list[FriendshipReward]]] = {}
-    items = get_all_items()
+    items = parse_items()
     badges = get_all_badges()
     decals = get_all_decals()
     upload_requests: list[UploadRequest] = []

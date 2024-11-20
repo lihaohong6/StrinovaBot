@@ -23,6 +23,10 @@ class Decal:
     def file(self):
         return f"File:Decal {self.id}.png"
 
+    @property
+    def icon(self):
+        return self.file
+
 
 def localize_decals(decals: list[Decal]):
     i18n = get_all_game_json("Decal")

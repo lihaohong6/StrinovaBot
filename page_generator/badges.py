@@ -25,6 +25,10 @@ class Badge:
     def file(self):
         return f"File:Achievement {self.id}.png"
 
+    @property
+    def icon(self):
+        return self.file
+
 
 def localize_badges(badges: list[Badge]):
     table_name = "Badge"

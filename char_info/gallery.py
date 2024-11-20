@@ -14,17 +14,21 @@ from utils.upload_utils import upload_file, UploadRequest, process_uploads
 from utils.wiki_utils import bwiki, s
 
 
-def generate_emotes():
-    @dataclass
-    class Emote:
-        id: int
-        name: dict[str, str]
-        text: dict[str, str]
+@dataclass
+class Emote:
+    id: int
+    name: dict[str, str]
+    text: dict[str, str]
 
+    @property
+    def icon(self):
+        return f"File:Emote_{self.id}.png"
+
+
+def parse_emotes() -> dict[str, list[Emote]]:
     goods_table = get_table("Goods")
     i18n = get_all_game_json('Goods')
     items: dict[str, list[Emote]] = {}
-    upload_requests: list[UploadRequest] = []
     for k, v in goods_table.items():
         if v['ItemType'] != 13:
             continue
@@ -40,12 +44,20 @@ def generate_emotes():
                       get_multilanguage_dict(i18n, f'{k}_Desc', extra=v['Desc']['SourceString']))
         lst.append(emote)
         items[name_en] = lst
-        upload_requests.append(UploadRequest(resource_root / "Emote" / f"T_Dynamic_Emote_{emote.id}.png",
-                                             FilePage(s, f"File:Emote_{emote.id}.png"),
-                                             '[[Category:Emotes]]',
-                                             "batch upload emotes"))
+    return items
+
+
+def generate_emotes():
+    upload_requests: list[UploadRequest] = []
+    emotes = parse_emotes()
+    for char_name, emote_list in emotes.items():
+        for emote in emote_list:
+            upload_requests.append(UploadRequest(resource_root / "Emote" / f"T_Dynamic_Emote_{emote.id}.png",
+                                                 FilePage(s, emote.icon),
+                                                 '[[Category:Emotes]]',
+                                                 "batch upload emotes"))
     process_uploads(upload_requests)
-    save_json_page("Module:Emote/data.json", items)
+    save_json_page("Module:Emote/data.json", emotes)
 
 
 @dataclass
@@ -92,7 +104,8 @@ def parse_skin_tables() -> dict[str, list[SkinInfo]]:
         if len(duplicates) > 0:
             assert len(duplicates) == 1
             d = duplicates[0]
-            d.id.append(skin_id)
+            if skin_id not in d.id:
+                d.id.append(skin_id)
             if d.quality != quality:
                 print(f"Quality mismatch for {char_name}: {skin_id} and {d.id}")
                 d.quality = 0 if min(quality, d.quality) == 0 else max(quality, d.quality)
@@ -125,6 +138,9 @@ def parse_skin_tables() -> dict[str, list[SkinInfo]]:
         add_skin(char_name, skin_id, quality,
                  {CHINESE.code: name_cn},
                  {CHINESE.code: v['Desc'].get('SourceString', "")})
+
+    for _, skin_list in skins.items():
+        localize_skins(skin_list)
     return skins
 
 
@@ -210,7 +226,6 @@ def localize_skins(skin_list: list[SkinInfo]):
 def generate_skins():
     skins = parse_skin_tables()
     for char_name, skin_list in skins.items():
-        localize_skins(skin_list)
         skin_list.sort(key=lambda x: x.quality if x.quality != 0 else 100, reverse=True)
         skin_list2: list[SkinInfo] = upload_skins(char_name, skin_list)
         skin_list.clear()

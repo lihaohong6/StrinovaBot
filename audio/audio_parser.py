@@ -2,9 +2,8 @@ import re
 from dataclasses import dataclass, fields, field
 from enum import Enum
 from pathlib import Path
-from tkinter.font import names
 
-from data.conversion_table import VoiceType, voice_conversion_table, table_languages
+from audio.data.conversion_table import VoiceType, voice_conversion_table, table_languages
 from utils.asset_utils import audio_event_root_cn, audio_root, audio_event_root_global
 from utils.general_utils import get_table
 from utils.json_utils import load_json, get_all_game_json
@@ -61,6 +60,11 @@ class Voice:
 
     def path_digits(self) -> str | None:
         return get_voice_path_digits(self.path)
+
+    @property
+    def icon(self):
+        assert self.role_id != 0
+        return f"File:Item Icon 22{self.role_id}001.png"
 
 
 def get_voice_path_digits(path: str) -> str | None:

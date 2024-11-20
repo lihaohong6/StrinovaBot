@@ -2,7 +2,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from pywikibot import FilePage, Page
+from pywikibot import FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
 from pywikibot.site._upload import Uploader
 
