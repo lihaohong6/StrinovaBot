@@ -47,8 +47,9 @@ def merge_results(previous: VoiceJson, current: VoiceJson) -> VoiceJson:
     :return: merged dict
     """
     for vid, voice in previous.items():
-        vid = int(vid)
-        assert vid in current, f"{vid} not in current"
+        if vid not in current:
+            current[vid] = voice
+            print(f"{vid} not in current. Prev: {voice}")
         for k, v in voice.items():
             if k in {'transcription', 'title', 'translation'}:
                 current[vid][k] = merge_dict(v, current[vid][k])
@@ -68,7 +69,10 @@ def make_character_json(triggers: list[Trigger], char_id: int):
             if not voice_filter(v):
                 continue
             titles = v.title.copy()
-            titles.update(t.name)
+            # Title is supposed to be empty if it's the same as the trigger
+            for k, v in titles.items():
+                titles[k] = ""
+            # titles.update(t.name)
             obj = {"id": v.id[0],
                    'title': titles}
             for attribute in attributes:
@@ -81,6 +85,8 @@ def make_character_json(triggers: list[Trigger], char_id: int):
         previous = load_json(previous_path)
     else:
         previous = {}
+    # json files are stored with string keys instead of int keys
+    previous = dict((int(k), v) for k, v in previous.items())
     result = merge_results(previous=previous,
                            current=result)
     with open(get_json_path(char_name), "w", encoding="utf-8") as f:

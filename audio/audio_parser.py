@@ -2,12 +2,13 @@ import re
 from dataclasses import dataclass, fields, field
 from enum import Enum
 from pathlib import Path
+from tkinter.font import names
 
 from data.conversion_table import VoiceType, voice_conversion_table, table_languages
-from utils.asset_utils import audio_event_root, audio_root
+from utils.asset_utils import audio_event_root_cn, audio_root, audio_event_root_global
 from utils.general_utils import get_table
 from utils.json_utils import load_json, get_all_game_json
-from utils.lang import CHINESE, Language, languages_with_audio
+from utils.lang import CHINESE, Language, languages_with_audio, ENGLISH
 from utils.lang_utils import get_multilanguage_dict
 
 
@@ -22,7 +23,10 @@ class Voice:
     id: list[int]
     role_id: int = -1
     quality: int = -1
+    # title: displayed on the wiki
     title: dict[str, str] = field(default_factory=dict)
+    # name: given by the game itself
+    name: dict[str, str] = field(default_factory=dict)
     transcription: dict[str, str] = field(default_factory=dict)
     translation: dict[str, dict[str, str]] = field(default_factory=dict)
     path: str = ""
@@ -104,9 +108,8 @@ class UpgradeTrigger:
     skins: list[int]
 
 
-def find_audio_file(file_name: str, table: dict, bank_name_to_files: dict[str, list[Path]]) -> str | None:
+def find_audio_file(event_file: Path, table: dict, bank_name_to_files: dict[str, list[Path]]) -> str | None:
     assert len(table) > 0
-    event_file = audio_event_root / f"{file_name}.json"
     if not event_file.exists():
         # print(event_file.name + " does not exist")
         return None
@@ -167,12 +170,7 @@ def map_bank_name_to_files(p: Path) -> dict[str, list[Path]]:
 def get_text(i18n: dict[str, dict], v) -> tuple[dict[str, str], dict[str, str], dict[str, dict[str, str]]]:
     name_obj = v['VoiceName']
     key = name_obj.get("Key", None)
-    title: dict[str, str] = {
-        CHINESE.code: "" if key is None else name_obj["SourceString"]
-    } | get_multilanguage_dict(i18n, key, "")
-    # forbid in-game titles from showing up in order to maintain uniformity on the wiki
-    for k, _ in title.items():
-        title[k] = ""
+    title: dict[str, str] = get_multilanguage_dict(i18n, key, "", extra="" if key is None else name_obj["SourceString"])
 
     content_obj = v['Content']
     key = content_obj.get("Key", None)
@@ -230,13 +228,17 @@ def role_voice() -> dict[int, Voice]:
 
     voices = {}
     for k, v in voice_table.items():
-        title, transcription, translation = get_text(i18n, v)
+        name, transcription, translation = get_text(i18n, v)
 
-        path = v["AkEvent"]["AssetPathName"].split(".")[-1]
+        path: str = v["AkEvent"]["AssetPathName"].split(".")[-1]
         files: dict[str, str] = {}
         failed = False
         for lang in languages_with_audio():
-            audio_file = find_audio_file(path, tables[lang.code], bank_name_to_files[lang.code])
+            if lang != ENGLISH:
+                event_file = audio_event_root_cn / f"{path}.json"
+            else:
+                event_file = audio_event_root_global / f"{path}.json"
+            audio_file = find_audio_file(event_file, tables[lang.code], bank_name_to_files[lang.code])
             if lang == CHINESE and audio_file is None:
                 failed = True
                 break
@@ -253,7 +255,7 @@ def role_voice() -> dict[int, Voice]:
         voice = Voice(id=[k],
                       role_id=v['RoleId'],
                       quality=v['Quality'],
-                      title=title,
+                      name=name,
                       transcription=transcription,
                       translation=translation,
                       path=path.strip(),

@@ -2,19 +2,24 @@ from pathlib import Path
 
 # cn export
 cn_export_root = Path(r"D:\Strinova\AutoUnpack\CNExport")
-csv_root = Path(r"D:\Strinova\Strinova-data\CN\CSV")
+json_root = Path(r"D:\Strinova\Strinova-data\CN")
+csv_root = json_root / "CSV"
 string_table_root = csv_root / ".." / "CyTable" / "StringTable"
 resource_root = cn_export_root / "DynamicResource"
-audio_root = cn_export_root / "../audio"
-audio_event_root = cn_export_root / r"WwiseAssets\AkEvent"
-wav_root_cn = audio_root / "Chinese"
-wav_root_jp = audio_root / "Japanese"
-wav_root_en = audio_root / "English"
 
 # global export
 global_export_root = Path(r"D:\Strinova\AutoUnpack\GLExport")
-global_csv_root = Path(r"D:\Strinova\Strinova-data\Global\CSV")
+global_json_root = Path(r"D:\Strinova\Strinova-data\Global")
+global_csv_root = global_json_root / "CSV"
 localization_root = Path("D:/Strinova/Strinova-data/Global/Localization/Game")
+
+# audio
+audio_root = cn_export_root / "../audio"
+audio_event_root_cn = json_root / r"WwiseAssets\AkEvent"
+audio_event_root_global = global_json_root / r"WwiseAssets\AkEvent"
+wav_root_cn = audio_root / "Chinese"
+wav_root_jp = audio_root / "Japanese"
+wav_root_en = audio_root / "English"
 
 # non-exported assets
 skin_back_root = Path(r"D:\Strinova\Skins Back\result")
