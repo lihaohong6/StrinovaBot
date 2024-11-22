@@ -59,7 +59,7 @@ class Weapon:
 
     @property
     def icon(self):
-        return self.get_icon_name()
+        return "File:" + self.get_icon_name()
 
 
 def get_weapons_by_type(weapon_type: str = None) -> list[Weapon]:

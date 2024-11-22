@@ -91,6 +91,11 @@ class SkinInfo:
     def get_bwiki_portrait_title(self, char_name: str):
         return f"File:{char_name}-{self.name_cn}立绘.png"
 
+    @property
+    def icon(self):
+        assert len(self.id) == 1
+        return f"File:Item Icon {self.id[0]}.png"
+
 
 def parse_skin_tables() -> dict[str, list[SkinInfo]]:
     skins_table = get_table("RoleSkin")

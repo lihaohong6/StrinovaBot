@@ -40,14 +40,22 @@ def parse_battle_pass() -> list[BattlePassLevel]:
 
 
 def generate_battle_pass():
-    battle_pass_rewards = parse_battle_pass()
-    battle_pass_rewards.sort(key=lambda x: x.level)
-    for r in battle_pass_rewards:
-        for i in r.rewards:
-            try:
-                print(i.item.icon)
-            except AttributeError:
-                print(type(i.item))
+    battle_pass_levels = parse_battle_pass()
+    battle_pass_levels.sort(key=lambda x: x.level)
+    result = ["{{BattlePass|"]
+    for r in battle_pass_levels:
+        level = r.level
+        for reward in r.rewards:
+            file = reward.item.icon.replace("File:", "").replace(".png", "")
+            name = reward.item.name['en']
+            free = reward.type == 1
+            if reward.amount != 1:
+                name = name + f" x {reward.amount}"
+            result.append("{{BattlePassReward|"
+                          f"Level={level}|File={file}|Name={name}" + ("|Free=1" if free else "") +
+                          "}}")
+    result.append("}}")
+    print("\n".join(result))
 
 
 def main():
