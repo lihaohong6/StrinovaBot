@@ -273,25 +273,6 @@ def process_weapon_skins(*args):
     save_json_page("Module:WeaponSkins/data.json", result)
 
 
-def make_weapon_skins_template(t: wtp.Template, weapon_list: list[Weapon]):
-    result: list[dict[str, str]] = []
-    for w in weapon_list:
-        d = {
-            'Name': w.name_en if w.name_en != "" else w.name_cn,
-            'Description': w.description,
-            'Icon': w.get_icon_name(),
-            'Quality': str(w.quality)
-        }
-        if w.file_screenshot is not None:
-            d['Screenshot'] = w.file_screenshot.title(with_ns=False, underscore=True)
-        if w.file_scope is not None:
-            d['Scope'] = w.file_scope.title(with_ns=False, underscore=True)
-        result.append(d)
-    for index, weapon_dict in enumerate(result, 1):
-        for key, value in weapon_dict.items():
-            t.set_arg(f"{key}{index}", value + "\n")
-
-
 def main():
     process_weapon_pages()
     process_weapon_skins()

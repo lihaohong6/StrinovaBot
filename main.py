@@ -33,14 +33,15 @@ def make_everything():
     generate_emotes()
     generate_skins()
     generate_translations()
+    process_weapon_skins()
+    # need transition to lua?
+    strinova_comms_main()
     for lang in available_languages:
         set_language(lang)
         generate_infobox()
         generate_skills()
         generate_string_energy_network()
         generate_weapons()
-        # need transition to lua
-        # strinova_comms_main()
 
 
 if __name__ == "__main__":
