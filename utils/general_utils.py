@@ -97,6 +97,14 @@ def get_default_weapon_id(char_id: int | str) -> int:
     return get_default_weapon_id.dict.get(char_id, -1)
 
 
+def get_char_id_to_weapon_id() -> dict[int, int]:
+    r = {}
+    for char_id, char_name in char_id_mapper.items():
+        weapon_id = get_default_weapon_id(char_id)
+        r[char_id] = weapon_id
+    return r
+
+
 def get_weapon_name(weapon_id: int, lang: Language = ENGLISH) -> str | None:
     r = get_game_json(lang)['Weapon'].get(f"{weapon_id}_Name", None)
     if r is not None and r == '!NoTextFound!':

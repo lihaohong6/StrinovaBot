@@ -6,7 +6,7 @@ from char_info.gallery import parse_skin_tables, SkinInfo, Emote, parse_emotes
 from page_generator.badges import get_all_badges, Badge
 from page_generator.decal import get_all_decals, Decal
 from page_generator.id_card import get_all_id_cards, IdCard
-from page_generator.weapons import Weapon, get_weapons_by_type
+from page_generator.weapons import Weapon, get_weapons_by_type, parse_weapons
 from utils.general_utils import get_table
 from utils.json_utils import get_all_game_json
 from utils.lang import CHINESE
@@ -75,9 +75,7 @@ def get_all_items() -> dict[int, Item | Badge | Decal | SkinInfo | Weapon | Emot
         for skin in skin_list:
             for sid in skin.id:
                 skins[sid] = skin
-    weapons: dict[int, Weapon] = {}
-    for w in get_weapons_by_type(None):
-        weapons[w.id] = w
+    weapons: dict[int, Weapon] = parse_weapons()
     emotes: dict[int, Emote] = {}
     for _, emote_list in parse_emotes().items():
         for emote in emote_list:
