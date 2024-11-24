@@ -2,10 +2,10 @@ from dataclasses import dataclass
 
 from pywikibot import Page
 from pywikibot.data.api import Request, PropertyGenerator
-from pywikibot.pagegenerators import GeneratorFactory
+from pywikibot.pagegenerators import GeneratorFactory, PreloadingGenerator
 
 from global_config import char_id_mapper
-from page_generator.translations import get_translations
+from page_generator.translations import get_translations, translate
 
 from utils.general_utils import get_char_pages
 from utils.lang import Language, LanguageVariants, ENGLISH, JAPANESE, get_language
@@ -32,31 +32,54 @@ def get_localized_char_name(char_id: int, lang: Language = get_language()) -> st
     # return get_game_json(language=lang)['RoleProfile'].get(f'{char_id}_NameEn', None)
 
 
+def copy_page(original: Page, target: Page, lang: Language, localized_title: str | None = None):
+    if not target.exists():
+        target.text = original.text
+        target.save(f"new {lang.name} page")
+        try:
+            r = Request(s, parameters={"action": "setpagelanguage", "title": target.title(), "lang": lang.mw_code,
+                                       "token": getattr(s, 'tokens')['csrf']})
+            r.submit()
+        except Exception as e:
+            print(e)
+        if localized_title is not None and localized_title.strip() != "":
+            try:
+                redirect = Page(s, localized_title)
+                if not redirect.exists():
+                    redirect.set_redirect_target(target, create=True, summary=f"redirect {lang.code} title")
+            except Exception as e:
+                print(e)
+
+
 def make_char_pages():
     languages = [l.value
                  for l in LanguageVariants
-                 if l.value not in [ENGLISH, JAPANESE, LanguageVariants.KOREAN.value]]
+                 if l.value not in [ENGLISH]]
     for lang in languages:
         print(f"Current language: {lang.code}")
         for subpage in ['', '/gallery']:
             english_version = dict((char_id, p) for char_id, _, p in get_char_pages(subpage_name=subpage))
             for char_id, char_name, p in get_char_pages(subpage_name=subpage, lang=lang):
-                if not p.exists():
-                    p_original = english_version[char_id]
-                    p.text = p_original.text
-                    p.save(f"new {lang.name} page")
-                    try:
-                        r = Request(s, parameters={"action": "setpagelanguage", "title": p.title(), "lang": lang.mw_code,
-                                                   "token": getattr(s, 'tokens')['csrf']})
-                        r.submit()
-                    except Exception as e:
-                        print(e)
-                if subpage == '':
-                    localized_name = get_localized_char_name(char_id, lang)
-                    if localized_name is not None and localized_name.strip() != "":
-                        redirect = Page(s, localized_name)
-                        if not redirect.exists():
-                            redirect.set_redirect_target(p, create=True, summary=f"redirect {lang.code} title")
+                page_en = english_version[char_id]
+                copy_page(page_en, p, lang, translate(page_en.title(), lang))
+
+
+def copy_lang_pages():
+    languages = [l.value
+                 for l in LanguageVariants
+                 if l.value not in [ENGLISH]]
+    gen = GeneratorFactory()
+    gen.handle_arg("-catr:Weapons")
+    en_pages: dict[str, Page] = dict((p.title(), p)
+                                     for p in gen.getCombinedGenerator(preload=True)
+                                     if "/" not in p.title())
+    for lang in languages:
+        print(f"Current language: {lang.code}")
+        pages = PreloadingGenerator(Page(s, f"{p}/{lang.code}") for p in en_pages)
+        for p in pages:
+            page_en = en_pages[p.title().split("/")[0]]
+            copy_page(page_en, p, lang, translate(page_en.title(), lang))
+
 
 
 def make_interlanguage_links():
@@ -67,7 +90,7 @@ def make_interlanguage_links():
         neighbors: list["LangPage"]
 
     gen = GeneratorFactory(s)
-    gen.handle_args(['-cat:Main pages', '-cat:Character galleries'])
+    gen.handle_args(['-cat:Main pages', '-cat:Character galleries', '-cat:Weapons'])
     gen = gen.getCombinedGenerator()
     pages: dict[str, LangPage] = dict((p.title(), LangPage(p, title_to_lang(p.title()), [])) for p in gen)
     gen = PropertyGenerator(site=s, prop="langlinks", titles="|".join(p.page.title() for p in pages.values()))
@@ -118,5 +141,5 @@ def make_interlanguage_links():
 
 
 if __name__ == "__main__":
-    make_char_pages()
+    make_interlanguage_links()
 
