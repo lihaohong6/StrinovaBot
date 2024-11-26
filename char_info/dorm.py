@@ -149,15 +149,19 @@ class FriendshipRewardGroup:
 
 
 def parse_friendship_rewards():
-    friendship_gifts: dict[int, dict[int, list[FriendshipRewardGroup]]] = {}
+    friendship_gifts: dict[str, dict[int, list[FriendshipRewardGroup]]] = {}
     items = get_all_items()
     i18n = get_all_game_json("RoleFavorabilityMission")
 
-    def make_rewards(role_id: int, level: int, prize_list: list[dict], cond: dict[str, str] = None):
-        if role_id not in friendship_gifts:
-            friendship_gifts[role_id] = {}
-        if level not in friendship_gifts[role_id]:
-            friendship_gifts[role_id][level] = []
+    def make_rewards(char: str | int, level: int, prize_list: list[dict], cond: dict[str, str] = None):
+        if isinstance(char, int):
+            char_name = get_char_by_id(char)
+        else:
+            char_name = char
+        if char_name not in friendship_gifts:
+            friendship_gifts[char_name] = {}
+        if level not in friendship_gifts[char_name]:
+            friendship_gifts[char_name][level] = []
         result = []
         for prize in prize_list:
             item_id = prize['ItemId']
@@ -165,7 +169,7 @@ def parse_friendship_rewards():
             item = items.get(item_id)
             assert item is not None, f"Item with id {item_id} not found"
             result.append(FriendshipReward(item.name, item.quality, item_amount, item.icon))
-        friendship_gifts[role_id][level].append(FriendshipRewardGroup(result, cond))
+        friendship_gifts[char_name][level].append(FriendshipRewardGroup(result, cond))
 
     table1 = get_table_global("RoleFavorabilityEvent")
 

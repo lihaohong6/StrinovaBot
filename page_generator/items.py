@@ -86,7 +86,8 @@ def get_all_items() -> dict[int, Item | Badge | Decal | SkinInfo | Weapon | Emot
     voices: dict[int, Voice] = {}
     for vid, v in role_voice().items():
         voices[vid] = v
-    return currencies | items | badges | decals | id_cards | skins | weapons | emotes | voices
+    # increasing order of specificity
+    return items | skins | badges | decals | id_cards | weapons | emotes | voices | currencies
 
 
 def main():
