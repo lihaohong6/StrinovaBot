@@ -1,20 +1,19 @@
 import re
 from dataclasses import dataclass, field
+from functools import cache
 
 import wikitextparser as wtp
-from pywikibot import Page, FilePage
+from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from global_config import characters_with_dorms
-from page_generator.badges import get_all_badges, Badge
-from page_generator.decal import get_all_decals, Decal
-from page_generator.items import parse_items, Item
-from utils.asset_utils import resource_root
-from utils.general_utils import get_table, get_char_by_id, make_tab_group, get_char_pages, save_json_page
-from utils.json_utils import get_game_json, get_all_game_json
-from utils.lang import LanguageVariants, get_language, CHINESE, available_languages
-from utils.lang_utils import get_multilanguage_dict, StringConverters, compose
-from utils.upload_utils import upload_item_icons, UploadRequest, process_uploads
+from page_generator.items import get_all_items
+from utils.general_utils import get_table, get_char_by_id, save_json_page, \
+    get_table_global
+from utils.json_utils import get_all_game_json
+from utils.lang import LanguageVariants
+from utils.lang_utils import get_multilanguage_dict
+from utils.upload_utils import upload_item_icons
 from utils.wiki_utils import s
 
 
@@ -29,6 +28,7 @@ class Gift:
     best_characters: list[str] = field(default_factory=list)
 
 
+@cache
 def get_gifts() -> dict[int, Gift]:
     gift_json = get_table("RoleFavorabilityGiftPresent")
     gift_dict: dict[int, Gift] = {}
@@ -134,64 +134,67 @@ def generate_bond_items():
     save_json_page("Module:BondItems/data.json", items, summary="update bond items")
 
 
-def generate_friendship_gifts():
-    @dataclass
-    class FriendshipReward:
-        name: dict[str, str]
-        quality: int
-        quantity: int
-        image: str
-    table = get_table("RoleFavorabilityEvent")
-    friendship_gifts: dict[int, dict[int, list[FriendshipReward]]] = {}
-    items = parse_items()
-    badges = get_all_badges()
-    decals = get_all_decals()
-    upload_requests: list[UploadRequest] = []
-    i18n = get_all_game_json("RoleFavorabilityEvent")
-    for v in table.values():
-        role_id = v['RoleId']
-        level = v['FavoLevel']
+@dataclass
+class FriendshipReward:
+    name: dict[str, str]
+    quality: int
+    quantity: int
+    image: str
+
+
+@dataclass
+class FriendshipRewardGroup:
+    rewards: list[FriendshipReward] = field(default_factory=list)
+    condition: dict[str, str] = field(default_factory=dict)
+
+
+def parse_friendship_rewards():
+    friendship_gifts: dict[int, dict[int, list[FriendshipRewardGroup]]] = {}
+    items = get_all_items()
+    i18n = get_all_game_json("RoleFavorabilityMission")
+
+    def make_rewards(role_id: int, level: int, prize_list: list[dict], cond: dict[str, str] = None):
         if role_id not in friendship_gifts:
             friendship_gifts[role_id] = {}
         if level not in friendship_gifts[role_id]:
             friendship_gifts[role_id][level] = []
-        emoticon_path = v["EmoticonsPicture"].get("AssetPathName", None)
-        reward: FriendshipReward
-        if emoticon_path is None or emoticon_path == "None":
-            prizes = v['FavoPrize']
-            assert len(prizes) == 1
-            prize: dict = prizes[0]
+        result = []
+        for prize in prize_list:
             item_id = prize['ItemId']
             item_amount = prize['ItemAmount']
-            item: Item | Badge | Decal
-            if item_id in items:
-                item = items[item_id]
-            elif item_id in badges:
-                item = badges[item_id]
-            elif item_id in decals:
-                item = decals[item_id]
-            else:
-                raise RuntimeError(f"Item {item_id} not found")
-            reward = FriendshipReward(item.name, item.quality, item_amount, item.file)
-        else:
-            source_name = emoticon_path.split(".")[-1]
-            source = resource_root / "Emote" / "ApartmentEmotePack" / (source_name + ".png")
-            file_name = f"File:Emoticon pack {source_name.split('_')[-1]}"
-            upload_requests.append(UploadRequest(source, FilePage(s, file_name), '[[Category:Emoticon pack icons]]'))
+            item = items.get(item_id)
+            assert item is not None, f"Item with id {item_id} not found"
+            result.append(FriendshipReward(item.name, item.quality, item_amount, item.icon))
+        friendship_gifts[role_id][level].append(FriendshipRewardGroup(result, cond))
 
-            emoticon_dict = v['FavoPrizeName']
-            reward = FriendshipReward({}, 1, 1, file_name)
-            reward.name = get_multilanguage_dict(i18n, emoticon_dict['Key'])
-            reward.name[CHINESE.code] = emoticon_dict['SourceString']
-        friendship_gifts[role_id][level].append(reward)
+    table1 = get_table_global("RoleFavorabilityEvent")
 
-    process_uploads(upload_requests)
-    p = Page(s, "Module:FriendshipReward/data.json")
-    save_json_page(p, friendship_gifts)
+    for v in table1.values():
+        prizes = v['FavoPrize']
+        make_rewards(v['RoleId'], v['FavoLevel'], prizes)
+
+    table2 = get_table_global("RoleFavorabilityMission")
+
+    for v in table2.values():
+        prizes = v['Prize']
+        desc = get_multilanguage_dict(i18n, v["Desc"]["Key"], extra=v["Desc"]["SourceString"])
+        make_rewards(v['RoleId'], v['RoleLevel'], prizes, desc)
+
+    return friendship_gifts
+
+
+def generate_friendship_gifts():
+    gifts = parse_friendship_rewards()
+    # upload_requests: list[UploadRequest] = []
+    # for gift_dict in gifts.values():
+    #     for level, gift in gift_dict.items():
+    #         source = resource_root / "Emote" / "ApartmentEmotePack" / (source_name + ".png")
+    #         upload_requests.append(UploadRequest(source, FilePage(s, file_name), '[[Category:Emoticon pack icons]]'))
+    # process_uploads(upload_requests)
+    save_json_page("Module:FriendshipReward/data.json", gifts)
 
 
 if __name__ == "__main__":
     generate_gifts()
     generate_bond_items()
-    # Not ready yet
-    # generate_friendship_gifts()
+    generate_friendship_gifts()

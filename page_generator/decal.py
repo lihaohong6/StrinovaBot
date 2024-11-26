@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from functools import cache
 from pathlib import Path
 
 from pywikibot import FilePage
@@ -35,6 +36,7 @@ def localize_decals(decals: list[Decal]):
         decal.description |= get_multilanguage_dict(i18n, f"{decal.id}_Desc")
 
 
+@cache
 def get_all_decals() -> dict[int, Decal]:
     decal_json = get_table("Decal")
     decals: dict[int, Decal] = {}

@@ -1,5 +1,6 @@
 import re
 from dataclasses import dataclass
+from functools import cache
 
 from pywikibot import FilePage
 
@@ -32,6 +33,7 @@ def get_i18n() -> dict:
     return i18n
 
 
+@cache
 def get_achievements(upload: bool = True) -> list[Achievement]:
     i18n = get_i18n()
     achievement_table = get_table("Achievement")

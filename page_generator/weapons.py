@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from dataclasses import dataclass
 from enum import Enum
+from functools import cache
 
 from pywikibot import FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
@@ -69,6 +70,7 @@ class Weapon:
         return "File:" + self.get_icon_name()
 
 
+@cache
 def parse_weapons() -> dict[int, Weapon]:
     i18n = get_all_game_json('Weapon')
     i18n = get_all_game_json('Goods') | i18n

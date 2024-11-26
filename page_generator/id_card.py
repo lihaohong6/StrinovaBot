@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from functools import cache
 from pathlib import Path
 
 from pywikibot import FilePage
@@ -36,6 +37,7 @@ def localize_id_cards(id_cards: list[IdCard]):
         id_card.description |= get_multilanguage_dict(i18n, f"{id_card.id}_Desc")
 
 
+@cache
 def get_all_id_cards() -> dict[int, IdCard]:
     id_card_json = get_table("IdCard")
     id_cards: dict[int, IdCard] = {}

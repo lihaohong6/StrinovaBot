@@ -1,12 +1,12 @@
 from dataclasses import dataclass, field
-from pathlib import Path
+from functools import cache
 
 from audio.audio_parser import Voice, role_voice
 from char_info.gallery import parse_skin_tables, SkinInfo, Emote, parse_emotes
 from page_generator.badges import get_all_badges, Badge
 from page_generator.decal import get_all_decals, Decal
 from page_generator.id_card import get_all_id_cards, IdCard
-from page_generator.weapons import Weapon, get_weapons_by_type, parse_weapons
+from page_generator.weapons import Weapon, parse_weapons
 from utils.general_utils import get_table
 from utils.json_utils import get_all_game_json
 from utils.lang import CHINESE
@@ -38,6 +38,7 @@ def localize_items(items: list[Item]):
         item.description |= get_multilanguage_dict(i18n, f"{item.id}_Desc")
 
 
+@cache
 def parse_items() -> dict[int, Item]:
     item_json = get_table("Item")
     items: dict[int, Item] = {}
@@ -52,6 +53,7 @@ def parse_items() -> dict[int, Item]:
     return items
 
 
+@cache
 def parse_currencies() -> dict[int, Item]:
     i18n = get_all_game_json("Currency")
     currencies: dict[int, Item] = {}
@@ -64,6 +66,7 @@ def parse_currencies() -> dict[int, Item]:
     return currencies
 
 
+@cache
 def get_all_items() -> dict[int, Item | Badge | Decal | SkinInfo | Weapon | Emote | IdCard]:
     currencies = parse_currencies()
     items = parse_items()

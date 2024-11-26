@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from functools import cache
 from pathlib import Path
 
 from pywikibot import FilePage
@@ -39,6 +40,7 @@ def localize_badges(badges: list[Badge]):
         badge.gain |= get_multilanguage_dict(i18n, f"{badge.id}_GainParam2")
 
 
+@cache
 def get_all_badges() -> dict[int, Badge]:
     badge_json = get_table("Badge")
     badges: dict[int, Badge] = {}

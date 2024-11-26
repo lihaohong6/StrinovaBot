@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+from functools import cache
 
 from pywikibot import FilePage, Page
 from pywikibot.pagegenerators import PreloadingGenerator
@@ -17,6 +18,7 @@ from utils.wiki_utils import bwiki, s
 @dataclass
 class Emote:
     id: int
+    quality: int
     name: dict[str, str]
     text: dict[str, str]
 
@@ -40,6 +42,7 @@ def parse_emotes() -> dict[str, list[Emote]]:
             continue
         lst = items.get(name_en, [])
         emote = Emote(k,
+                      v['Quality'],
                       get_multilanguage_dict(i18n, f'{k}_Name', extra=v['Name']['SourceString']),
                       get_multilanguage_dict(i18n, f'{k}_Desc', extra=v['Desc']['SourceString']))
         lst.append(emote)
@@ -93,10 +96,15 @@ class SkinInfo:
 
     @property
     def icon(self):
-        assert len(self.id) == 1
-        return f"File:Item Icon {self.id[0]}.png"
+        if len(self.id) == 1:
+            return f"File:Item Icon {self.id[0]}.png"
+        else:
+            good_id = [sid for sid in self.id if str(sid).startswith("20")]
+            assert len(good_id) == 1
+            return f"File:Item Icon {good_id[0]}.png"
 
 
+@cache
 def parse_skin_tables() -> dict[str, list[SkinInfo]]:
     skins_table = get_table("RoleSkin")
     store_skins_table = get_table("Goods")
