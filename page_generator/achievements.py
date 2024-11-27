@@ -5,7 +5,7 @@ from functools import cache
 from pywikibot import FilePage
 
 from utils.asset_utils import resource_root
-from utils.general_utils import get_table, get_char_by_id, save_json_page
+from utils.general_utils import get_table, get_char_by_id, save_json_page, get_table_global
 from utils.json_utils import get_all_game_json
 from utils.lang_utils import get_multilanguage_dict, StringConverters, compose
 from utils.upload_utils import UploadRequest, process_uploads
@@ -36,34 +36,31 @@ def get_i18n() -> dict:
 @cache
 def get_achievements(upload: bool = True) -> list[Achievement]:
     i18n = get_i18n()
-    achievement_table = get_table("Achievement")
+    achievement_table = get_table_global("Achievement")
     achievements = []
     for key, value in achievement_table.items():
-        try:
-            role_id: int = value['Role']
-            role_name = get_char_by_id(role_id)
+        role_id: int = value['Role']
+        role_name = get_char_by_id(role_id)
 
-            def sub_condition(string: str):
-                if "{0}" in string:
-                    string = string.format(value['Param2'][0])
-                    return re.sub(r"<Chat-Self>(\d+)</>", lambda match: match.group(1), string)
-                if "[1]" in string:
-                    string = string.replace("[1]", str(value['Param2'][0]))
-                    return string
+        def sub_condition(string: str):
+            if "{0}" in string:
+                string = string.format(value['Param2'][0])
+                return re.sub(r"<Chat-Self>(\d+)</>", lambda match: match.group(1), string)
+            if "[1]" in string:
+                string = string.replace("[1]", str(value['Param2'][0]))
                 return string
+            return string
 
-            converter = compose(StringConverters.basic_converter, sub_condition)
-            name = get_multilanguage_dict(i18n, f"{key}_Name", converter=converter,
-                                          extra=value['Name']['SourceString'])
-            unlock = get_multilanguage_dict(i18n, f"{key}_Explain", converter=converter,
-                                            extra=value['Explain']['SourceString'])
-            details = get_multilanguage_dict(i18n, f"{key}_Details", converter=converter,
-                                             extra=value['Details']['SourceString'])
-            achievement = Achievement(key, value['Level'], value['Type'], value['Quality'], role_id, role_name,
-                                      name, unlock, details)
-            achievements.append(achievement)
-        except KeyError:
-            pass
+        converter = compose(StringConverters.basic_converter, sub_condition)
+        name = get_multilanguage_dict(i18n, f"{key}_Name", converter=converter,
+                                      extra=value['Name']['SourceString'])
+        unlock = get_multilanguage_dict(i18n, f"{key}_Explain", converter=converter,
+                                        extra=value['Explain']['SourceString'])
+        details = get_multilanguage_dict(i18n, f"{key}_Details", converter=converter,
+                                         extra=value['Details']['SourceString'])
+        achievement = Achievement(key, value['Level'], value['Type'], value['Quality'], role_id, role_name,
+                                  name, unlock, details)
+        achievements.append(achievement)
     if upload:
         requests: list[UploadRequest] = []
         for achievement in achievements:
