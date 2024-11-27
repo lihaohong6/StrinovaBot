@@ -11,7 +11,7 @@ from utils.general_utils import get_table, get_char_by_id, get_cn_wiki_skins, \
 from utils.json_utils import get_all_game_json
 from utils.lang import CHINESE
 from utils.lang_utils import get_multilanguage_dict
-from utils.upload_utils import upload_file, UploadRequest, process_uploads
+from utils.upload_utils import upload_file, UploadRequest, process_uploads, upload_item_icons
 from utils.wiki_utils import bwiki, s
 
 
@@ -188,6 +188,12 @@ def upload_skins(char_name: str, skin_list: list[SkinInfo]) -> list[SkinInfo]:
     for skin in process_skin_upload_requests(char_name, skin_uploads,
                                              cat="Skin portraits"):
         skin.portrait = skin.name_cn
+
+    icons: list[int] = []
+    for skin in skin_list:
+        ids = [sid for sid in skin.id if str(sid).startswith("20")]
+        icons.extend(ids)
+    upload_item_icons(icons)
 
     return skin_list
 
