@@ -134,6 +134,8 @@ class UploadRequest:
 def process_uploads(requests: list[UploadRequest]) -> None:
     for r in requests:
         if isinstance(r.target, str):
+            if "File" not in r.target:
+                r.target = "File:" + r.target
             r.target = FilePage(s, r.target)
     existing = set(p.title() for p in PreloadingGenerator((r.target for r in requests)) if p.exists())
     for r in requests:
@@ -144,5 +146,5 @@ def process_uploads(requests: list[UploadRequest]) -> None:
         elif isinstance(r.source, FilePage):
             upload_file(r.text, r.target, r.comment, url=r.source.get_file_url())
         elif isinstance(r.source, Path):
-            assert r.source.exists()
+            assert r.source.exists(), f"File {r.source} does not exist"
             upload_file(r.text, r.target, r.comment, file=r.source)
