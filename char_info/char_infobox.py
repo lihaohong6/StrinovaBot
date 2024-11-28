@@ -32,7 +32,7 @@ infobox_args: list[tuple[list[str] | str, str, Callable[[list[str] | str], str]]
     ("Apartment", "Home", nop),
     ("Title", "Title", nop),
     ("Desc", "Description", nop),
-    (["Cv", "CvCn"], "VA", lambda x: f"JP: {x[0]}<br/>CN: {x[1]}"),
+    # (["Cv", "CvCn"], "VA", lambda x: f"JP: {x[0]}<br/>CN: {x[1]}"),
 ]
 
 
