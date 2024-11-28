@@ -34,7 +34,7 @@ class Voice:
     upgrade: VoiceUpgrade = VoiceUpgrade.REGULAR
 
     def merge(self, o: "Voice"):
-        assert self.file[CHINESE.code] == o.file[CHINESE.code] and self.path == o.path
+        assert self.path == o.path
         assert len(o.id) == 1
         self.id.append(o.id[0])
         for f in fields(self):
@@ -220,21 +220,54 @@ def in_game_triggers_upgrade() -> list[UpgradeTrigger]:
     return result
 
 
+def parse_role_voice() -> dict[int, Voice]:
+    """
+    Lightweight version that does not deal with files.
+    :return:
+    """
+    i18n = get_all_game_json('RoleVoice')
+    voice_table = get_table("RoleVoice")
+
+    voices = {}
+    path_to_voice: dict[str, Voice] = {}
+    for k, v in voice_table.items():
+        name, transcription, translation = get_text(i18n, v)
+
+        path: str = v["AkEvent"]["AssetPathName"].split(".")[-1]
+        upgrade = VoiceUpgrade.REGULAR
+        if "org" in path:
+            upgrade = VoiceUpgrade.ORG
+        if "red" in path:
+            upgrade = VoiceUpgrade.RED
+        voice = Voice(id=[k],
+                      role_id=v['RoleId'],
+                      quality=v['Quality'],
+                      name=name,
+                      transcription=transcription,
+                      translation=translation,
+                      path=path.strip(),
+                      upgrade=upgrade)
+        if path in path_to_voice:
+            path_to_voice[path].merge(voice)
+            voice = path_to_voice[path]
+        else:
+            path_to_voice[path] = voice
+        voices[k] = voice
+    return voices
+
+
+
 def role_voice() -> dict[int, Voice]:
     tables: dict[str, dict] = {}
     bank_name_to_files: dict[str, dict[str, list[Path]]] = {}
     for lang in languages_with_audio():
         tables[lang.code] = parse_banks_xml(lang)
         bank_name_to_files[lang.code] = map_bank_name_to_files(audio_root / lang.audio_dir_name)
-    i18n = get_all_game_json('RoleVoice')
-    voice_table = get_table("RoleVoice")
-    path_to_voice: dict[str, Voice] = {}
 
-    voices = {}
-    for k, v in voice_table.items():
-        name, transcription, translation = get_text(i18n, v)
-
-        path: str = v["AkEvent"]["AssetPathName"].split(".")[-1]
+    voices = parse_role_voice()
+    result: dict[int, Voice] = {}
+    for k, voice in voices.items():
+        path = voice.path
         files: dict[str, str] = {}
         failed = False
         for lang in languages_with_audio():
@@ -251,27 +284,9 @@ def role_voice() -> dict[int, Voice]:
             files[lang.code] = audio_file
         if failed:
             continue
-        upgrade = VoiceUpgrade.REGULAR
-        if "org" in path:
-            upgrade = VoiceUpgrade.ORG
-        if "red" in path:
-            upgrade = VoiceUpgrade.RED
-        voice = Voice(id=[k],
-                      role_id=v['RoleId'],
-                      quality=v['Quality'],
-                      name=name,
-                      transcription=transcription,
-                      translation=translation,
-                      path=path.strip(),
-                      file=files,
-                      upgrade=upgrade)
-        if path in path_to_voice:
-            path_to_voice[path].merge(voice)
-            voice = path_to_voice[path]
-        else:
-            path_to_voice[path] = voice
-        voices[k] = voice
-    return voices
+        voice.file = files
+        result[k] = voice
+    return result
 
 
 def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
