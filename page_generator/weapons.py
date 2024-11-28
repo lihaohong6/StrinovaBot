@@ -205,12 +205,13 @@ def process_weapon_skins(*args):
     children: dict[int, list[Weapon]] = {}
     for w in weapons.values():
         parent = w.parent
-        if parent.id == w.id:
+        if parent is None or parent.id == w.id:
             continue
         if parent.id not in children:
             children[parent.id] = []
         children[parent.id].append(w)
-    uploaded_weapons = set(w.id for w in upload_weapon_variants([w for w in weapons.values() if w.id != w.parent.id]))
+    uploaded_weapons = set(w.id for w in upload_weapon_variants([w for w in weapons.values()
+                                                                 if w.parent is not None and w.parent.id != w.id]))
     result: dict[str, list[dict]] = {}
     for weapon_id, variants in children.items():
         variants = [v for v in variants if v.id in uploaded_weapons]

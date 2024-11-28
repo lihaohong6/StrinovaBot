@@ -31,8 +31,7 @@ class Item:
 
 
 def localize_items(items: list[Item]):
-    table_name = "Item"
-    i18n = get_all_game_json(table_name)
+    i18n = get_all_game_json("Item") | get_all_game_json("Goods")
     for item in items:
         item.name |= get_multilanguage_dict(i18n, f"{item.id}_Name")
         item.description |= get_multilanguage_dict(i18n, f"{item.id}_Desc")
@@ -40,15 +39,20 @@ def localize_items(items: list[Item]):
 
 @cache
 def parse_items() -> dict[int, Item]:
-    item_json = get_table("Item")
     items: dict[int, Item] = {}
-    for item_id, v in item_json.items():
-        item = Item(item_id)
-        item.name[CHINESE.code] = v['Name']['SourceString']
-        item.description[CHINESE.code] = v['Desc'].get("SourceString", "")
-        item.quality = v['Quality']
-        item.type = v['ItemType']
-        items[item_id] = item
+
+    def process_json(d: dict):
+        for item_id, v in d.items():
+            item = Item(item_id)
+            item.name[CHINESE.code] = v['Name']['SourceString']
+            item.description[CHINESE.code] = v['Desc'].get("SourceString", "")
+            item.quality = v['Quality']
+            item.type = v['ItemType']
+            items[item_id] = item
+
+    process_json(get_table("Item"))
+    process_json(get_table("Goods"))
+
     localize_items(list(items.values()))
     return items
 
