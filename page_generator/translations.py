@@ -1,11 +1,17 @@
+import json
+import re
 from functools import cache
 
+from pywikibot import Page
+
 from global_config import char_id_mapper, internal_names
+from page_generator.maps import parse_maps
 from page_generator.weapons import parse_weapons
 from utils.general_utils import save_json_page, merge_dict, camp_id_to_string
 from utils.json_utils import get_all_game_json
 from utils.lang import Language
 from utils.lang_utils import get_multilanguage_dict, char_name_table
+from utils.wiki_utils import s
 
 
 @cache
@@ -41,6 +47,11 @@ def get_translations() -> dict[str, dict[str, str]]:
         if w.parent is None:
             result[w.name_en] = w.name
 
+    # maps
+    maps = parse_maps().values()
+    for m in maps:
+        result[m.name_en] = m.name
+
     return result
 
 
@@ -51,6 +62,27 @@ def translate(original: str, lang: Language) -> str | None:
 def generate_translations():
     result = get_translations()
     save_json_page("Module:Translate/data.json", result)
+
+
+def transition_translation():
+    pages = {
+        'ru': Page(s, "Template:Translate/ru").text,
+        'ja': Page(s, "Template:Translate/ja").text
+    }
+
+    result: dict[str, dict[str, str]] = {}
+
+    for lang, text in pages.items():
+        for line in text.split("\n"):
+            r = re.search(r"\|(.+)=(.*)(\n|$)", line)
+            if r is None:
+                continue
+            key, value = r.group(1), r.group(2)
+            if key not in result:
+                result[key] = {}
+            result[key][lang] = value
+
+    print(json.dumps(result, indent=4, ensure_ascii=False))
 
 
 if __name__ == '__main__':
