@@ -177,6 +177,14 @@ def get_bwiki_char_pages() -> list[tuple[int, str, Page]]:
     return res
 
 
+def save_page(page: Page | str, text, summary: str = "update page"):
+    if isinstance(page, str):
+        page = Page(s, page)
+    if page.text.strip() != text.strip():
+        page.text = text
+        page.save(summary=summary)
+
+
 def save_json_page(page: Page | str, obj, summary: str = "update json page", merge: bool = False):
     class EnhancedJSONEncoder(json.JSONEncoder):
         def default(self, o):

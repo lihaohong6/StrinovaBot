@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from functools import cache
 
-from audio.audio_parser import Voice, role_voice
+from audio.audio_parser import Voice, role_voice, parse_role_voice
 from char_info.gallery import parse_skin_tables, SkinInfo, Emote, parse_emotes
 from page_generator.badges import get_all_badges, Badge
 from page_generator.decal import get_all_decals, Decal
@@ -88,7 +88,7 @@ def get_all_items() -> dict[int, Item | Badge | Decal | SkinInfo | Weapon | Emot
         for emote in emote_list:
             emotes[emote.id] = emote
     voices: dict[int, Voice] = {}
-    for vid, v in role_voice().items():
+    for vid, v in parse_role_voice().items():
         voices[vid] = v
     # increasing order of specificity
     return items | skins | badges | decals | id_cards | weapons | emotes | voices | currencies

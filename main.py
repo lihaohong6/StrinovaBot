@@ -8,6 +8,9 @@ from char_info.skills import generate_string_energy_network, generate_skills
 from char_info.story import generate_return_letter, generate_biography
 from char_info.weapons import generate_weapons
 from page_generator.achievements import generate_all_achievements
+from page_generator.badges import upload_all_badges
+from page_generator.decal import upload_all_decals
+from page_generator.id_card import upload_all_id_cards
 from page_generator.strinova_comms import strinova_comms_main
 from page_generator.translations import generate_translations
 from page_generator.weapons import process_weapon_pages, process_weapon_skins
@@ -22,6 +25,12 @@ def main():
         "weapon_variant": process_weapon_skins
     }
     commands[sys.argv[1]](sys.argv[:1] + sys.argv[2:])
+
+
+def misc_uploads():
+    upload_all_badges()
+    upload_all_decals()
+    upload_all_id_cards()
 
 
 def make_everything():
@@ -43,6 +52,7 @@ def make_everything():
         generate_skills()
         generate_string_energy_network()
         generate_weapons()
+    misc_uploads()
 
 
 if __name__ == "__main__":

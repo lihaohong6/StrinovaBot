@@ -57,7 +57,6 @@ def get_all_badges() -> dict[int, Badge]:
 
 
 def upload_all_badges():
-    raise RuntimeError("This shouldn't be necessary because all badges are covered by achievements")
     badges = get_all_badges()
     requests: list[UploadRequest] = []
     for b in badges.values():

@@ -34,9 +34,12 @@ def get_i18n() -> dict:
 
 
 @cache
-def get_achievements(upload: bool = True) -> list[Achievement]:
+def parse_achievements(use_cn: bool = False) -> list[Achievement]:
     i18n = get_i18n()
-    achievement_table = get_table_global("Achievement")
+    if use_cn:
+        achievement_table = get_table("Achievement")
+    else:
+        achievement_table = get_table_global("Achievement")
     achievements = []
     for key, value in achievement_table.items():
         role_id: int = value['Role']
@@ -61,19 +64,23 @@ def get_achievements(upload: bool = True) -> list[Achievement]:
         achievement = Achievement(key, value['Level'], value['Type'], value['Quality'], role_id, role_name,
                                   name, unlock, details)
         achievements.append(achievement)
-    if upload:
-        requests: list[UploadRequest] = []
-        for achievement in achievements:
-            requests.append(UploadRequest(resource_root / "Achievement" / f"T_Dynamic_Achievement_{achievement.id}.png",
-                                          FilePage(s, f"File:Achievement_{achievement.id}.png"),
-                                          '[[Category:Achievement icons]]',
-                                          'Batch upload achievement icons'))
-        process_uploads(requests)
     return achievements
 
 
+def upload_achievements(achievements: list[Achievement]) -> None:
+    requests: list[UploadRequest] = []
+    for achievement in achievements:
+        requests.append(UploadRequest(resource_root / "Achievement" / f"T_Dynamic_Achievement_{achievement.id}.png",
+                                      FilePage(s, f"File:Achievement_{achievement.id}.png"),
+                                      '[[Category:Achievement icons]]',
+                                      'Batch upload achievement icons'))
+    process_uploads(requests)
+
+
 def generate_all_achievements(*args):
-    achievements = get_achievements()
+    achievements = parse_achievements()
+    achievements_cn = parse_achievements(use_cn=True)
+    upload_achievements(achievements_cn)
     save_json_page("Module:Achievement/data.json", achievements)
 
 
