@@ -9,7 +9,7 @@ from page_generator.maps import parse_maps
 from page_generator.weapons import parse_weapons
 from utils.general_utils import save_json_page, merge_dict, camp_id_to_string
 from utils.json_utils import get_all_game_json
-from utils.lang import Language
+from utils.lang import Language, ENGLISH
 from utils.lang_utils import get_multilanguage_dict, char_name_table
 from utils.wiki_utils import s
 
@@ -51,6 +51,12 @@ def get_translations() -> dict[str, dict[str, str]]:
     maps = parse_maps().values()
     for m in maps:
         result[m.name_en] = m.name
+
+    # game modes
+    i18n = get_all_game_json("PlayerSeasonData")
+    for i in range(1, 6):
+        d = get_multilanguage_dict(i18n, f"{i}_Name")
+        result[d[ENGLISH.code]] = d
 
     return result
 
