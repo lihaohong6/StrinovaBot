@@ -26,6 +26,10 @@ class Emote:
     def icon(self):
         return f"File:Emote_{self.id}.png"
 
+    @property
+    def description(self):
+        return self.text
+
 
 def parse_emotes() -> dict[str, list[Emote]]:
     goods_table = get_table("Goods")
