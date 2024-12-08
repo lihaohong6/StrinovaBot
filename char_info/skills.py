@@ -2,6 +2,7 @@ import re
 
 import wikitextparser as wtp
 from pywikibot import Page, FilePage
+from wikitextparser import parse
 
 from global_config import char_id_mapper
 from utils.asset_utils import resource_root
@@ -11,6 +12,7 @@ from utils.json_utils import get_game_json
 from utils.lang import get_language
 from utils.upload_utils import UploadRequest, process_uploads
 from utils.wiki_utils import bwiki, s
+from utils.wtp_utils import get_templates_by_name
 
 
 def generate_skills():
@@ -92,7 +94,7 @@ Growth_Team
     i18n_skill = get_game_json(lang)['Skill']
     role_json = get_table_global("Role")
     skill_json = get_table_global("Skill")
-    growth_json = get_table_global("Growth_Bomb")
+    growth_bomb = get_table_global("Growth_Bomb")
     for char_id, char_name, p in get_char_pages(lang=lang):
         # FIXME: bwiki api is too slow
         # bwiki_base_page = Page(bwiki(), en_name_to_zh[char_name])
@@ -110,7 +112,7 @@ Growth_Team
             return
 
         try:
-            char_string_energy_network(char_id, char_name, growth_json, i18n, i18n_skill, p, role_json, skill_json, t)
+            char_string_energy_network(char_id, char_name, growth_bomb, i18n, i18n_skill, p, role_json, skill_json, t)
         except Exception as e:
             print(f"Failed to process string energy network for {char_name} due to {e}")
             continue
@@ -121,9 +123,9 @@ Growth_Team
         p.save(summary="generate string energy network", minor=True)
 
 
-def char_string_energy_network(char_id, char_name, growth_json, i18n, i18n_skill, p, role_json, skill_json, t):
+def char_string_energy_network(char_id, char_name, growth_bomb, i18n, i18n_skill, p, role_json, skill_json, t):
     part: wtp.Template | None = None
-    char_growth = growth_json[char_id]
+    char_growth = growth_bomb[char_id]
 
     def add_arg(name, value):
         nonlocal part
@@ -190,13 +192,16 @@ def char_string_energy_network(char_id, char_name, growth_json, i18n, i18n_skill
         t.set_arg(f"group{arg_index}", str(part) + "\n")
         arg_index += 1
     # process awakenings
+    awakening_template_name = "StringEnergyNetwork/awakening"
+    original_templates = get_templates_by_name(parse(p.text), awakening_template_name)
     wake_ids = role_json[char_id]["SkillWake"]
     for wake_index, wake_id in enumerate(wake_ids, 1):
-        part = wtp.Template("{{StringEnergyNetwork/awakening}}")
-        wake_info = skill_json[wake_id]
-        assert wake_info["SkillType"] == 4, wake_id
-        active_cond = skill_json[wake_id]["ActiveCond"]
-        for cond_index, cond in enumerate(active_cond, 1):
+        if len(original_templates) >= wake_index:
+            part = original_templates[wake_index - 1]
+        else:
+            part = wtp.Template("{{" + awakening_template_name + "}}")
+        activate_condition = char_growth[f'Arousal{wake_index}ActivateNeed']
+        for cond_index, cond in enumerate(activate_condition, 1):
             add_arg(f"icon{cond_index}", cond)
         name = i18n_skill[f'{wake_id}_Name']
         text = i18n_skill[f'{wake_id}_Intro']
@@ -206,7 +211,7 @@ def char_string_energy_network(char_id, char_name, growth_json, i18n, i18n_skill
 
 
 def main():
-    generate_skills()
+    # generate_skills()
     generate_string_energy_network()
 
 
