@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from typing import Callable
 
@@ -66,6 +67,7 @@ class StringConverters:
     basic_converter: StringConverter = compose(no_text_found, remove_extra_line_space)
     newline_to_br: StringConverter = lambda x: x.replace("\n", "<br>")
     double_newline: StringConverter = lambda x: x.replace("\n", "\n\n")
+    all_caps_remove: StringConverter = lambda x: re.subn(r"(^| )[a-z]", lambda y: y.group(0).upper(), x.lower())[0]
 
 
 def get_multilanguage_dict(i18n: dict[str, dict], key: str | list[str] | None, default: str = None,
