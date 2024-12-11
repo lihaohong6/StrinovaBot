@@ -1,6 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
-from utils.general_utils import get_table, get_table_global
+from page_generator.items import Item
+from utils.general_utils import get_table_global
 from utils.json_utils import get_all_game_json
 from utils.lang import ENGLISH
 from utils.lang_utils import get_multilanguage_dict, StringConverters
@@ -25,10 +26,21 @@ class EventTask:
 
 
 @dataclass
+class EventReward:
+    item: Item
+    quantity: int
+
+
+@dataclass
 class Event:
     id: int
     name: dict[str, str]
     tasks: list[EventTask]
+    rewards: list[EventReward] = field(default_factory=list)
+
+
+def manual_event_rewards(events: dict[int, Event]):
+    rewards = []
 
 
 def parse_events():
@@ -53,12 +65,11 @@ def parse_events():
         daily = v["DayFlush"]
         weekly = v["WeekFlush"]
         result[activity_id].tasks.append(EventTask(description=desc, reward=reward, reward_id=reward_id, daily=daily, weekly=weekly))
+    manual_event_rewards(result)
     return result
 
 
-def main():
-    events = parse_events()
-    event = events[10013]
+def print_event(event: Event):
     rid_to_task: dict[int, list[EventTask]] = {}
     for task in event.tasks:
         if task.reward_id not in rid_to_task:
@@ -71,6 +82,12 @@ def main():
         for task in tasks:
             print(str(task))
         print("|}")
+
+
+def main():
+    events = parse_events()
+    event = events[10028]
+    print_event(event)
 
 
 if __name__ == '__main__':

@@ -7,9 +7,9 @@ from page_generator.badges import get_all_badges, Badge
 from page_generator.decal import get_all_decals, Decal
 from page_generator.id_card import get_all_id_cards, IdCard
 from page_generator.weapons import Weapon, parse_weapons
-from utils.general_utils import get_table
+from utils.general_utils import get_table, save_json_page, get_table_global, merge_dict2
 from utils.json_utils import get_all_game_json
-from utils.lang import CHINESE
+from utils.lang import CHINESE, ENGLISH
 from utils.lang_utils import get_multilanguage_dict
 
 
@@ -31,7 +31,7 @@ class Item:
 
 
 def localize_items(items: list[Item]):
-    i18n = get_all_game_json("Item") | get_all_game_json("Goods")
+    i18n = merge_dict2(get_all_game_json("Item"), get_all_game_json("Goods"))
     for item in items:
         item.name |= get_multilanguage_dict(i18n, f"{item.id}_Name")
         item.description |= get_multilanguage_dict(i18n, f"{item.id}_Desc")
@@ -52,6 +52,7 @@ def parse_items() -> dict[int, Item]:
 
     process_json(get_table("Item"))
     process_json(get_table("Goods"))
+    process_json(get_table_global("Item"))
 
     localize_items(list(items.values()))
     return items
@@ -94,8 +95,44 @@ def get_all_items() -> dict[int, Item | Badge | Decal | SkinInfo | Weapon | Emot
     return items | skins | badges | decals | id_cards | weapons | emotes | voices | currencies
 
 
+@cache
+def get_en_items() -> dict[str, Item]:
+    items = get_all_items()
+    result = {}
+    for item in items.values():
+        name_en = item.name.get(ENGLISH.code, None)
+        if name_en is None:
+            continue
+        result[name_en] = item
+    return result
+
+
+def get_item(item: str | int) -> Item:
+    items = get_all_items()
+    if type(item) is int:
+        return items[item]
+    en_items = get_en_items()
+    return en_items[item]
+
+
+def save_all_items():
+    items = get_en_items()
+    result = {}
+    for name_en, item in items.items():
+
+        result[name_en] = {
+            'id': item.id,
+            'name': {
+                'en': name_en,
+            },
+            'icon': item.icon,
+            'quality': item.quality,
+        }
+    save_json_page("Module:Item/data.json", result)
+
+
 def main():
-    pass
+    save_all_items()
 
 
 if __name__ == '__main__':
