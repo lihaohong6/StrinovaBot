@@ -4,7 +4,7 @@ from pywikibot import Site, FilePage
 from pywikibot.pagegenerators import GeneratorFactory
 from pywikibot.site._upload import Uploader
 
-from utils.general_utils import download_file
+from utils.general_utils import download_file, cn_name_to_en
 
 bwiki = Site(code="bwiki")
 s = Site()
@@ -21,7 +21,7 @@ def default():
             print(f"{file_page.title()} does not exist")
             continue
         url = file_page.get_file_url()
-        title = zh_name_to_en(title)
+        title = cn_name_to_en(title)
         target_page = FilePage(s, f'File:{title} Default.png')
         Uploader(s, target_page, source_url=url, comment="upload from bwiki", ignore_warnings=True).upload()
 
@@ -37,7 +37,7 @@ def profile():
             print(f"{file_page.title()} does not exist")
             continue
         url = file_page.get_file_url()
-        title = zh_name_to_en(title)
+        title = cn_name_to_en(title)
         target_page = FilePage(s, f'File:{title} Profile.png')
         if not target_page.exists():
             s.upload(target_page, source_url=url, comment="upload from bwiki")
@@ -47,19 +47,27 @@ file_dir = Path("files")
 file_dir.mkdir(exist_ok=True)
 
 
-def download_any():
+def download_wallpapers():
+    wallpaper_dir = file_dir / "wallpapers"
+    existing = set(f.name for f in (wallpaper_dir / 'existing').glob("*"))
     gen = GeneratorFactory(bwiki)
-    gen.handle_args(["-imagesused:壁纸"])
+    gen.handle_args(["-imagesused:壁纸", "-ns:File"])
     gen = gen.getCombinedGenerator(preload=False)
     for page in gen:
-        title = page.title(with_ns=True, underscore=True)
-        file_page = FilePage(bwiki, title)
+        file_name = page.title(underscore=True, with_ns=False)
+        if file_name in existing:
+            continue
+        target_file = wallpaper_dir / file_name
+        # title = page.title(with_ns=True, underscore=True)
+        # file_page = FilePage(bwiki, title)
+        file_page: FilePage = page
         url = file_page.get_file_url()
-        download_file(url, file_dir / page.title(underscore=True, with_ns=False))
+        download_file(url, target_file)
+        print(f"{file_name} downloaded")
 
 
 def bwiki_downloader_main(*args):
-    download_any()
+    download_wallpapers()
 
 
 if __name__ == "__main__":
