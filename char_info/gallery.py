@@ -32,15 +32,15 @@ class Emote:
 
 
 def parse_emotes() -> dict[str, list[Emote]]:
-    goods_table = get_table("Goods")
-    i18n = get_all_game_json('Goods')
+    goods_table = get_table("Emote")
+    i18n = get_all_game_json('Emote')
     items: dict[str, list[Emote]] = {}
     for k, v in goods_table.items():
-        if v['ItemType'] != 13:
-            continue
-        name_source = v['Name']['SourceString']
+        # if v['ItemType'] != 13:
+        #     continue
+        name_source: str = v['Name']['SourceString']
         name_chs = name_source.split("-")[0]
-        name_en = cn_name_to_en(name_chs)
+        name_en = cn_name_to_en(name_chs.strip())
         if name_en is None:
             print(f"{name_source} has no EN character name")
             continue
@@ -273,5 +273,5 @@ def generate_skins():
 
 
 if __name__ == '__main__':
-    generate_skins()
     generate_emotes()
+    generate_skins()
