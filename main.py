@@ -10,7 +10,9 @@ from char_info.weapons import generate_weapons
 from page_generator.achievements import generate_all_achievements
 from page_generator.badges import upload_all_badges
 from page_generator.decal import upload_all_decals
+from page_generator.events import save_wiki_events
 from page_generator.id_card import upload_all_id_cards
+from page_generator.items import save_all_items
 from page_generator.strinova_comms import strinova_comms_main
 from page_generator.translations import generate_translations
 from page_generator.weapons import process_weapon_pages, process_weapon_skins
@@ -33,7 +35,7 @@ def misc_uploads():
     upload_all_id_cards()
 
 
-def make_everything():
+def make_all_character_info():
     generate_biography()
     generate_bond_items()
     generate_return_letter()
@@ -41,8 +43,6 @@ def make_everything():
     generate_gifts()
     generate_emotes()
     generate_skins()
-    generate_translations()
-    process_weapon_skins()
     generate_friendship_gifts()
     # need transition to lua?
     strinova_comms_main()
@@ -52,6 +52,14 @@ def make_everything():
         generate_skills()
         generate_string_energy_network()
         generate_weapons()
+
+
+def make_everything():
+    make_all_character_info()
+    generate_translations()
+    save_all_items()
+    save_wiki_events()
+    process_weapon_skins()
     misc_uploads()
 
 

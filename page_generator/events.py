@@ -1,10 +1,16 @@
 from dataclasses import dataclass, field
 
+from pywikibot.pagegenerators import PreloadingGenerator, GeneratorFactory
+
 from page_generator.items import Item
-from utils.general_utils import get_table_global
+from utils.general_utils import get_table_global, save_json_page
 from utils.json_utils import get_all_game_json
 from utils.lang import ENGLISH
 from utils.lang_utils import get_multilanguage_dict, StringConverters
+from utils.wiki_utils import s
+from utils.wtp_utils import get_templates_by_name
+
+import wikitextparser as wtp
 
 @dataclass
 class EventTask:
@@ -84,10 +90,48 @@ def print_event(event: Event):
         print("|}")
 
 
-def main():
+def print_event_rewards():
     events = parse_events()
     event = events[10028]
     print_event(event)
+
+
+@dataclass
+class WikiEvent:
+    title: str
+    image: str
+    start: str
+    end: str
+    intro: str
+
+
+def parse_wiki_events() -> list[WikiEvent]:
+    gen = GeneratorFactory(s)
+    gen.handle_args(['-cat:Events'])
+    result = []
+    for page in gen.getCombinedGenerator(preload=True):
+        parsed = wtp.parse(page.text)
+        matches = get_templates_by_name(parsed, "Event top")
+        assert len(matches) == 1, f"Template event top not found on {page.title()}"
+        t = matches[0]
+        args = {
+            'title': page.title()
+        }
+        for attr in ['image', 'start', 'end', 'intro']:
+            args[attr] = t.get_arg(attr).value.strip()
+        result.append(WikiEvent(**args))
+    result.sort(key=lambda e: e.start)
+    return result
+
+
+def save_wiki_events():
+    events = parse_wiki_events()
+    save_json_page("Module:Event/data.json", events)
+
+
+def main():
+    print_event_rewards()
+    save_wiki_events()
 
 
 if __name__ == '__main__':
