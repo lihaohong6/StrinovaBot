@@ -38,16 +38,16 @@ def parse_emotes() -> dict[str, list[Emote]]:
     for k, v in goods_table.items():
         # if v['ItemType'] != 13:
         #     continue
-        name_source: str = v['Name']['SourceString']
-        name_chs = name_source.split("-")[0]
-        name_en = cn_name_to_en(name_chs.strip())
+        name_source = v['Name']['SourceString']
+        role_id = v['RoleSkinId'] // 1000 % 1000
+        name_en = get_char_by_id(role_id)
         if name_en is None:
             print(f"{name_source} has no EN character name")
             continue
         lst = items.get(name_en, [])
         emote = Emote(k,
                       v['Quality'],
-                      get_multilanguage_dict(i18n, f'{k}_Name', extra=v['Name']['SourceString']),
+                      get_multilanguage_dict(i18n, f'{k}_Name', extra=name_source),
                       get_multilanguage_dict(i18n, f'{k}_Desc', extra=v['Desc']['SourceString']))
         lst.append(emote)
         items[name_en] = lst
