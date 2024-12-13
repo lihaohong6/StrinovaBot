@@ -61,13 +61,28 @@ def compose(f1: StringConverter, f2: StringConverter) -> StringConverter:
     return lambda x: f2(f1(x))
 
 
+def all_caps_remove(original: str) -> str:
+    lower = original.lower()
+
+    diff = 0
+    for i in range(0, len(original)):
+        diff += 1 if original[i] != lower[i] else 0
+    if diff < len(original) / 2:
+        return original
+
+    def upper(match: re.Match) -> str:
+        return str(match.group(0).upper())
+
+    return re.subn(r"(^| ).", lambda y: upper(y), lower)[0]
+
+
 class StringConverters:
     no_text_found: StringConverter = lambda x: x if "NoTextFound" not in x else ""
     remove_extra_line_space: StringConverter = lambda string: "\n".join(x.strip() for x in string.split("\n"))
     basic_converter: StringConverter = compose(no_text_found, remove_extra_line_space)
     newline_to_br: StringConverter = lambda x: x.replace("\n", "<br>")
     double_newline: StringConverter = lambda x: x.replace("\n", "\n\n")
-    all_caps_remove: StringConverter = lambda x: re.subn(r"(^| )[a-z]", lambda y: y.group(0).upper(), x.lower())[0]
+    all_caps_remove: StringConverter = all_caps_remove
 
 
 def get_multilanguage_dict(i18n: dict[str, dict], key: str | list[str] | None, default: str = None,

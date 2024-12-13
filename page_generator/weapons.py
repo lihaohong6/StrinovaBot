@@ -16,8 +16,8 @@ from utils.wiki_utils import bwiki, s
 
 
 class WeaponType(Enum):
-    PRIMARY = "Primary weapon"
-    SECONDARY = "Secondary weapon"
+    PRIMARY = "Primary Weapon"
+    SECONDARY = "Secondary Weapon"
     GRENADE = "Grenade"
 
     def get_string(self):

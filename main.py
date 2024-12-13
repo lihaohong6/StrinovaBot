@@ -59,6 +59,7 @@ def make_everything():
     generate_translations()
     save_all_items()
     save_wiki_events()
+    process_weapon_pages()
     process_weapon_skins()
     misc_uploads()
 

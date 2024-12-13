@@ -10,7 +10,7 @@ from page_generator.weapons import parse_weapons
 from utils.general_utils import save_json_page, merge_dict, camp_id_to_string
 from utils.json_utils import get_all_game_json
 from utils.lang import Language, ENGLISH
-from utils.lang_utils import get_multilanguage_dict, char_name_table
+from utils.lang_utils import get_multilanguage_dict, char_name_table, StringConverters
 from utils.wiki_utils import s
 
 
@@ -55,9 +55,25 @@ def get_translations() -> dict[str, dict[str, str]]:
     # game modes
     i18n = get_all_game_json("PlayerSeasonData")
     for i in range(1, 6):
-        d = get_multilanguage_dict(i18n, f"{i}_Name")
+        d = get_multilanguage_dict(i18n, f"{i}_Name", converter=StringConverters.all_caps_remove)
         result[d[ENGLISH.code]] = d
 
+    # skills
+    i18n = get_all_game_json("ST_Common")
+    for i in range(1, 4):
+        d = get_multilanguage_dict(i18n, f"SkillTypeName_{i}")
+        result[d[ENGLISH.code]] = d
+
+    # Weapon types
+    for i in [21, 22, 24]:
+        d = get_multilanguage_dict(i18n, f"ItemTypeNameKey_{i}")
+        result[d[ENGLISH.code]] = d
+
+    # Damage locations
+    i18n = get_all_game_json("ST_UINonResidentFunctionsBattleData")
+    result['Head'] = get_multilanguage_dict(i18n, "Header")
+    result['Body'] = get_multilanguage_dict(i18n, "UpperBody")
+    result['Legs'] = get_multilanguage_dict(i18n, "LowerBody")
     return result
 
 
