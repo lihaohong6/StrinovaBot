@@ -5,10 +5,10 @@ from pathlib import Path
 from pywikibot import FilePage
 
 from utils.asset_utils import resource_root
-from utils.general_utils import get_table, get_table_global
+from utils.general_utils import get_table, get_table_global, save_json_page
 from utils.json_utils import get_all_game_json
 from utils.lang import CHINESE
-from utils.lang_utils import get_multilanguage_dict
+from utils.lang_utils import get_multilanguage_dict, compose, StringConverters
 from utils.upload_utils import UploadRequest, process_uploads
 from utils.wiki_utils import s
 
@@ -18,6 +18,7 @@ class IdCard:
     id: int
     name: dict[str, str] = field(default_factory=dict)
     description: dict[str, str] = field(default_factory=dict)
+    unlock: dict[str, str] = field(default_factory=dict)
     quality: int = -1
 
     @property
@@ -29,36 +30,32 @@ class IdCard:
         return f"File:IdCard {self.id}.png"
 
 
-def localize_id_cards(id_cards: list[IdCard]):
-    table_name = "IdCard"
-    i18n = get_all_game_json(table_name)
-    for id_card in id_cards:
-        id_card.name |= get_multilanguage_dict(i18n, f"{id_card.id}_Name")
-        id_card.description |= get_multilanguage_dict(i18n, f"{id_card.id}_Desc")
-
-
 @cache
-def get_all_id_cards() -> dict[int, IdCard]:
-    id_card_json = get_table("IdCard")
+def get_all_id_cards(use_cn: bool = True) -> dict[int, IdCard]:
+    id_card_json = get_table("IdCard") if use_cn else get_table_global("IdCard")
+    i18n = get_all_game_json("IdCard")
     id_cards: dict[int, IdCard] = {}
     for id_card_id, v in id_card_json.items():
         if "::Avatar" not in v['Type']:
             continue
         try:
             id_card = IdCard(id_card_id)
-            id_card.name[CHINESE.code] = v['Name']['SourceString']
-            id_card.description[CHINESE.code] = v['Desc']['SourceString']
+            id_card.name = get_multilanguage_dict(i18n, f"{id_card.id}_Name", extra=v['Name']['SourceString'])
+            id_card.description = get_multilanguage_dict(
+                i18n, f"{id_card.id}_Desc", extra=v['Desc']['SourceString'],
+                converter=compose(StringConverters.basic_converter, StringConverters.newline_to_br))
             id_card.quality = v['Quality']
+            id_card.unlock = get_multilanguage_dict(
+                i18n, f"{id_card.id}_GainParam2", extra=v['GainParam2'].get('SourceString', None),
+                converter=compose(StringConverters.basic_converter, StringConverters.all_caps_remove))
             id_cards[id_card_id] = id_card
         except Exception:
             pass
-    localize_id_cards(list(id_cards.values()))
     return id_cards
 
 
-def upload_all_id_cards():
+def upload_all_id_cards(id_cards: dict[int, IdCard]):
     root = resource_root / "IdCard" / "Appearance"
-    id_cards = get_all_id_cards()
     requests: list[UploadRequest] = []
     for d in id_cards.values():
         source_icon = root / f"T_Dynamic_IdCard_{d.id}_icon.png"
@@ -74,9 +71,15 @@ def upload_all_id_cards():
     process_uploads(requests)
 
 
-def main():
-    upload_all_id_cards()
+def make_id_cards():
+    id_cards = get_all_id_cards()
+    upload_all_id_cards(id_cards)
+    id_cards = get_all_id_cards(use_cn=False)
+    save_json_page("Module:IdCard/data.json", id_cards)
 
+
+def main():
+    make_id_cards()
 
 
 if __name__ == '__main__':
