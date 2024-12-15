@@ -4,6 +4,7 @@ from functools import cache
 
 from pywikibot import Page
 
+from char_info.skills import parse_string_energy_network_stats
 from global_config import char_id_mapper, internal_names
 from page_generator.maps import parse_maps
 from page_generator.weapons import parse_weapons
@@ -68,6 +69,14 @@ def get_translations() -> dict[str, dict[str, str]]:
     for i in [21, 22, 24]:
         d = get_multilanguage_dict(i18n, f"ItemTypeNameKey_{i}")
         result[d[ENGLISH.code]] = d
+
+    # string energy network upgrades
+    i18n = get_all_game_json("ST_InGame")
+    attributes = list(parse_string_energy_network_stats().values())[0].keys()
+    # If something got changed, panic
+    assert len(attributes) == 9
+    for a in attributes:
+        result[a] = get_multilanguage_dict(i18n, a)
 
     # Damage locations
     i18n = get_all_game_json("ST_UINonResidentFunctionsBattleData")
