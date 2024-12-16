@@ -11,7 +11,7 @@ from page_generator.achievements import generate_all_achievements
 from page_generator.badges import upload_all_badges
 from page_generator.decal import upload_all_decals
 from page_generator.events import save_wiki_events
-from page_generator.id_card import upload_all_id_cards
+from page_generator.id_card import make_id_cards
 from page_generator.items import save_all_items
 from page_generator.strinova_comms import strinova_comms_main
 from page_generator.translations import generate_translations
@@ -32,7 +32,7 @@ def main():
 def misc_uploads():
     upload_all_badges()
     upload_all_decals()
-    upload_all_id_cards()
+    make_id_cards()
 
 
 def make_all_character_info():
