@@ -71,10 +71,10 @@ def get_translations() -> dict[str, dict[str, str]]:
         result[d[ENGLISH.code]] = d
 
     # string energy network upgrades
-    i18n = get_all_game_json("ST_InGame")
+    i18n = merge_dict(get_all_game_json("ST_GrowthDefine"), get_all_game_json("ST_InGame"))
     attributes = list(parse_string_energy_network_stats().values())[0].keys()
     # If something got changed, panic
-    assert len(attributes) == 9
+    assert len(attributes) == 10
     for a in attributes:
         result[a] = get_multilanguage_dict(i18n, a)
 

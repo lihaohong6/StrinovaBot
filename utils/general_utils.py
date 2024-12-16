@@ -185,7 +185,10 @@ def save_page(page: Page | str, text, summary: str = "update page"):
         page.save(summary=summary)
 
 
-def save_json_page(page: Page | str, obj, summary: str = "update json page", merge: bool = False):
+MergeFunction = Callable[[str | int | None, str | int | None], str | int]
+
+
+def save_json_page(page: Page | str, obj, summary: str = "update json page", merge: bool | None | MergeFunction = False):
     class EnhancedJSONEncoder(json.JSONEncoder):
         def default(self, o):
             if dataclasses.is_dataclass(o):
@@ -204,7 +207,7 @@ def save_json_page(page: Page | str, obj, summary: str = "update json page", mer
     else:
         original_json = {}
         original = ""
-    if merge:
+    if merge is not None and merge:
         def merge_function(s1: str | None, s2: str | None) -> str:
             if s1 is None:
                 return s2
@@ -217,7 +220,7 @@ def save_json_page(page: Page | str, obj, summary: str = "update json page", mer
             if check_no_bot(s2):
                 return s2
             return s1
-        obj = merge_dict2(json.loads(dump(obj)), original_json, merge=merge_function)
+        obj = merge_dict2(json.loads(dump(obj)), original_json, merge=merge_function if merge is True else merge)
     modified = dump(obj)
     if original != modified:
         page.text = modified
@@ -291,7 +294,7 @@ def merge_dict[K, V](a: dict[K, V], b: dict[K, V], check: bool = False, merge: C
     return result
 
 
-def merge_dict2(a: dict, b: dict, merge: Callable[[str | None, str | None], str] = pick_string_length) -> dict:
+def merge_dict2(a: dict, b: dict, merge: MergeFunction = pick_string_length) -> dict:
     """
     Use b as the base dict and override with a whenever there's a conflict (i.e. prioritize a)
 
@@ -303,8 +306,8 @@ def merge_dict2(a: dict, b: dict, merge: Callable[[str | None, str | None], str]
             if result.get(k) is None:
                 result[k] = v
             else:
-                result[k] = merge_dict2(v, result[k])
-        elif isinstance(v, str):
+                result[k] = merge_dict2(v, result[k], merge)
+        elif isinstance(v, str) or isinstance(v, int):
             result[k] = merge(result.get(k, None), v)
         elif v is not None:
             raise RuntimeError("Unexpected type")

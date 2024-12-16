@@ -1,5 +1,6 @@
 import re
 from dataclasses import dataclass
+from typing import Final
 
 import wikitextparser as wtp
 from pywikibot import Page, FilePage
@@ -224,6 +225,10 @@ class StringEnergyNetworkStats:
     scope_zoom: str
     movement_speed: int
 
+EXTRAS: Final[dict] = {
+    "MagazineCapacity": -1,
+    "Armor": -1,
+}
 
 def parse_string_energy_network_stats():
     table = get_table_global("Growth_Bomb")
@@ -237,6 +242,10 @@ def parse_string_energy_network_stats():
             value = float(value) if "." in value else int(value)
             attributes[name] = value
         assert len(attributes) == 9
+
+        for k, value in EXTRAS.items():
+            attributes[k] = value
+
         attributes["MoveSpeed"] = int(attributes["MoveSpeed"])
 
         result[char_name] = attributes
@@ -245,7 +254,15 @@ def parse_string_energy_network_stats():
 
 def make_string_energy_network_stats():
     stats = parse_string_energy_network_stats()
-    save_json_page("Module:SENStats/data.json", stats)
+    def merge_function(n1: int, n2: int) -> int:
+        if n1 is None:
+            return n2
+        if n2 is None:
+            return n1
+        if n1 == 0 or n1 == -1:
+            return n2
+        return n1
+    save_json_page("Module:SENStats/data.json", stats, merge=merge_function)
 
 
 def main():
