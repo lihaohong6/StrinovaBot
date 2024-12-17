@@ -1,7 +1,7 @@
 /.venv
 /apicache
 /throttle.ctrl
-/user-passwords.py
+/user-password*
 *.lwp
 sandbox.py
 /logs
