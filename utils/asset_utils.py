@@ -27,11 +27,6 @@ wav_root_cn = audio_root / "Chinese"
 wav_root_jp = audio_root / "Japanese"
 wav_root_en = audio_root / "English"
 
-# non-exported assets
-skin_back_root = Path(r"D:\Strinova\Skins Back\result")
-portrait_root = Path(r"D:\Strinova\Portrait\result")
-local_asset_root = Path(r"D:\Strinova\LocalAssets")
-
 
 def main():
     pass
