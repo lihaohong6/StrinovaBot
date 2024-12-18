@@ -3,17 +3,16 @@ from dataclasses import dataclass
 from typing import Final
 
 import wikitextparser as wtp
-from pywikibot import Page, FilePage
+from pywikibot import FilePage
 from wikitextparser import parse
 
 from global_config import char_id_mapper
 from utils.asset_utils import resource_root
-from utils.general_utils import get_table, en_name_to_zh, get_id_by_char, \
-    get_weapon_name, get_default_weapon_id, get_char_pages, pick_string, pick_two, get_table_global, save_json_page
+from utils.general_utils import get_table, get_char_pages, pick_two, get_table_global, save_json_page
 from utils.json_utils import get_game_json
 from utils.lang import get_language
 from utils.upload_utils import UploadRequest, process_uploads
-from utils.wiki_utils import bwiki, s
+from utils.wiki_utils import s
 from utils.wtp_utils import get_templates_by_name
 
 
@@ -209,6 +208,7 @@ def char_string_energy_network(char_id, char_name, growth_bomb, i18n, i18n_skill
         text = i18n_skill[f'{wake_id}_Intro']
         add_arg("name", name)
         add_arg("text", text)
+        part.set_arg(" number", str(wake_index) + " ", before="name")
         t.set_arg(f"wake{wake_index}", str(part) + "\n")
 
 
