@@ -228,6 +228,7 @@ class StringEnergyNetworkStats:
 EXTRAS: Final[dict] = {
     "MagazineCapacity": -1,
     "Armor": -1,
+    "ShootSpeed": -1,
 }
 
 def parse_string_energy_network_stats():
