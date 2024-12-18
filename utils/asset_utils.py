@@ -4,14 +4,14 @@ from pathlib import Path
 cn_export_root = Path(r"D:\Strinova\AutoUnpack\CNExport")
 json_root = Path(r"D:\Strinova\Strinova-data\CN")
 csv_root = json_root / "CSV"
-string_table_root = csv_root / ".." / "CyTable" / "StringTable"
+string_table_root = json_root / "CyTable" / "StringTable"
 resource_root = cn_export_root / "DynamicResource"
 
 # global export
 global_export_root = Path(r"D:\Strinova\AutoUnpack\GLExport")
 global_json_root = Path(r"D:\Strinova\Strinova-data\Global")
 global_csv_root = global_json_root / "CSV"
-localization_root = Path("D:/Strinova/Strinova-data/Global/Localization/Game")
+localization_root = global_json_root  /"Localization/Game"
 
 # audio
 audio_root = cn_export_root / "../audio"
@@ -21,7 +21,7 @@ wav_root_cn = audio_root / "Chinese"
 wav_root_jp = audio_root / "Japanese"
 wav_root_en = audio_root / "English"
 
-# non-exported assets
+# non-exported assets; do not use these unless absolutely necessary
 skin_back_root = Path(r"D:\Strinova\Skins Back\result")
 portrait_root = Path(r"D:\Strinova\Portrait\result")
 local_asset_root = Path(r"D:\Strinova\LocalAssets")
