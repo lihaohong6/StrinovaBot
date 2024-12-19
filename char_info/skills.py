@@ -110,7 +110,7 @@ Growth_Team
                 break
         else:
             print("Template StringEnergyNetwork not found on " + char_name)
-            return
+            continue
 
         try:
             char_string_energy_network(char_id, char_name, growth_bomb, i18n, i18n_skill, p, role_json, skill_json, t)

@@ -9,7 +9,7 @@ from char_info.story import generate_return_letter, generate_biography
 from char_info.weapons import generate_weapons
 from page_generator.achievements import generate_all_achievements
 from page_generator.badges import upload_all_badges
-from page_generator.decal import upload_all_decals
+from page_generator.decal import upload_all_decals, make_all_decals
 from page_generator.events import save_wiki_events
 from page_generator.id_card import make_id_cards
 from page_generator.items import save_all_items
@@ -31,7 +31,7 @@ def main():
 
 def misc_uploads():
     upload_all_badges()
-    upload_all_decals()
+    make_all_decals()
     make_id_cards()
 
 
