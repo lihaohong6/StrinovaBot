@@ -93,7 +93,7 @@ Growth_Team
     lang = get_language()
     i18n = get_game_json(lang)['ST_GrowthDefine']
     i18n_skill = get_game_json(lang)['Skill']
-    role_json = get_table_global("Role")
+    role_json = get_table("Role")
     skill_json = get_table_global("Skill")
     growth_bomb = get_table_global("Growth_Bomb")
     for char_id, char_name, p in get_char_pages(lang=lang):
