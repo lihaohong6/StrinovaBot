@@ -1,6 +1,3 @@
-import sys
-
-from audio.audio_main import audio_main
 from char_info.char_infobox import generate_infobox
 from char_info.dorm import generate_bond_items, generate_gifts, generate_friendship_gifts
 from char_info.gallery import generate_skins, generate_emotes
@@ -9,24 +6,14 @@ from char_info.story import generate_return_letter, generate_biography
 from char_info.weapons import generate_weapons
 from page_generator.achievements import generate_all_achievements
 from page_generator.badges import upload_all_badges
-from page_generator.decal import upload_all_decals, make_all_decals
+from page_generator.decal import make_all_decals
 from page_generator.events import save_wiki_events
 from page_generator.id_card import make_id_cards
 from page_generator.items import save_all_items
 from page_generator.strinova_comms import strinova_comms_main
 from page_generator.translations import generate_translations
 from page_generator.weapons import process_weapon_pages, process_weapon_skins
-from utils.lang import available_languages, set_language, LanguageVariants
-
-
-def main():
-    commands = {
-        "audio": audio_main,
-        "achievements": generate_all_achievements,
-        "weapons": process_weapon_pages,
-        "weapon_variant": process_weapon_skins
-    }
-    commands[sys.argv[1]](sys.argv[:1] + sys.argv[2:])
+from utils.lang import available_languages, set_language
 
 
 def misc_uploads():
