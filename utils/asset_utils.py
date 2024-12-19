@@ -18,6 +18,7 @@ global_export_root = strinova_root / "AutoUnpack/GLExport"
 global_json_root = strinova_root / "Strinova-data/Global"
 global_csv_root = global_json_root / "CSV"
 localization_root = global_json_root / "Localization/Game"
+global_resources_root = global_export_root / "DynamicResource"
 
 # audio
 audio_root = cn_export_root / "../audio"
