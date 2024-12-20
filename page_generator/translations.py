@@ -11,12 +11,21 @@ from page_generator.weapons import parse_weapons
 from utils.general_utils import save_json_page, merge_dict, camp_id_to_string
 from utils.json_utils import get_all_game_json
 from utils.lang import Language, ENGLISH
-from utils.lang_utils import get_multilanguage_dict, char_name_table, StringConverters
+from utils.lang_utils import get_multilanguage_dict, char_name_table, StringConverters, compose
 from utils.wiki_utils import s
+
+
+def replace_placeholders(original: str) -> str:
+    return re.subn(r"\{\d*}", "%s", original)[0]
+
+
+def remove_trailing_info(original: str) -> str:
+    return re.sub(r" ?[:：].*$", "", original)
 
 
 @cache
 def get_translations() -> dict[str, dict[str, str]]:
+    ui_global = get_all_game_json("ST_UIGlobal")
     result: dict[str, dict[str, str]] = {}
     i18n_1 = get_all_game_json("ST_RoleName")
     i18n_2 = get_all_game_json("Goods")
@@ -78,11 +87,30 @@ def get_translations() -> dict[str, dict[str, str]]:
     for a in attributes:
         result[a] = get_multilanguage_dict(i18n, a)
 
+    # string energy network
+    result["AwakeTitle"] = get_multilanguage_dict(i18n, "Awake_Description",
+                                                  converter=replace_placeholders)
+    ui_bomb = get_all_game_json("ST_UIBomb")
+    result["String Energy Network"] = get_multilanguage_dict(ui_bomb, "StringEnergyAmplification")
+
     # Damage locations
     i18n = get_all_game_json("ST_UINonResidentFunctionsBattleData")
     result['Head'] = get_multilanguage_dict(i18n, "Header")
     result['Body'] = get_multilanguage_dict(i18n, "UpperBody")
     result['Legs'] = get_multilanguage_dict(i18n, "LowerBody")
+
+    # Infobox
+    i18n = get_all_game_json("ST_UIApartmentInformation")
+    for string in ["Camp", "Weight", "Height"]:
+        result[string] = get_multilanguage_dict(i18n, string, converter=remove_trailing_info)
+    result["Birthday"] = get_multilanguage_dict(ui_global, "Birthday", converter=remove_trailing_info)
+
+    i18n = get_all_game_json("FunctionUnlock")
+    result["Achievements"] = get_multilanguage_dict(
+        i18n, "52_Name",
+        converter=compose(StringConverters.basic_converter,
+                          StringConverters.all_caps_remove))
+    result["Unlock"] = get_multilanguage_dict(ui_global, "Unlock")
     return result
 
 
