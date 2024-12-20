@@ -30,6 +30,10 @@ class Emote:
     def description(self):
         return self.text
 
+    @property
+    def get_local_path(self):
+        return f"Emote/T_Dynamic_Emote_{self.id}.png"
+
 
 def parse_emotes() -> dict[str, list[Emote]]:
     goods_table = get_table("Emote")
@@ -59,7 +63,7 @@ def generate_emotes():
     emotes = parse_emotes()
     for char_name, emote_list in emotes.items():
         for emote in emote_list:
-            upload_requests.append(UploadRequest(resource_root / "Emote" / f"T_Dynamic_Emote_{emote.id}.png",
+            upload_requests.append(UploadRequest(resource_root / emote.get_local_path,
                                                  FilePage(s, emote.icon),
                                                  '[[Category:Emotes]]',
                                                  "batch upload emotes"))
