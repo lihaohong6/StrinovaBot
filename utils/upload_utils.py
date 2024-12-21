@@ -6,7 +6,7 @@ from pywikibot import FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
 from pywikibot.site._upload import Uploader
 
-from utils.asset_utils import resource_root
+from utils.asset_utils import resource_root, global_resources_root
 from utils.wiki_utils import s
 
 
@@ -52,7 +52,10 @@ def upload_item_icons(items: list[int | str], text: str = "[[Category:Item icons
         for big in [True, False]:
             folder = "ItemIcon" if not big else "BigIcon"
             file_name = "Item" if not big else "BigItem"
-            source = resource_root / f"Item/{folder}/T_Dynamic_{file_name}_{item}.png"
+            local_path = f"Item/{folder}/T_Dynamic_{file_name}_{item}.png"
+            source = resource_root / local_path
+            if not source.exists():
+                source = global_resources_root / local_path
             if source.exists():
                 break
         if not source.exists():

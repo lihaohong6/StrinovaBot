@@ -130,7 +130,7 @@ def save_wiki_events():
 
 
 def main():
-    print_event_rewards()
+    # print_event_rewards()
     save_wiki_events()
 
 

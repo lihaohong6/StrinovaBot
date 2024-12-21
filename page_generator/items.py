@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass, field
 from functools import cache
 
@@ -20,10 +21,14 @@ class Item:
     description: dict[str, str] = field(default_factory=dict)
     quality: int = -1
     type: int = -1
+    icon_id: int = -1
 
     @property
     def file(self):
-        return f"File:Item Icon {self.id}.png"
+        use_id = self.icon_id
+        if use_id == -1:
+            use_id = self.id
+        return f"File:Item Icon {use_id}.png"
 
     @property
     def icon(self):
@@ -43,11 +48,16 @@ def parse_items() -> dict[int, Item]:
 
     def process_json(d: dict):
         for item_id, v in d.items():
+            if isinstance(item_id, list):
+                item_id = item_id[0]
             item = Item(item_id)
             item.name[CHINESE.code] = v['Name']['SourceString']
             item.description[CHINESE.code] = v['Desc'].get("SourceString", "")
             item.quality = v['Quality']
             item.type = v['ItemType']
+            search_result = re.search(r"Item_(\d+)$", v.get('IconItem', {}).get('AssetPathName', ''))
+            if search_result is not None:
+                item.icon_id = int(search_result.group(1))
             items[item_id] = item
 
     process_json(get_table("Item"))
@@ -119,7 +129,6 @@ def save_all_items():
     items = get_en_items()
     result = {}
     for name_en, item in items.items():
-
         result[name_en] = {
             'id': item.id,
             'name': {

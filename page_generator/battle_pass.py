@@ -1,8 +1,11 @@
+import re
 from dataclasses import dataclass
 
 from page_generator.items import get_all_items, Item
-from utils.general_utils import get_table, get_table_global, save_json_page, save_page
+from utils.general_utils import get_table, get_table_global, save_json_page, save_page, parse_ticks
+from utils.json_utils import get_all_game_json
 from utils.lang import ENGLISH, CHINESE, Language, LanguageVariants
+from utils.lang_utils import get_multilanguage_dict
 
 
 @dataclass
@@ -20,7 +23,16 @@ class BattlePassLevel:
     rewards: list[BattlePassReward]
 
 
-def parse_battle_pass(use_cn: bool = False) -> dict[int, list[BattlePassLevel]]:
+@dataclass
+class BattlePassSeason:
+    id: int
+    name: dict[str, str]
+    start: str
+    end: str
+    image: str
+
+
+def parse_battle_pass_rewards(use_cn: bool = False) -> dict[int, list[BattlePassLevel]]:
     all_items = get_all_items()
     result = {}
     if use_cn:
@@ -46,9 +58,26 @@ def parse_battle_pass(use_cn: bool = False) -> dict[int, list[BattlePassLevel]]:
     return result
 
 
-def generate_battle_pass(use_cn: bool = False) -> str:
+def parse_battle_pass_seasons() -> list[BattlePassSeason]:
+    i18n = get_all_game_json("BattlePassSeason")
+    result: list[BattlePassSeason] = []
+    for k, v in get_table_global("BattlePassSeason").items():
+        image_id = re.search(r"BattlePassLogo_(\d+)", v['SeasonLogo']['AssetPathName']).group(1)
+        result.append(
+            BattlePassSeason(
+                v['Id'],
+                get_multilanguage_dict(i18n, v['Name']['Key']),
+                str(parse_ticks(v['Start']['Ticks'])),
+                str(parse_ticks(v['Finish']['Ticks'])),
+                f"File:Season {image_id} wallpaper.png"
+            ))
+    result.sort(key=lambda x: x.start)
+    return result
+
+
+def generate_battle_pass_page(use_cn: bool = False) -> str:
     result = []
-    for season, battle_pass_levels in parse_battle_pass(use_cn).items():
+    for season, battle_pass_levels in parse_battle_pass_rewards(use_cn).items():
         battle_pass_levels.sort(key=lambda x: x.level)
         result.append(f"==Season {season}==")
         result.append("{{BattlePass|")
@@ -70,9 +99,38 @@ def generate_battle_pass(use_cn: bool = False) -> str:
     return "\n".join(result)
 
 
+def make_cn_battle_page():
+    save_page("Battle Pass/CN", generate_battle_pass_page(True))
+
+
+def make_battle_pass_rewards():
+    rewards = parse_battle_pass_rewards(use_cn=False)
+    result: dict[int, list[dict]] = {}
+    for season, battle_pass_levels in rewards.items():
+        result[season] = []
+        battle_pass_levels.sort(key=lambda x: x.level)
+        for level in battle_pass_levels:
+            for reward in level.rewards:
+                result[season].append({
+                    'name': {
+                        'en': reward.item.name[ENGLISH.code],
+                    },
+                    'amount': reward.amount,
+                    'image': reward.item.icon,
+                    'level': level.level,
+                    'free': reward.type == 1
+                })
+    save_json_page("Module:Season/battle_pass_rewards.json", result)
+
+
+def make_battle_pass_seasons():
+    seasons = parse_battle_pass_seasons()
+    save_json_page("Module:Season/seasons.json", seasons)
+    make_battle_pass_rewards()
+
+
 def main():
-    generate_battle_pass()
-    save_page("Battle Pass/CN", generate_battle_pass(True))
+    make_battle_pass_seasons()
 
 
 if __name__ == '__main__':
