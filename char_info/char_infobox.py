@@ -24,7 +24,7 @@ def get_group_0(x: re.Match):
 
 
 infobox_args: list[tuple[list[str] | str, str, Callable[[list[str] | str], str]]] = [
-    ("Birthday", "Birthday", nop),
+    # ("Birthday", "Birthday", nop),
     ("Constellation", "Constellation", nop),
     ("Age", "Age", lambda x: get_group_0(re.search(r"^\d+", x))),
     ("Height", "Height", nop),

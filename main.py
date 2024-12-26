@@ -44,7 +44,7 @@ def make_all_character_info():
 def make_everything():
     make_all_character_info()
     generate_translations()
-    save_all_items()
+    # save_all_items()
     save_wiki_events()
     process_weapon_pages()
     process_weapon_skins()
