@@ -1,8 +1,5 @@
 ﻿import concurrent.futures
-import os
-import random
 import shutil
-import string
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -33,6 +30,7 @@ class SimpleProcessPool:
         while self.size > target:
             process = self.pool.get()
             process.wait()
+            self.size -= 1
 
 
     def submit(self, commands: list, *args, **kwargs):
@@ -64,7 +62,7 @@ def txtp_to_wav(source: Path, dest: Path):
         out_path = dest.joinpath(file_name.replace(".txtp", ".wav"))
         processes.append(Popen(
             ["vgmstream-cli", file, "-o", out_path.absolute()],
-            stdout=open(os.devnull, 'wb'),
+            stdout=subprocess.DEVNULL,
             cwd=source.parent
         ))
     for p in processes:
@@ -87,13 +85,14 @@ def make_bank_file(banks_dir, config):
 
 
 def make_txtp_files(audio_dir, txtp):
-    processes = []
+    pool = SimpleProcessPool()
     for p in Path(audio_dir).glob('*.bnk'):
-        processes.append(subprocess.Popen(
+        pool.submit(
             ['python', wwiser_location.absolute(), "-g", "-go", "txtp", str(p.relative_to(audio_dir))],
-            cwd=audio_dir))
-    for p in processes:
-        p.wait()
+            cwd=audio_dir,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL)
+    pool.reap()
 
 
 def generate_wav(audio_dir: Path, output_dir: Path):
@@ -135,10 +134,8 @@ def main():
         Path(dir_name).mkdir()
 
     # Generate WAV files
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        for config in configs:
-            executor.submit(generate_wav, 
-                            config.audio_path, Path(config.output_dir))
+    for config in configs:
+        generate_wav(config.audio_path, Path(config.output_dir))
 
 if __name__ == "__main__":
     main()
