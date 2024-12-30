@@ -26,7 +26,7 @@ wwiser_location = Path('wwiser.pyz')
 def get_configs(root: Path, root_gl: Path):
     return [
         AudioConfig(root_gl / 'Chinese', 'cn_banks.xml', 'Chinese'),
-        AudioConfig(root_gl / 'Japanese', 'ja_bank.xml', 'Japanese'),
+        AudioConfig(root_gl / 'Japanese', 'ja_banks.xml', 'Japanese'),
         AudioConfig(root_gl / 'English', 'en_banks.xml', 'English'),
         AudioConfig(root_gl, 'sfx_banks.xml', 'sfx')
     ]

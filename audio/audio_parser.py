@@ -5,7 +5,7 @@ from pathlib import Path
 
 from audio.data.conversion_table import VoiceType, voice_conversion_table, table_languages
 from utils.asset_utils import audio_event_root_cn, audio_root, audio_event_root_global
-from utils.general_utils import get_table
+from utils.general_utils import get_table, get_table_global
 from utils.json_utils import load_json, get_all_game_json
 from utils.lang import CHINESE, Language, languages_with_audio, ENGLISH
 from utils.lang_utils import get_multilanguage_dict
@@ -174,13 +174,13 @@ def map_bank_name_to_files(p: Path) -> dict[str, list[Path]]:
 def get_text(i18n: dict[str, dict], v) -> tuple[dict[str, str], dict[str, str], dict[str, dict[str, str]]]:
     name_obj = v['VoiceName']
     key = name_obj.get("Key", None)
-    title: dict[str, str] = get_multilanguage_dict(i18n, key, "", extra="" if key is None else name_obj["SourceString"])
+    title: dict[str, str] = get_multilanguage_dict(i18n, key, "",
+                                                   extra="" if key is None else name_obj["SourceString"])
 
     content_obj = v['Content']
     key = content_obj.get("Key", None)
-    content = {
-        CHINESE.code: "" if key is None else content_obj["SourceString"]
-    } | get_multilanguage_dict(i18n, key, "")
+    content = get_multilanguage_dict(i18n, key, "",
+                                     extra="" if key is None else content_obj["SourceString"])
 
     language_codes_with_audio = set(l.code for l in languages_with_audio())
 
@@ -226,7 +226,7 @@ def parse_role_voice() -> dict[int, Voice]:
     :return:
     """
     i18n = get_all_game_json('RoleVoice')
-    voice_table = get_table("RoleVoice")
+    voice_table = get_table_global("RoleVoice")
 
     voices = {}
     path_to_voice: dict[str, Voice] = {}
@@ -271,10 +271,9 @@ def role_voice() -> dict[int, Voice]:
         files: dict[str, str] = {}
         failed = False
         for lang in languages_with_audio():
-            if lang != ENGLISH:
-                event_file = audio_event_root_cn / f"{path}.json"
-            else:
-                event_file = audio_event_root_global / f"{path}.json"
+            event_file = audio_event_root_global / f"{path}.json"
+            # FIXME: should source CN events too (as a bonus)
+            # event_file = audio_event_root / f"{path}.json"
             audio_file = find_audio_file(event_file, tables[lang.code], bank_name_to_files[lang.code])
             if lang == CHINESE and audio_file is None:
                 failed = True
