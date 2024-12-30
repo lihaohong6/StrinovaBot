@@ -65,7 +65,9 @@ def make_character_audio_page(char_id: int, lang: Language):
 def make_character_audio_pages():
     lang = get_language()
     for char_id, char_name in char_id_mapper.items():
-        make_character_audio_page(char_id, lang)
+        # FIXME: only do Michele for now to test
+        if char_name == "Michele":
+            make_character_audio_page(char_id, lang)
 
 
 def main():

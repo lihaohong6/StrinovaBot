@@ -112,7 +112,7 @@ class UpgradeTrigger:
     skins: list[int]
 
 
-def find_audio_file(event_file: Path, table: dict, bank_name_to_files: dict[str, list[Path]]) -> str | None:
+def find_audio_file(event_file: Path, table: dict, bank_name_to_files: dict[str, list[Path]], lang: Language) -> str | None:
     assert len(table) > 0
     if not event_file.exists():
         # print(event_file.name + " does not exist")
@@ -137,7 +137,11 @@ def find_audio_file(event_file: Path, table: dict, bank_name_to_files: dict[str,
     if len(candidates) == 0:
         # print(f"No audio file found for {file_name} and bank {bank_name}")
         return None
-    return candidates[0].name
+    for candidate in candidates:
+        assert candidate.exists()
+        if not audio_is_silent(candidate):
+            return candidate.name
+    return None
 
 
 def parse_bank(bank_file: Path, table: dict[str, str]):
@@ -274,7 +278,7 @@ def role_voice() -> dict[int, Voice]:
             event_file = audio_event_root_global / f"{path}.json"
             # FIXME: should source CN events too (as a bonus)
             # event_file = audio_event_root / f"{path}.json"
-            audio_file = find_audio_file(event_file, tables[lang.code], bank_name_to_files[lang.code])
+            audio_file = find_audio_file(event_file, tables[lang.code], bank_name_to_files[lang.code], lang)
             if lang == CHINESE and audio_file is None:
                 failed = True
                 break
@@ -318,3 +322,18 @@ def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
         if digits in triggers:
             triggers[digits].voices.append(v)
     return list(triggers.values())
+
+
+def audio_is_silent(source: Path):
+    import librosa.feature
+    import numpy as np
+    y, sr = librosa.load(source, sr=None)
+
+    rms = librosa.feature.rms(y=y)
+    avg_rms = np.mean(rms)
+
+    # If the average RMS is below the threshold, the audio is considered silent
+    if avg_rms < 0.001:
+        return True
+
+    return False

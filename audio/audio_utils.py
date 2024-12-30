@@ -5,10 +5,10 @@ from typing import Any
 from pywikibot import FilePage
 from pywikibot.pagegenerators import GeneratorFactory
 
-from audio_parser import Voice
+from audio.audio_parser import Voice
 from utils.asset_utils import audio_root
 from utils.json_utils import load_json
-from utils.lang import CHINESE, JAPANESE, ENGLISH, languages_with_audio
+from utils.lang import CHINESE, languages_with_audio
 
 from utils.upload_utils import upload_file
 from utils.wiki_utils import s
