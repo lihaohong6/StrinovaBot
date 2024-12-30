@@ -6,8 +6,8 @@
 sandbox.py
 /logs
 /.idea
-/json
 __pycache__
 /files
-/old
 /models
+
+audio/audio_export/*/
