@@ -3,7 +3,7 @@ import json
 import wikitextparser as wtp
 from wikitextparser import Template
 
-from audio.audio_parser import get_voice_path_digits
+from audio.voice import get_voice_path_digits
 from audio.audio_utils import get_json_path
 from audio.data.conversion_table import voice_conversion_table_flat
 from utils.general_utils import get_char_pages

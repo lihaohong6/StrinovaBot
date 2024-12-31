@@ -2,7 +2,8 @@ import re
 from dataclasses import dataclass, field
 from functools import cache
 
-from audio.audio_parser import Voice, role_voice, parse_role_voice
+from audio.audio_parser import role_voice, parse_role_voice
+from audio.voice import Voice
 from char_info.gallery import parse_skin_tables, SkinInfo, Emote, parse_emotes
 from page_generator.badges import get_all_badges, Badge
 from page_generator.decal import get_all_decals, Decal

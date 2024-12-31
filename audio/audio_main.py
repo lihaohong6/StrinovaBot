@@ -17,8 +17,9 @@ from typing import Any
 
 from pywikibot import Page
 
-from audio_parser import VoiceUpgrade, Voice, Trigger, in_game_triggers, in_game_triggers_upgrade, role_voice, \
+from audio_parser import Trigger, in_game_triggers, in_game_triggers_upgrade, role_voice, \
     match_custom_triggers
+from audio.voice import VoiceUpgrade, Voice
 from audio_utils import VoiceJson, get_json_path
 from data.conversion_table import voice_conversion_table
 from machine_assist import transcribe, translate
