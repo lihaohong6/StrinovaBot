@@ -4,7 +4,7 @@ from time import sleep
 
 from audio_utils import get_json_path
 from global_config import name_to_en
-from page_generator.weapons import get_weapons_by_type
+from page_generator.weapons import get_weapons_by_type, WeaponType
 from utils.asset_utils import wav_root_cn, audio_root
 from utils.general_utils import camp_name_cn
 from utils.json_utils import load_json
@@ -22,7 +22,7 @@ char_prompts: dict[str, dict[str, str]] = {
 }
 
 
-weapon_prompts: dict[str, str] = dict((w.name_cn, w.name_en) for w in get_weapons_by_type("Grenade"))
+weapon_prompts: dict[str, str] = dict((w.name_cn, w.name_en) for w in get_weapons_by_type(WeaponType.GRENADE))
 
 
 def postprocess_chinese(t: str) -> str:
@@ -70,7 +70,7 @@ def transcribe_char(char_name: str, model = None):
 
 def transcribe():
     model = load_whisper_model()
-    for c in ['Audrey', 'Flavia', 'Bai Mo', 'Fuchsia', 'Kanami', 'Kokona', 'Lawine', 'Maddelena', 'Meredith', 'Ming', 'Nobunaga', 'Reiichi', 'Yvette']:
+    for c in ['Michele']:
         transcribe_char(c, model)
 
 
