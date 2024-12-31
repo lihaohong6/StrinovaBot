@@ -1,5 +1,7 @@
 ﻿import concurrent.futures
+import random
 import shutil
+import string
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -54,6 +56,24 @@ def get_configs(root: Path, root_gl: Path):
     ]
 
 
+def path_name_to_priority(p: str) -> int:
+    if "_original" in p:
+        return 0
+    if "org" in p or "red" in p:
+        return 2
+    return 1
+
+
+def sort_audio_paths(paths: list[Path]) -> None:
+    """
+    Sort audio paths to prioritize original voice lines over red and org ones.
+    See https://github.com/bnnm/wwiser/issues/49
+
+    :param paths: List of bnk files.
+    """
+    paths.sort(key=lambda p: (path_name_to_priority(p.name), p.name))
+
+
 def txtp_to_wav(source: Path, dest: Path):
     dest.mkdir(exist_ok=True, parents=True)
     processes = []
@@ -70,7 +90,9 @@ def txtp_to_wav(source: Path, dest: Path):
 
 
 def make_bank_file(banks_dir, config):
-    out_string = " ".join(f'"{str(p)}"' for p in config.audio_path.glob('*.bnk'))
+    paths = list(config.audio_path.glob('*.bnk'))
+    sort_audio_paths(paths)
+    out_string = " ".join(f'"{str(p)}"' for p in paths)
     if out_string == "":
         return
     out_file = Path(config.bank_file)
@@ -85,14 +107,17 @@ def make_bank_file(banks_dir, config):
 
 
 def make_txtp_files(audio_dir, txtp):
-    pool = SimpleProcessPool()
-    for p in Path(audio_dir).glob('*.bnk'):
-        pool.submit(
-            ['python', wwiser_location.absolute(), "-g", "-go", "txtp", str(p.relative_to(audio_dir))],
-            cwd=audio_dir,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL)
-    pool.reap()
+    config_file = Path(
+        ''.join(random.choices(string.ascii_uppercase + string.digits, k=15)) + "wwconfig.txt").absolute()
+    paths = list(Path(audio_dir).glob('*.bnk'))
+    sort_audio_paths(paths)
+    with open(config_file, "w") as f:
+        f.write("-g -go ")
+        f.write(f'"txtp" ')
+        f.write(" ".join(f'"{str(p.relative_to(audio_dir))}"' for p in paths))
+    subprocess.run(['python', wwiser_location.absolute(), config_file],
+                   cwd=audio_dir)
+    config_file.unlink()
 
 
 def generate_wav(audio_dir: Path, output_dir: Path):
@@ -101,6 +126,17 @@ def generate_wav(audio_dir: Path, output_dir: Path):
         shutil.rmtree(txtp, ignore_errors=True)
     make_txtp_files(audio_dir, txtp)
     txtp_to_wav(txtp, output_dir)
+
+
+def make_banks(configs):
+    banks_dir = Path('banks')
+    if banks_dir.exists():
+        shutil.rmtree(banks_dir)
+    banks_dir.mkdir(exist_ok=True)
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        for config in configs:
+            executor.submit(make_bank_file,
+                            banks_dir, config)
 
 
 def main():
@@ -117,15 +153,8 @@ def main():
 
     configs = get_configs(audio_root, audio_root_en)
 
-    # Process bnk files
-    banks_dir = Path('banks')
-    if banks_dir.exists():
-        shutil.rmtree(banks_dir)
-    banks_dir.mkdir(exist_ok=True)
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        for config in configs:
-            executor.submit(make_bank_file,
-                            banks_dir, config)
+    # Convert bnk files into xml banks
+    make_banks(configs)
 
     # Reset output directories
     for config in configs:
@@ -134,8 +163,11 @@ def main():
         Path(dir_name).mkdir()
 
     # Generate WAV files
-    for config in configs:
-        generate_wav(config.audio_path, Path(config.output_dir))
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        for config in configs:
+            executor.submit(generate_wav,
+                            config.audio_path, Path(config.output_dir))
+
 
 if __name__ == "__main__":
     main()
