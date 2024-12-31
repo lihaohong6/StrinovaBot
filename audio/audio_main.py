@@ -1,12 +1,11 @@
-import sys
 import os
+import sys
 
 SCRIPT_DIR = os.path.abspath(__file__)
 sys.path.append(os.path.dirname(SCRIPT_DIR))
 
 from audio.make_character_page import make_character_audio_pages
 from audio.pull_from_miraheze import pull_from_miraheze
-from utils.lang import CHINESE, ENGLISH
 
 import json
 import re
@@ -17,29 +16,16 @@ from typing import Any
 
 from pywikibot import Page
 
-from audio_parser import Trigger, in_game_triggers, in_game_triggers_upgrade, role_voice, \
+from audio_parser import Trigger, role_voice, \
     match_custom_triggers
 from audio.voice import VoiceUpgrade, Voice
 from audio_utils import VoiceJson, get_json_path
-from data.conversion_table import voice_conversion_table
 from machine_assist import transcribe, translate
-from global_config import char_id_mapper, internal_names
-from utils.asset_utils import audio_root, wav_root_cn
+from global_config import char_id_mapper
+from utils.asset_utils import audio_root
 from utils.general_utils import get_bwiki_char_pages, merge_dict
 from utils.json_utils import load_json
 from utils.wiki_utils import bwiki
-
-
-def audio_convert():
-    output_root = Path("files/audio")
-    output_root.mkdir(exist_ok=True, parents=True)
-    for file in audio_root.rglob("*.txtp"):
-        file: Path
-        file_name = file.name
-        out_path = output_root.joinpath(file.relative_to(audio_root))
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path = out_path.parent.joinpath(file_name.replace(".txtp", ".wav"))
-        subprocess.call(["vgmstream-cli.exe", file, "-o", out_path], stdout=open(os.devnull, 'wb'))
 
 
 def merge_results(previous: VoiceJson, current: VoiceJson) -> VoiceJson:
@@ -163,65 +149,6 @@ def make_json():
         make_character_json(triggers, char_id)
 
 
-def test_audio():
-    voices = role_voice()
-    triggers = in_game_triggers()
-    upgrades = in_game_triggers_upgrade()
-    custom_triggers = match_custom_triggers(list(voices.values()))
-    can_be_triggered: set[int] = set()
-    missing_1 = 0
-    for t in triggers + upgrades + custom_triggers:
-        for vid in t.voice_id:
-            can_be_triggered.add(vid)
-            if vid not in voices:
-                # print(f"{vid} can be triggered by {t} but is not in a voice file")
-                missing_1 += 1
-        # if hasattr(t, "voices"):
-        #     for v in t.voices:
-        #         if v.id[0] in can_be_triggered:
-        #             print(t.id, t.description_cn, "is a duplicate trigger")
-        #         can_be_triggered.add(v.id[0])
-
-    nums = [num for table in voice_conversion_table.values() for num in table.keys()]
-
-    missing_2 = 0
-    orphans = []
-    for k, v in voices.items():
-        # if k in can_be_triggered:
-        #     continue
-        # if v.name_cn != "":
-        #     continue
-        if v.path.startswith("Vox_") and v.path.split("_")[1] in internal_names:
-            for c in nums:
-                if c in v.path:
-                    break
-            else:
-                # print(f"Orphan voice: {v}")
-                missing_2 += 1
-                orphans.append(v)
-        else:
-            missing_2 += 1
-            orphans.append(v)
-    print(f"Missing voice files: {missing_1}. Missing trigger {missing_2}")
-    voices_non_orphan = [v for k, v in voices.items() if k in can_be_triggered]
-    print(f"Non-orphan voice-lines: {len(voices_non_orphan)}")
-    print("\n".join(str(o) for o in orphans))
-
-    # TODO:
-    #  Role.json: UnlockVoiceId, AppearanceVoiceId, EquipSecondWeaponVoiceId, EquipGrenadeVoiceId
-    exists = set()
-    while True:
-        cond = input("Cond: ")
-        for v in voices.values():
-            conditions = ["_" + cond.strip()]
-            if any(c in v.path for c in conditions):
-                if v.path in exists:
-                    continue
-                exists.add(v.path)
-                print(v.path + "    " + v.file[CHINESE.code])
-                os.startfile(wav_root_cn / v.file[CHINESE.code])
-
-
 def audio_main(args=None):
     if args is None:
         args = argv
@@ -229,7 +156,6 @@ def audio_main(args=None):
         "push": make_character_audio_pages,
         "gen": make_json,
         "pull": pull_from_miraheze,
-        "test": test_audio,
         "transcribe": transcribe,
         "translate": translate
     }

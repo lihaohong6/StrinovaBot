@@ -254,6 +254,10 @@ def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
         if ids in voice_found:
             continue
         voice_found.add(ids)
+        # FIXME: temporary patch to prevent birthday lines (e.g. Vox_Audrey_Birthday_001) from interfering
+        #  with regular lines
+        if "Birthday_" in v.path:
+            continue
         digits = v.path_digits()
         if digits is None:
             continue

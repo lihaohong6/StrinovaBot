@@ -93,6 +93,18 @@ def get_json_path(char_name: str) -> Path:
 
 
 def compute_audio_distance(audio_path1, audio_path2, sr=22050, n_mfcc=13) -> float:
+    """
+    Computes similarity score between two audio clips using MFCC features.
+
+    Parameters:
+        audio_path1 (str): Path to the first audio file.
+        audio_path2 (str): Path to the second audio file.
+        sr (int): Sampling rate for audio loading.
+        n_mfcc (int): Number of MFCC coefficients to extract.
+
+    Returns:
+        float: Similarity score (range: -1 to 1, where 1 is most similar).
+    """
     import librosa.feature
     import numpy as np
     from scipy.spatial.distance import euclidean
@@ -114,18 +126,6 @@ def compute_audio_distance(audio_path1, audio_path2, sr=22050, n_mfcc=13) -> flo
         mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
         return y.shape[0], mfcc
 
-    """
-    Computes similarity score between two audio clips using MFCC features.
-
-    Parameters:
-        audio_path1 (str): Path to the first audio file.
-        audio_path2 (str): Path to the second audio file.
-        sr (int): Sampling rate for audio loading.
-        n_mfcc (int): Number of MFCC coefficients to extract.
-
-    Returns:
-        float: Similarity score (range: -1 to 1, where 1 is most similar).
-    """
     try:
         # Extract mean MFCC features
         length1, mfcc1 = extract_audio_info(audio_path1, sr, n_mfcc)
