@@ -127,7 +127,10 @@ def get_quality_table() -> dict[int, str]:
 
 
 def download_file(url: str, target: Path):
-    with requests.get(url, stream=True) as r:
+    headers = None
+    if "miraheze" in url or "wikitide" in url:
+        headers = {'User-Agent': 'Bot by User:PetraMagna', }
+    with requests.get(url, stream=True, headers=headers) as r:
         r.raise_for_status()
         f = open(target, 'wb')
         for chunk in r.iter_content(chunk_size=16 * 1024):

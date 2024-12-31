@@ -71,8 +71,7 @@ def upload_item_icons(items: list[int | str], text: str = "[[Category:Item icons
 
 
 def upload_file(text: str, target: FilePage, summary: str = "batch upload file",
-                file: str | Path = None, url: str = None):
-    force = False
+                file: str | Path = None, url: str = None, force: bool = False):
     while True:
         try:
             if url is not None:

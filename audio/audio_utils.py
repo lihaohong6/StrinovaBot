@@ -1,13 +1,14 @@
+import os
 import subprocess
 from pathlib import Path
 from typing import Any
 
-import librosa.feature
 from pywikibot import FilePage
 from pywikibot.pagegenerators import GeneratorFactory
 
 from audio.voice import Voice
 from utils.asset_utils import audio_root
+from utils.general_utils import download_file
 from utils.json_utils import load_json
 from utils.lang import CHINESE, languages_with_audio
 
@@ -15,7 +16,7 @@ from utils.upload_utils import upload_file
 from utils.wiki_utils import s
 
 
-def upload_audio(source: Path, target: FilePage, text: str):
+def upload_audio(source: Path, target: FilePage, text: str, force: bool = False):
     assert source.exists()
     temp_file = Path("temp.ogg")
     subprocess.run(["ffmpeg", "-i", source, "-c:a", "libopus", "-y", temp_file],
@@ -23,7 +24,7 @@ def upload_audio(source: Path, target: FilePage, text: str):
                    stdout=subprocess.DEVNULL,
                    stderr=subprocess.DEVNULL
                    )
-    upload_file(text=text, target=target, file=temp_file)
+    upload_file(text=text, target=target, file=temp_file, force=force)
     temp_file.unlink()
 
 
@@ -42,6 +43,8 @@ def upload_audio_file(voices: list[Voice], char_name: str):
     gen = gen.getCombinedGenerator()
     existing: set[str] = set(p.title(underscore=True, with_ns=False) for p in gen)
     text = f"[[Category:{char_name} voice lines]]"
+    temp_download_dir = Path("files/cache")
+    temp_download_dir.mkdir(parents=True, exist_ok=True)
     for v in voices:
         assert v.file_page[CHINESE.code] != ""
         for lang in languages_with_audio():
@@ -51,9 +54,15 @@ def upload_audio_file(voices: list[Voice], char_name: str):
             file_page = FilePage(s, "File:" + file_page_title)
             local_path = audio_root / lang.audio_dir_name / v.file[lang.code]
             if file_page_title in existing:
-                pass
-                # temp_file = Path("temp.ogg")
-                # download_file(file_page.get_file_url(), temp_file)
+                if not file_page_title.startswith("EN"):
+                    continue
+                temp_wiki_file = temp_download_dir / file_page_title
+                if not temp_wiki_file.exists():
+                    download_file(file_page.get_file_url(), temp_wiki_file)
+
+                is_same = audio_is_same(local_path, temp_wiki_file)
+                if not is_same:
+                    upload_audio(local_path, file_page, text, True)
             else:
                 assert local_path.exists()
                 upload_audio(local_path, file_page, text)
@@ -78,12 +87,13 @@ def get_json_path(char_name: str) -> Path:
     return Path("audio/data/" + char_name + ".json")
 
 
-def audio_is_same(audio1, audio2):
+def compute_audio_distance(audio_path1, audio_path2, sr=22050, n_mfcc=13) -> float:
     import librosa.feature
     import numpy as np
-    from sklearn.metrics.pairwise import cosine_similarity
+    from scipy.spatial.distance import euclidean
+    from fastdtw import fastdtw
 
-    def extract_mean_mfcc(audio_path, sr=22050, n_mfcc=13):
+    def extract_audio_info(audio_path, sr=22050, n_mfcc=13) -> tuple[int, np.ndarray]:
         """
         Extracts the mean MFCC features from an audio file.
 
@@ -97,30 +107,37 @@ def audio_is_same(audio1, audio2):
         """
         y, _ = librosa.load(audio_path, sr=sr)
         mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
-        return np.mean(mfcc, axis=1)
+        return y.shape[0], mfcc
 
-    def compute_similarity(audio_path1, audio_path2, sr=22050, n_mfcc=13) -> float:
-        """
-        Computes similarity score between two audio clips using MFCC features.
+    """
+    Computes similarity score between two audio clips using MFCC features.
 
-        Parameters:
-            audio_path1 (str): Path to the first audio file.
-            audio_path2 (str): Path to the second audio file.
-            sr (int): Sampling rate for audio loading.
-            n_mfcc (int): Number of MFCC coefficients to extract.
+    Parameters:
+        audio_path1 (str): Path to the first audio file.
+        audio_path2 (str): Path to the second audio file.
+        sr (int): Sampling rate for audio loading.
+        n_mfcc (int): Number of MFCC coefficients to extract.
 
-        Returns:
-            float: Similarity score (range: -1 to 1, where 1 is most similar).
-        """
+    Returns:
+        float: Similarity score (range: -1 to 1, where 1 is most similar).
+    """
+    try:
         # Extract mean MFCC features
-        mfcc1_mean = extract_mean_mfcc(audio_path1, sr, n_mfcc)
-        mfcc2_mean = extract_mean_mfcc(audio_path2, sr, n_mfcc)
+        length1, mfcc1 = extract_audio_info(audio_path1, sr, n_mfcc)
+        length2, mfcc2 = extract_audio_info(audio_path2, sr, n_mfcc)
 
-        # Compute cosine similarity
-        similarity = cosine_similarity([mfcc1_mean], [mfcc2_mean])[0][0]
-        return similarity
+        if abs(length1 - length2) > 1:
+            return 1
+        distance, _ = fastdtw(mfcc1, mfcc2, dist=euclidean)
 
-    return compute_similarity(audio1, audio2) > 0.9999
+        return distance / length1
+    except ValueError as e:
+        print(f"Error computing similarity score between {audio_path1} and {audio_path2}: {e}")
+        return 0
+
+
+def audio_is_same(audio1, audio2):
+    return compute_audio_distance(audio1, audio2) < 0.05
 
 
 def audio_is_silent(source: Path):
