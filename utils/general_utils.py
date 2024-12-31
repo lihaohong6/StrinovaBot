@@ -126,7 +126,7 @@ def get_quality_table() -> dict[int, str]:
     return get_quality_table.table
 
 
-def download_file(url, target: Path):
+def download_file(url: str, target: Path):
     with requests.get(url, stream=True) as r:
         r.raise_for_status()
         f = open(target, 'wb')

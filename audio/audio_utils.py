@@ -44,11 +44,18 @@ def upload_audio_file(voices: list[Voice], char_name: str):
     for v in voices:
         assert v.file_page[CHINESE.code] != ""
         for lang in languages_with_audio():
-            file_page = v.file_page.get(lang.code, "")
-            if file_page not in existing and file_page != "":
-                path = audio_root / lang.audio_dir_name / v.file[lang.code]
-                assert path.exists()
-                upload_audio(path, FilePage(s, "File:" + file_page), text)
+            file_page_title = v.file_page.get(lang.code, "")
+            if file_page_title == "":
+                continue
+            file_page = FilePage(s, "File:" + file_page_title)
+            local_path = audio_root / lang.audio_dir_name / v.file[lang.code]
+            if file_page_title in existing:
+                pass
+                # temp_file = Path("temp.ogg")
+                # download_file(file_page.get_file_url(), temp_file)
+            else:
+                assert local_path.exists()
+                upload_audio(local_path, file_page, text)
 
 
 VoiceJson = dict[int, dict[str, Any]]
