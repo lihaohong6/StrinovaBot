@@ -42,9 +42,8 @@ class SimpleProcessPool:
             self.reap(self.SIZE_LIMIT)
 
 
-
-
 wwiser_location = Path('wwiser.pyz')
+assert wwiser_location.exists(), "Need wwiser to exist in order to run script."
 
 
 def get_configs(root: Path, root_gl: Path):
