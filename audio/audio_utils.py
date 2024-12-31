@@ -2,10 +2,11 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+import librosa.feature
 from pywikibot import FilePage
 from pywikibot.pagegenerators import GeneratorFactory
 
-from audio.audio_parser import Voice
+from audio.voice import Voice
 from utils.asset_utils import audio_root
 from utils.json_utils import load_json
 from utils.lang import CHINESE, languages_with_audio
@@ -68,3 +69,63 @@ def load_json_voices(char_name: str) -> list[Voice]:
 
 def get_json_path(char_name: str) -> Path:
     return Path("audio/data/" + char_name + ".json")
+
+
+def audio_is_same(audio1, audio2):
+    import librosa.feature
+    import numpy as np
+    from sklearn.metrics.pairwise import cosine_similarity
+
+    def extract_mean_mfcc(audio_path, sr=22050, n_mfcc=13):
+        """
+        Extracts the mean MFCC features from an audio file.
+
+        Parameters:
+            audio_path (str): Path to the audio file.
+            sr (int): Sampling rate for audio loading.
+            n_mfcc (int): Number of MFCC coefficients to extract.
+
+        Returns:
+            np.ndarray: Mean MFCC features.
+        """
+        y, _ = librosa.load(audio_path, sr=sr)
+        mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
+        return np.mean(mfcc, axis=1)
+
+    def compute_similarity(audio_path1, audio_path2, sr=22050, n_mfcc=13) -> float:
+        """
+        Computes similarity score between two audio clips using MFCC features.
+
+        Parameters:
+            audio_path1 (str): Path to the first audio file.
+            audio_path2 (str): Path to the second audio file.
+            sr (int): Sampling rate for audio loading.
+            n_mfcc (int): Number of MFCC coefficients to extract.
+
+        Returns:
+            float: Similarity score (range: -1 to 1, where 1 is most similar).
+        """
+        # Extract mean MFCC features
+        mfcc1_mean = extract_mean_mfcc(audio_path1, sr, n_mfcc)
+        mfcc2_mean = extract_mean_mfcc(audio_path2, sr, n_mfcc)
+
+        # Compute cosine similarity
+        similarity = cosine_similarity([mfcc1_mean], [mfcc2_mean])[0][0]
+        return similarity
+
+    return compute_similarity(audio1, audio2) > 0.9999
+
+
+def audio_is_silent(source: Path):
+    import librosa.feature
+    import numpy as np
+    y, sr = librosa.load(source, sr=None)
+
+    rms = librosa.feature.rms(y=y)
+    avg_rms = np.mean(rms)
+
+    # If the average RMS is below the threshold, the audio is considered silent
+    if avg_rms < 0.001:
+        return True
+
+    return False
