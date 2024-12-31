@@ -28,7 +28,7 @@ def upload_audio(source: Path, target: FilePage, text: str, force: bool = False)
     temp_file.unlink()
 
 
-def upload_audio_file(voices: list[Voice], char_name: str):
+def upload_audio_file(voices: list[Voice], char_name: str, dry_run: bool = False):
     for v in voices:
         for lang in languages_with_audio():
             file_name = v.file.get(lang.code, '')
@@ -61,11 +61,16 @@ def upload_audio_file(voices: list[Voice], char_name: str):
                     download_file(file_page.get_file_url(), temp_wiki_file)
 
                 is_same = audio_is_same(local_path, temp_wiki_file)
-                if not is_same:
+                if dry_run:
+                    print(f"{file_page_title} is {is_same}")
+                if not is_same and not dry_run:
                     upload_audio(local_path, file_page, text, True)
             else:
                 assert local_path.exists()
-                upload_audio(local_path, file_page, text)
+                if dry_run:
+                    print(f"Will upload {local_path.name} to {file_page_title}")
+                else:
+                    upload_audio(local_path, file_page, text)
 
 
 VoiceJson = dict[int, dict[str, Any]]
