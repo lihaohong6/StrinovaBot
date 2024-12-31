@@ -77,8 +77,7 @@ def find_audio_file(event_file: Path, table: dict, bank_name_to_files: dict[str,
         return None
     for candidate in candidates:
         assert candidate.exists()
-        if not audio_is_silent(candidate):
-            return candidate.name
+        return candidate.name
     return None
 
 

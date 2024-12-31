@@ -9,6 +9,8 @@ from pathlib import Path
 from queue import Queue
 from subprocess import Popen
 
+from audio.audio_utils import audio_is_silent
+
 sys.path.append("../..")
 
 from utils.asset_utils import wem_root, global_wem_root
@@ -138,6 +140,12 @@ def make_banks(configs):
                             banks_dir, config)
 
 
+def remove_silent_file(path: Path):
+    if audio_is_silent(path):
+        print(f"Removing {path.name} because it's silent.")
+        path.unlink()
+
+
 def main():
 
     # Set paths
@@ -166,6 +174,16 @@ def main():
         for config in configs:
             executor.submit(generate_wav,
                             config.audio_path, Path(config.output_dir))
+
+    # Remove all silent wav files
+    all_wav_files = []
+    for config in configs:
+        out_path = Path(config.output_dir)
+        all_wav_files.extend(out_path.glob('*.wav'))
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        for file in all_wav_files:
+            executor.submit(remove_silent_file,
+                            file)
 
 
 if __name__ == "__main__":
