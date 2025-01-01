@@ -238,15 +238,16 @@ def apply_trigger_fix(triggers: list[Trigger]) -> None:
     the file of the derived event.
     """
     for t in triggers:
+        if t.id not in [66, 67]:
+            continue
         base_voice: dict[str, Voice] = {}
         extra_voice: dict[str, list[Voice]] = {}
         for v in t.voices:
             role_id = v.role_id
-            suffix = re.search(r"(_[a-z]|)$", v.path).group(1)
-            key = f"{role_id}{suffix}"
+            key = f"{role_id}"
             is_derived = ("_org" in v.path or "_red" in v.path) and "_original" not in v.path
             if is_derived:
-                if role_id not in extra_voice:
+                if key not in extra_voice:
                     extra_voice[key] = []
                 extra_voice[key].append(v)
             else:
@@ -298,8 +299,7 @@ def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
             triggers[digits].voices.append(v)
 
     result = list(triggers.values())
-    # Doesn't work as intended
-    # apply_trigger_fix(result)
+    apply_trigger_fix(result)
     return result
 
 
