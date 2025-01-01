@@ -229,6 +229,40 @@ def role_voice() -> dict[int, Voice]:
     return result
 
 
+def apply_trigger_fix(triggers: list[Trigger]) -> None:
+    """
+    Another attempt at fixing the issue in https://github.com/bnnm/wwiser/issues/49
+    An attempt has been made to reorder the bnk files, but a few bnk files contain a ton of audio files
+    that include both originals and org/red. The internal names are all gibberish, so can't
+    use internal names to sort them. This function detects this situation and lets the base voice steal
+    the file of the derived event.
+    """
+    for t in triggers:
+        base_voice: dict[str, Voice] = {}
+        extra_voice: dict[str, list[Voice]] = {}
+        for v in t.voices:
+            role_id = v.role_id
+            suffix = re.search(r"(_[a-z]|)$", v.path).group(1)
+            key = f"{role_id}{suffix}"
+            is_derived = ("_org" in v.path or "_red" in v.path) and "_original" not in v.path
+            if is_derived:
+                if role_id not in extra_voice:
+                    extra_voice[key] = []
+                extra_voice[key].append(v)
+            else:
+                assert key not in base_voice
+                base_voice[key] = v
+        for key, voice in base_voice.items():
+            if key not in extra_voice:
+                continue
+            for derived in extra_voice[key]:
+                for lang, file_path in derived.file.items():
+                    # If the derived file is nonempty but the base file is empty, then steal it.
+                    if voice.file.get(lang, "") == "" and file_path != "":
+                        voice.file[lang] = file_path
+                        derived.file[lang] = ""
+
+
 def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
     triggers: dict[str, Trigger] = {}
 
@@ -255,13 +289,17 @@ def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
         voice_found.add(ids)
         # FIXME: temporary patch to prevent birthday lines (e.g. Vox_Audrey_Birthday_001) from interfering
         #  with regular lines
-        if "Birthday_" in v.path:
+        if re.search(r"(_Date|Birthday_)\d{2,3}", v.path) is not None or "_TeamGuide_" in v.path:
             continue
         digits = v.path_digits()
         if digits is None:
             continue
         if digits in triggers:
             triggers[digits].voices.append(v)
-    return list(triggers.values())
+
+    result = list(triggers.values())
+    # Doesn't work as intended
+    # apply_trigger_fix(result)
+    return result
 
 
