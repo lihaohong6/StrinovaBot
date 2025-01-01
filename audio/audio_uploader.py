@@ -26,7 +26,10 @@ def upload_audio(source: Path, target: FilePage, text: str, force: bool = False)
     temp_file.unlink()
 
 
-def upload_audio_file(voices: list[Voice], char_name: str, dry_run: bool = False):
+def upload_audio_file(voices: list[Voice],
+                      char_name: str,
+                      dry_run: bool = False,
+                      force_replace: bool = False):
     for v in voices:
         for lang in languages_with_audio():
             file_name = v.file.get(lang.code, '')
@@ -57,12 +60,13 @@ def upload_audio_file(voices: list[Voice], char_name: str, dry_run: bool = False
                 temp_wiki_file = temp_download_dir / file_page_title
                 if not temp_wiki_file.exists():
                     download_file(file_page.get_file_url(), temp_wiki_file)
-
                 is_same = audio_is_same(local_path, temp_wiki_file)
-                if dry_run:
-                    print(f"{file_page_title} is {is_same}")
-                if not is_same and not dry_run:
-                    upload_audio(local_path, file_page, text, True)
+                if not is_same:
+                    if dry_run:
+                        print(f"{file_page_title} is {is_same}")
+                    elif force_replace:
+                        # Only replace the old copy if this is not a dry run AND force replace is explicitly enabled
+                        upload_audio(local_path, file_page, text, True)
             else:
                 assert local_path.exists()
                 if dry_run:

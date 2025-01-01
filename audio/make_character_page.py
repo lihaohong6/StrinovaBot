@@ -42,11 +42,14 @@ def make_table(triggers: list[Trigger], lang: Language):
     return "\n".join(result)
 
 
-def make_character_audio_page(char_id: int, lang: Language, dry_run: bool = False):
+def make_character_audio_page(char_id: int,
+                              lang: Language,
+                              dry_run: bool = False,
+                              force_replace: bool = False):
     result = ["{{CharacterAudioTop}}"]
     char_name = char_id_mapper[char_id]
     voices = load_json_voices(char_name)
-    upload_audio_file(voices, char_name, dry_run=dry_run)
+    upload_audio_file(voices, char_name, dry_run=dry_run, force_replace=force_replace)
     triggers = match_custom_triggers(voices)
     for voice_type in VoiceType:
         t_list = [t for t in triggers if t.type.value == voice_type.value]
@@ -70,8 +73,10 @@ def make_character_audio_pages():
     lang = get_language()
     for char_id, char_name in char_id_mapper.items():
         # FIXME: only do Michele for now to test
-        if char_name == "Celestia":
-            make_character_audio_page(char_id, lang, dry_run=True)
+        if char_name == "Yvette":
+            make_character_audio_page(char_id, lang,
+                                      dry_run=False,
+                                      force_replace=True)
 
 
 def main():

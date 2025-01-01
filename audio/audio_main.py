@@ -28,14 +28,17 @@ from utils.json_utils import load_json
 from utils.wiki_utils import bwiki
 
 
-def merge_results(previous: VoiceJson, current: VoiceJson) -> VoiceJson:
+def merge_results(previous: VoiceJson, current: VoiceJson, discard: bool = False) -> VoiceJson:
     """
     Goal: use current as base and override certain attributes with previous
     :return: merged dict
     """
     for vid, voice in previous.items():
         if vid not in current:
-            current[vid] = voice
+            if not discard:
+                current[vid] = voice
+            else:
+                continue
             print(f"{vid} not in current. Prev: {voice}")
         for k, v in voice.items():
             if k in {'transcription', 'title', 'translation'}:
@@ -44,7 +47,7 @@ def merge_results(previous: VoiceJson, current: VoiceJson) -> VoiceJson:
     return current
 
 
-def make_character_json(triggers: list[Trigger], char_id: int):
+def make_character_json(triggers: list[Trigger], char_id: int, discard: bool = False) -> None:
     def voice_filter(v: Voice):
         return v.role_id == 0 or v.role_id == char_id
 
@@ -75,7 +78,8 @@ def make_character_json(triggers: list[Trigger], char_id: int):
     # json files are stored with string keys instead of int keys
     previous = dict((int(k), v) for k, v in previous.items())
     result = merge_results(previous=previous,
-                           current=result)
+                           current=result,
+                           discard=discard)
     with open(get_json_path(char_name), "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=4)
 
@@ -146,7 +150,7 @@ def make_json():
         if char_name == "Fragrans":
             # Fragrans' English voice lines are identical to Chinese ones; disable for now
             continue
-        make_character_json(triggers, char_id)
+        make_character_json(triggers, char_id, discard=False)
 
 
 def audio_main(args=None):
