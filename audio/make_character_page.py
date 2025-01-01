@@ -22,9 +22,9 @@ def make_table(triggers: list[Trigger], lang: Language):
                 ("Title", title_text)
             ]
 
-            if 'org' in voice.path:
+            if '_org' in voice.path:
                 args.append(('Type', 'org'))
-            if 'red' in voice.path:
+            if '_red' in voice.path:
                 args.append(('Type', 'red'))
 
             transcription_languages = languages_with_audio()
@@ -73,10 +73,10 @@ def make_character_audio_pages():
     lang = get_language()
     for char_id, char_name in char_id_mapper.items():
         # FIXME: only do Michele for now to test
-        if char_name == "Yvette":
+        if char_name == "Fragrans":
             make_character_audio_page(char_id, lang,
-                                      dry_run=False,
-                                      force_replace=True)
+                                      dry_run=True,
+                                      force_replace=False)
 
 
 def main():

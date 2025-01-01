@@ -55,6 +55,7 @@ def upload_audio_file(voices: list[Voice],
             file_page = FilePage(s, "File:" + file_page_title)
             local_path = audio_root / lang.audio_dir_name / v.file[lang.code]
             if file_page_title in existing:
+                # FIXME: extend this comparison to non-English lines as well?
                 if not file_page_title.startswith("EN"):
                     continue
                 temp_wiki_file = temp_download_dir / file_page_title
@@ -66,6 +67,8 @@ def upload_audio_file(voices: list[Voice],
                         print(f"{file_page_title} is {is_same}")
                     elif force_replace:
                         # Only replace the old copy if this is not a dry run AND force replace is explicitly enabled
+                        # Need to invalidate the local cache
+                        temp_wiki_file.unlink()
                         upload_audio(local_path, file_page, text, True)
             else:
                 assert local_path.exists()

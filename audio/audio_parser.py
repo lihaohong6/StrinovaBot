@@ -237,6 +237,7 @@ def apply_trigger_fix(triggers: list[Trigger]) -> None:
     use internal names to sort them. This function detects this situation and lets the base voice steal
     the file of the derived event.
     """
+    dont_steal_list = {"HuiXing.*066_org", "Lawine.*067_red"}
     for t in triggers:
         if t.id not in [66, 67]:
             continue
@@ -257,6 +258,8 @@ def apply_trigger_fix(triggers: list[Trigger]) -> None:
             if key not in extra_voice:
                 continue
             for derived in extra_voice[key]:
+                if any(re.search(l, derived.path) is not None for l in dont_steal_list):
+                    continue
                 for lang, file_path in derived.file.items():
                     # If the derived file is nonempty but the base file is empty, then steal it.
                     if voice.file.get(lang, "") == "" and file_path != "":
