@@ -87,8 +87,10 @@ def upload_file(text: str, target: FilePage, summary: str = "batch upload file",
             if "http-timed-out" in str(e):
                 continue
             if "was-deleted" in str(e):
+                # print(f"Warning: {target.title(with_ns=True)} was deleted. Reuploading...")
                 # force = True
                 # continue
+                print(f"INFO: {target.title(with_ns=True)} was deleted. Will not reupload.")
                 return
             assert search is not None, str(e)
             existing_page = f"File:{search.group(1)}"

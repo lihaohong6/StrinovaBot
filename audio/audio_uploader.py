@@ -75,4 +75,4 @@ def upload_audio_file(voices: list[Voice],
                 if dry_run:
                     print(f"Will upload {local_path.name} to {file_page_title}")
                 else:
-                    upload_audio(local_path, file_page, text)
+                    upload_audio(local_path, file_page, text, force=force_replace)

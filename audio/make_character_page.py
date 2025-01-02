@@ -72,8 +72,9 @@ def make_character_audio_page(char_id: int,
 def make_character_audio_pages():
     lang = get_language()
     for char_id, char_name in char_id_mapper.items():
-        # FIXME: only do Michele for now to test
-        if char_name == "Fragrans":
+        # Be very careful with audio: do one character at a time and watch for problems in the upload.
+        # Try to do a dry run to make sure everything looks alright.
+        if char_name == "NOP":
             make_character_audio_page(char_id, lang,
                                       dry_run=True,
                                       force_replace=False)

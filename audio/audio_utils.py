@@ -23,7 +23,7 @@ def get_json_path(char_name: str) -> Path:
     return Path("audio/data/" + char_name + ".json")
 
 
-def compute_audio_distance(audio_path1, audio_path2, sr=22050, n_mfcc=13) -> float:
+def compute_audio_distance(audio_path1: Path, audio_path2: Path, sr=22050, n_mfcc=13) -> float:
     """
     Computes similarity score between two audio clips using MFCC features.
 
@@ -41,7 +41,7 @@ def compute_audio_distance(audio_path1, audio_path2, sr=22050, n_mfcc=13) -> flo
     from scipy.spatial.distance import euclidean
     from fastdtw import fastdtw
 
-    def extract_audio_info(audio_path, sr=22050, n_mfcc=13) -> tuple[int, np.ndarray]:
+    def extract_audio_info(audio_path: Path, sr=22050, n_mfcc=13) -> tuple[int, np.ndarray]:
         """
         Extracts the mean MFCC features from an audio file.
 
@@ -53,7 +53,7 @@ def compute_audio_distance(audio_path1, audio_path2, sr=22050, n_mfcc=13) -> flo
         Returns:
             np.ndarray: Mean MFCC features.
         """
-        y, _ = librosa.load(audio_path, sr=sr)
+        y, _ = librosa.load(audio_path, sr=sr, duration=10)
         mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=n_mfcc)
         return y.shape[0], mfcc
 
@@ -64,6 +64,11 @@ def compute_audio_distance(audio_path1, audio_path2, sr=22050, n_mfcc=13) -> flo
 
         if abs(length1 - length2) > 1:
             return 1
+
+        if mfcc1.shape != mfcc2.shape:
+            mfcc1 = mfcc1.T
+            mfcc2 = mfcc2.T
+
         distance, _ = fastdtw(mfcc1, mfcc2, dist=euclidean)
 
         return distance / length1
@@ -72,7 +77,7 @@ def compute_audio_distance(audio_path1, audio_path2, sr=22050, n_mfcc=13) -> flo
         return 0
 
 
-def audio_is_same(audio1, audio2):
+def audio_is_same(audio1: Path, audio2: Path):
     return compute_audio_distance(audio1, audio2) < 0.05
 
 
