@@ -31,14 +31,15 @@ def upload_audio_file(voices: list[Voice],
                       dry_run: bool = False,
                       force_replace: bool = False):
     for v in voices:
+        has_file = False
         for lang in languages_with_audio():
             file_name = v.file.get(lang.code, '')
             audio_path = audio_root / lang.audio_dir_name / f"{file_name}"
-            if file_name != '' and audio_path.exists():
+            if file_name != '':
+                assert audio_path.exists()
                 v.set_file_page(lang)
-            else:
-                # Chinese file must always be present
-                assert lang != CHINESE or (audio_path.exists() and audio_path.is_file()), f"{audio_path} does not exist"
+                has_file = True
+        assert has_file
     gen = GeneratorFactory()
     gen.handle_args([f"-cat:{char_name} voice lines", "-ns:File"])
     gen = gen.getCombinedGenerator()
@@ -47,7 +48,6 @@ def upload_audio_file(voices: list[Voice],
     temp_download_dir = Path("files/cache")
     temp_download_dir.mkdir(parents=True, exist_ok=True)
     for v in voices:
-        assert v.file_page[CHINESE.code] != ""
         for lang in languages_with_audio():
             file_page_title = v.file_page.get(lang.code, "")
             if file_page_title == "":

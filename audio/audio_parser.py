@@ -210,17 +210,16 @@ def role_voice() -> dict[int, Voice]:
     for k, voice in voices.items():
         path = voice.path
         files: dict[str, str] = {}
-        failed = False
+        failed = True
         for lang in languages_with_audio():
             event_file = audio_event_root_global / f"{path}.json"
             # FIXME: should source CN events too (as a bonus)
             # event_file = audio_event_root / f"{path}.json"
             audio_file = find_audio_file(event_file, tables[lang.code], bank_name_to_files[lang.code], lang)
-            if lang == CHINESE and audio_file is None:
-                failed = True
-                break
             if audio_file is None:
                 audio_file = ""
+            else:
+                failed = False
             files[lang.code] = audio_file
         if failed:
             continue
