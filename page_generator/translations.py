@@ -1,5 +1,6 @@
 import json
 import re
+from copy import deepcopy
 from functools import cache
 
 from pywikibot import Page
@@ -21,6 +22,14 @@ def replace_placeholders(original: str) -> str:
 
 def remove_trailing_info(original: str) -> str:
     return re.sub(r" ?[:：].*$", "", original)
+
+
+def handle_translation_alt(d: dict[str, dict[str, str]], original_key: str, alt_key: str | None = None) -> None:
+    original = d[original_key]
+    if alt_key is None:
+        alt_key = original_key + "s"
+    d[alt_key] = deepcopy(original)
+    d[alt_key][ENGLISH.code] = alt_key
 
 
 @cache
@@ -52,6 +61,11 @@ def get_translations() -> dict[str, dict[str, str]]:
     for camp_id, camp_name in camp_id_to_string.items():
         result[camp_name] = get_multilanguage_dict(i18n, f"{camp_id}_NameCn", default=camp_name)
 
+    i18n = get_all_game_json("ST_UIRoomCustomRoomRule")
+    d = get_multilanguage_dict(i18n, "Weapon")
+    result["Weapon"] = d
+    handle_translation_alt(result, "Weapon")
+
     weapons = parse_weapons()
     for w in weapons.values():
         if w.parent is None:
@@ -75,9 +89,11 @@ def get_translations() -> dict[str, dict[str, str]]:
         result[d[ENGLISH.code]] = d
 
     # Weapon types
-    for i in [21, 22, 24]:
+    for i, alt_name in [(21, "Primary weapons"), (22, "Secondary weapons"), (24, "Grenades")]:
         d = get_multilanguage_dict(i18n, f"ItemTypeNameKey_{i}")
-        result[d[ENGLISH.code]] = d
+        english_key = d[ENGLISH.code]
+        result[english_key] = d
+        handle_translation_alt(result, english_key, alt_name)
 
     # string energy network upgrades
     i18n = merge_dict(get_all_game_json("ST_GrowthDefine"), get_all_game_json("ST_InGame"))
@@ -111,6 +127,25 @@ def get_translations() -> dict[str, dict[str, str]]:
         converter=compose(StringConverters.basic_converter,
                           StringConverters.all_caps_remove))
     result["Unlock"] = get_multilanguage_dict(ui_global, "Unlock")
+
+    i18n = get_all_game_json("ST_Lottery")
+    result["Emotes"] = get_multilanguage_dict(i18n, "Emote",
+                                              converter=compose(StringConverters.basic_converter,
+                                                                StringConverters.all_caps_remove))
+
+    result["Emotes"][ENGLISH.code] = "Emotes"
+
+    i18n = get_all_game_json("ST_UIBattlePass")
+    result["Description"] = get_multilanguage_dict(i18n, "Description")
+
+    i18n = get_all_game_json("ST_UILottery")
+    result["Type"] = get_multilanguage_dict(i18n, "Type")
+
+    i18n = get_all_game_json("ST_UIChat")
+    result["Name"] = get_multilanguage_dict(i18n, "Name")
+
+    result["Damage"] = get_multilanguage_dict(ui_global, "Damage")
+
     return result
 
 
