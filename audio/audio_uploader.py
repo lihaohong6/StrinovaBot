@@ -30,16 +30,6 @@ def upload_audio_file(voices: list[Voice],
                       char_name: str,
                       dry_run: bool = False,
                       force_replace: bool = False):
-    for v in voices:
-        has_file = False
-        for lang in languages_with_audio():
-            file_name = v.file.get(lang.code, '')
-            audio_path = audio_root / lang.audio_dir_name / f"{file_name}"
-            if file_name != '':
-                assert audio_path.exists()
-                v.set_file_page(lang)
-                has_file = True
-        assert has_file
     gen = GeneratorFactory()
     gen.handle_args([f"-cat:{char_name} voice lines", "-ns:File"])
     gen = gen.getCombinedGenerator()
@@ -76,3 +66,16 @@ def upload_audio_file(voices: list[Voice],
                     print(f"Will upload {local_path.name} to {file_page_title}")
                 else:
                     upload_audio(local_path, file_page, text, force=force_replace)
+
+
+def ensure_audio_files_exist(voices):
+    for v in voices:
+        has_file = False
+        for lang in languages_with_audio():
+            file_name = v.file.get(lang.code, '')
+            audio_path = audio_root / lang.audio_dir_name / f"{file_name}"
+            if file_name != '':
+                assert audio_path.exists()
+                has_file = True
+                v.set_file_page(lang)
+        assert has_file

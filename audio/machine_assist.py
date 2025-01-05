@@ -3,7 +3,7 @@ import re
 from time import sleep
 
 from audio_utils import get_json_path
-from global_config import name_to_en
+from global_config import name_to_en, char_id_mapper
 from page_generator.weapons import get_weapons_by_type, WeaponType
 from utils.asset_utils import wav_root_cn, audio_root
 from utils.general_utils import camp_name_cn
@@ -70,7 +70,7 @@ def transcribe_char(char_name: str, model = None):
 
 def transcribe():
     model = load_whisper_model()
-    for c in ['Michele']:
+    for c in char_id_mapper.values():
         transcribe_char(c, model)
 
 

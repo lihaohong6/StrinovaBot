@@ -1,7 +1,7 @@
 from pywikibot import Page
 
 from audio_utils import load_json_voices
-from audio.audio_uploader import upload_audio_file
+from audio.audio_uploader import upload_audio_file, ensure_audio_files_exist
 from utils.general_utils import pick_string
 from audio_parser import Trigger, match_custom_triggers
 from data.conversion_table import VoiceType
@@ -10,14 +10,14 @@ from utils.lang import JAPANESE, ENGLISH, CHINESE, Language, get_language, langu
 from utils.wiki_utils import s
 
 
-def make_table(triggers: list[Trigger], lang: Language):
+def make_table(triggers: list[Trigger], page_lang: Language):
     result = ['{{Voice/start}}']
     for t in triggers:
         for voice in t.voices:
             title = t.name.copy()
             for k, v in voice.title.items():
                 title[k] = pick_string([v, title.get(k, "")])
-            title_text = title.get(lang.code, title.get(ENGLISH.code, ""))
+            title_text = title.get(page_lang.code, title.get(ENGLISH.code, ""))
             args = [
                 ("Title", title_text)
             ]
@@ -35,7 +35,7 @@ def make_table(triggers: list[Trigger], lang: Language):
                 if file_page != "":
                     args.append((f"File{lang_name}", file_page))
                     args.append((f"Text{lang_name}", voice.transcription.get(lang_code, "")))
-                    args.append((f"Trans{lang_name}", voice.translation.get(lang_code, {}).get(lang.code, "")))
+                    args.append((f"Trans{lang_name}", voice.translation.get(lang_code, {}).get(page_lang.code, "")))
 
             result.append("{{Voice/row | " + " | ".join(f"{k}={v}" for k, v in args) + " }}")
     result.append('{{Voice/end}}')
@@ -45,11 +45,14 @@ def make_table(triggers: list[Trigger], lang: Language):
 def make_character_audio_page(char_id: int,
                               lang: Language,
                               dry_run: bool = False,
+                              upload_audio_files: bool = False,
                               force_replace: bool = False):
     result = ["{{CharacterAudioTop}}"]
     char_name = char_id_mapper[char_id]
     voices = load_json_voices(char_name)
-    upload_audio_file(voices, char_name, dry_run=dry_run, force_replace=force_replace)
+    ensure_audio_files_exist(voices)
+    if upload_audio_files:
+        upload_audio_file(voices, char_name, dry_run=dry_run, force_replace=force_replace)
     triggers = match_custom_triggers(voices)
     for voice_type in VoiceType:
         t_list = [t for t in triggers if t.type.value == voice_type.value]
@@ -74,9 +77,10 @@ def make_character_audio_pages():
     for char_id, char_name in char_id_mapper.items():
         # Be very careful with audio: do one character at a time and watch for problems in the upload.
         # Try to do a dry run to make sure everything looks alright.
-        if char_name == "NOP":
+        if char_name not in ["Yugiri", "Leona"]:
             make_character_audio_page(char_id, lang,
-                                      dry_run=True,
+                                      dry_run=False,
+                                      upload_audio_files=False,
                                       force_replace=False)
 
 
