@@ -24,6 +24,15 @@ def cn_name_to_en(cn: str) -> str | None:
     return t.get(cn, None)
 
 
+def en_name_to_cn(en: str, short: str = True) -> str | None:
+    result = en_name_to_zh.get(en, None)
+    if result is None:
+        return None
+    if short:
+        return result.split("·")[0]
+    return result
+
+
 def get_char_by_id(char_id: int) -> str:
     return char_id_mapper.get(char_id, None)
 
