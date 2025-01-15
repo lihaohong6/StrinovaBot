@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from page_generator.events import Event, EventTask, parse_events
 from utils.general_utils import get_table_global
 from utils.json_utils import get_game_json
 
@@ -13,7 +14,7 @@ class EventMessage:
     content: str
 
 
-def main():
+def print_phantom_night_event_story():
     table = get_table_global("ActivityStrangeThiefStory")
     i18n = get_game_json()['ActivityStrangeThiefStory']
 
@@ -62,4 +63,25 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    print_phantom_night_event_story()
+
+
+def print_event_tasks(event: Event):
+    rid_to_task: dict[int, list[EventTask]] = {}
+    for task in event.tasks:
+        if task.reward_id not in rid_to_task:
+            rid_to_task[task.reward_id] = []
+        rid_to_task[task.reward_id].append(task)
+    for _, tasks in rid_to_task.items():
+        print("{| class=\"wikitable\"")
+        print("|-\n"
+              "! Task !! Frequency !! Points")
+        for task in tasks:
+            print(str(task))
+        print("|}")
+
+
+def print_event_tasks_main():
+    events = parse_events()
+    event = events[10051]
+    print_event_tasks(event)

@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from pywikibot.pagegenerators import PreloadingGenerator, GeneratorFactory
+from pywikibot.pagegenerators import GeneratorFactory
 
 from page_generator.items import Item
 from utils.general_utils import get_table_global, save_json_page
@@ -75,27 +75,6 @@ def parse_events():
     return result
 
 
-def print_event(event: Event):
-    rid_to_task: dict[int, list[EventTask]] = {}
-    for task in event.tasks:
-        if task.reward_id not in rid_to_task:
-            rid_to_task[task.reward_id] = []
-        rid_to_task[task.reward_id].append(task)
-    for _, tasks in rid_to_task.items():
-        print("{| class=\"wikitable\"")
-        print("|-\n"
-              "! Task !! Frequency !! Points")
-        for task in tasks:
-            print(str(task))
-        print("|}")
-
-
-def print_event_rewards():
-    events = parse_events()
-    event = events[10028]
-    print_event(event)
-
-
 @dataclass
 class WikiEvent:
     title: str
@@ -130,7 +109,6 @@ def save_wiki_events():
 
 
 def main():
-    # print_event_rewards()
     save_wiki_events()
 
 
