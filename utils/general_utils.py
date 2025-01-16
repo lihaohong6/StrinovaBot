@@ -10,7 +10,7 @@ import requests
 from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
-from global_config import name_to_en, char_id_mapper, internal_names
+from global_config import name_to_en, char_id_mapper, internal_names, get_characters
 from utils.asset_utils import csv_root, global_csv_root
 from utils.json_utils import load_json, get_game_json
 from utils.lang import Language, ENGLISH
@@ -170,12 +170,13 @@ def get_char_pages(subpage_name: str = "", lang: Language = ENGLISH) -> list[tup
     def get_page_name(char_name):
         return f"{char_name}{subpage_name}{lang.page_suffix}"
 
-    pages = list(PreloadingGenerator(Page(s, get_page_name(v)) for k, v in char_id_mapper.items()))
-    assert len(pages) == len(char_id_mapper)
-    res = [(t[0], t[1], pages[index])
-           for index, t in enumerate(char_id_mapper.items())
-           if get_page_name(t[1]) == pages[index].title()]
-    assert len(res) == len(char_id_mapper)
+    characters = get_characters()
+    pages = list(PreloadingGenerator(Page(s, get_page_name(c.name)) for c in characters))
+    assert len(pages) == len(characters)
+    res = [(c.id, c.name, pages[index])
+           for index, c in enumerate(characters)
+           if get_page_name(c.name) == pages[index].title()]
+    assert len(res) == len(characters)
     return res
 
 

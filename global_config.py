@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 characters_with_dorms = {"Michele", "Kokona", "Yvette", "Lawine", "Kanami", "Celestia", "Audrey", "Maddelena",
                          "Fuchsia"}
 name_to_en: dict[str, str] = {
@@ -25,6 +27,11 @@ name_to_en: dict[str, str] = {
 
 name_to_cn: dict[str, str] = dict((v, k) for k, v in name_to_en.items())
 
+@dataclass
+class Character:
+    id: int
+    name: str
+
 char_id_mapper: dict[int, str] = {101: 'Michele', 105: 'Audrey', 107: 'Maddelena', 108: 'Nobunaga', 109: 'Reiichi',
                                   110: 'Bai Mo', 112: 'Fuchsia', 115: 'Flavia', 119: 'Eika', 120: 'Fragrans',
                                   121: 'Yugiri',
@@ -34,5 +41,8 @@ char_id_mapper: dict[int, str] = {101: 'Michele', 105: 'Audrey', 107: 'Maddelena
                                   146: 'Celestia',
                                   205: 'Galatea'}
 
-internal_names: dict[str, int] = dict((v, k) for k, v in char_id_mapper.items())
+def get_characters() -> list[Character]:
+    return [Character(k, v) for k, v in char_id_mapper.items()]
+
+internal_names: dict[str, int] = dict((c.name, c.id)for c in get_characters())
 internal_names.update({"HuiXing": 146, "MoBai": 110, "Aika": 119, "Michelle": 101})

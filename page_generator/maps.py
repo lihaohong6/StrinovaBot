@@ -45,7 +45,7 @@ def parse_maps():
         minimap = v['Minimap2d']['AssetPathName'].split(".")[-1]
         if len(name) > 1:
             result[map_id] = Map(map_id, name, description, intro, minimap)
-            print(name['en'], v['Type'], v['Order'])
+            # print(name['en'], v['Type'], v['Order'])
     return result
 
 

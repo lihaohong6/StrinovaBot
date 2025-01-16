@@ -3,29 +3,57 @@ import re
 from time import sleep
 
 from audio_utils import get_json_path
-from global_config import name_to_en, char_id_mapper
+from global_config import name_to_en, char_id_mapper, get_characters
+from page_generator.translations import get_translations
 from page_generator.weapons import get_weapons_by_type, WeaponType
 from utils.asset_utils import wav_root_cn, audio_root
 from utils.general_utils import camp_name_cn
 from utils.json_utils import load_json
-from utils.lang import ENGLISH, CHINESE
+from utils.lang import ENGLISH, CHINESE, Language, LanguageVariants
 
-general_prompts = dict([(k.split("·")[0], v) for k, v in name_to_en.items()] +
-                       list(camp_name_cn.items()) +
-                       [('引航者', 'Navigator'), ('卡拉彼丘', 'Strinova')])
+def get_char_prompts(char_name: str) -> list[dict[str, str]]:
+    char_prompts: dict[str, list[tuple[str, str, str]]] = {
+        'Michele': [('喵喵卫士', 'Pawtector'), ('火力大喵', 'Mighty Meowblast')],
+        'Celestia': [('星庇所', 'Astral Sanctuary', '星のクリニック')],
+        'Audrey': [('格罗夫', 'Grove', "グローブ")],
+        'Yvette': [('菲', 'Fay', 'フェイ')]
+    }
+    langs = ['zh-hans', 'en', 'ja']
+    prompts = char_prompts.get(char_name, [])
+    result = []
+    for prompt_tuple in prompts:
+        d = {}
+        for index, string in enumerate(prompt_tuple):
+            lang = langs[index]
+            d[lang] = string
+        result.append(d)
+    return result
 
-char_prompts: dict[str, dict[str, str]] = {
-    'Michele': {'喵喵卫士': 'Pawtector', '火力大喵': 'Mighty Meowblast', '搜查官': 'Inspector'},
-    'Celestia': {'星庇所': 'Astral Sanctuary'},
-    'Audrey': {'格罗夫': 'Grove'},
-    'Yvette': {'菲': 'Fay'}
-}
-
-
-weapon_prompts: dict[str, str] = dict((w.name_cn, w.name_en) for w in get_weapons_by_type(WeaponType.GRENADE))
+def get_prompt(char: str, lang: Language) -> str:
+    i18n = get_translations()
+    characters = get_characters()
+    result = []
+    code = lang.code
+    # Use SC instead since cn does not exist in i18n files
+    if code == CHINESE.code:
+        code = LanguageVariants.SIMPLIFIED_CHINESE.value.code
+    # character names
+    strings = [c.name for c in characters]
+    # custom strings
+    strings.extend(["Navigator", "Strinova"])
+    # grenades
+    strings.extend(w.name_en for w in get_weapons_by_type(WeaponType.GRENADE))
+    for string in strings:
+        t = i18n.get(string, {}).get(code, None)
+        if t is not None:
+            result.append(t)
+    result.extend(d[code] for d in get_char_prompts(char) if code in d)
+    return ",".join(result)
 
 
 def postprocess_chinese(t: str) -> str:
+    if len(t) == 0:
+        return t
     t = (t.replace(",", "，")
          .replace("?", "？")
          .replace(" ", "，")
@@ -43,11 +71,11 @@ def load_whisper_model():
 
 
 def transcribe_char(char_name: str, model = None):
+    lang = CHINESE
     json_path = get_json_path(char_name)
     assert json_path.exists()
     voices = load_json(json_path)
-    prompt = ",".join(list(general_prompts.values()) + list(char_prompts.get(char_name, {}).values()))
-    lang = ENGLISH
+    prompt = get_prompt(char_name, lang)
     print(f"Prompt: {prompt}")
     if model is None:
         model = load_whisper_model()
@@ -58,7 +86,7 @@ def transcribe_char(char_name: str, model = None):
         file = audio_root / lang.audio_dir_name / voice['file'].get(lang.code, "DOES_NOT_EXIST")
         if not file.exists() or file.is_dir():
             continue
-        result = model.transcribe(str(file), language=lang.code, patience=2, beam_size=5, prompt=prompt)
+        result = model.transcribe(str(file), language=lang.iso_code, patience=2, beam_size=7, prompt=prompt)
         text = result['text'].strip()
         if lang == CHINESE:
             text = postprocess_chinese(text)

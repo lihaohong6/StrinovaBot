@@ -43,6 +43,12 @@ class Language:
     def mw_code(self):
         return self.code
 
+    @property
+    def iso_code(self):
+        if self.code == 'cn':
+            return 'zh'
+        return self.code
+
 
 class LanguageVariants(Enum):
     ENGLISH = Language('en', 'English')

@@ -6,14 +6,49 @@ import wikitextparser as wtp
 from pywikibot import FilePage
 from wikitextparser import parse
 
-from global_config import char_id_mapper
+from global_config import char_id_mapper, Character, get_characters
 from utils.asset_utils import resource_root
 from utils.general_utils import get_table, get_char_pages, pick_two, get_table_global, save_json_page
-from utils.json_utils import get_game_json
+from utils.json_utils import get_game_json, get_all_game_json
 from utils.lang import get_language
+from utils.lang_utils import get_multilanguage_dict
 from utils.upload_utils import UploadRequest, process_uploads
 from utils.wiki_utils import s
 from utils.wtp_utils import get_templates_by_name
+
+
+@dataclass
+class Skill:
+    name: dict[str, str]
+    type: dict[str, str]
+    description: dict[str, str]
+
+
+@dataclass
+class CharacterSkills:
+    char: Character
+    active_skill: Skill
+    passive_skill: Skill
+    ultimate_skill: Skill
+
+
+def parse_skills() -> dict[str, CharacterSkills]:
+    i18n = get_all_game_json('Skill')
+    skill_table = get_table("Skill")
+    result: list[CharacterSkills] = []
+
+    for char in get_characters():
+        skills = []
+        for skill_num in range(1, 4):
+            key = char.id * 10 + skill_num
+            name_cn = skill_table[key]['Name']['SourceString']
+            description_cn = skill_table[key]['Intro']['SourceString']
+            name = get_multilanguage_dict(i18n, f"{key}_Name", extra=name_cn)
+            skill_type = get_multilanguage_dict(i18n, f"{key}_DisplayName")
+            description = get_multilanguage_dict(i18n, f"{key}_Intro", extra=description_cn)
+            skills.append(Skill(name=name, type=skill_type, description=description))
+        result.append(CharacterSkills(char, *skills))
+    return dict((r.char.name, r) for r in result)
 
 
 def generate_skills():

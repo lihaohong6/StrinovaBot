@@ -128,6 +128,8 @@ def get_translations() -> dict[str, dict[str, str]]:
                           StringConverters.all_caps_remove))
     result["Unlock"] = get_multilanguage_dict(ui_global, "Unlock")
 
+    result["Navigator"] = get_multilanguage_dict(ui_global, "Pilot")
+
     i18n = get_all_game_json("ST_Lottery")
     result["Emotes"] = get_multilanguage_dict(i18n, "Emote",
                                               converter=compose(StringConverters.basic_converter,
@@ -143,6 +145,7 @@ def get_translations() -> dict[str, dict[str, str]]:
 
     i18n = get_all_game_json("ST_UIChat")
     result["Name"] = get_multilanguage_dict(i18n, "Name")
+    result["Strinova"] = get_multilanguage_dict(i18n, "Strinova")
 
     result["Damage"] = get_multilanguage_dict(ui_global, "Damage")
 
