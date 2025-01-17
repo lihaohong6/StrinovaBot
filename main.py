@@ -6,6 +6,7 @@ from char_info.story import generate_return_letter, generate_biography
 from char_info.weapons import generate_weapons
 from page_generator.achievements import generate_all_achievements
 from page_generator.badges import upload_all_badges
+from page_generator.battle_pass import make_battle_pass_seasons
 from page_generator.decal import make_all_decals
 from page_generator.events import save_wiki_events
 from page_generator.id_card import make_id_cards
@@ -52,6 +53,7 @@ def make_everything():
     misc_uploads()
     make_gacha_drop_data()
     make_gacha_banners()
+    make_battle_pass_seasons()
 
 
 if __name__ == "__main__":

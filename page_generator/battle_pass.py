@@ -111,9 +111,11 @@ def make_battle_pass_rewards():
         battle_pass_levels.sort(key=lambda x: x.level)
         for level in battle_pass_levels:
             for reward in level.rewards:
+                item = reward.item.name
+                reward_name = item.get(ENGLISH.code, item.get(CHINESE.code, ""))
                 result[season].append({
                     'name': {
-                        'en': reward.item.name[ENGLISH.code],
+                        'en': reward_name,
                     },
                     'amount': reward.amount,
                     'image': reward.item.icon,

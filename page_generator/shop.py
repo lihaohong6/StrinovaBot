@@ -3,7 +3,6 @@ from datetime import datetime
 from functools import cache
 
 from char_info.gallery import SkinInfo, parse_skin_tables
-from global_config import char_id_mapper
 from page_generator.items import Item, get_all_items
 from utils.general_utils import get_table_global, parse_ticks, get_table, save_json_page
 from utils.json_utils import get_all_game_json
@@ -76,6 +75,7 @@ def banners_to_serializable(banners: list[Banner]) -> list[dict]:
             "start": str(b.start),
             "end": str(b.end),
             "image": get_role_legendary_skin(b.group),
+            "group": b.group
         }
         result.append(d)
     return result
