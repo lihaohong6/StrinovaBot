@@ -62,8 +62,19 @@ def print_phantom_night_event_story():
     print("{{Tab/content | group=story_by_type | " + " | ".join(tab_contents) + " }}")
 
 
-if __name__ == '__main__':
-    print_phantom_night_event_story()
+def print_spring_blessings_event_story():
+    table = get_table_global("ActivityCNYFireStory")
+    i18n = get_game_json()['ActivityCNYFireStory']
+
+    tab_titles = []
+    tab_contents = []
+    for _, v in table.items():
+        name_key = v['StoryName']['Key']
+        content_key = v['StoryContext']['Key']
+        tab_titles.append(i18n[name_key])
+        tab_contents.append(i18n[content_key])
+    print("{{Tab/tabs | group=stories | " + " | ".join(tab_titles) + " }}")
+    print("{{Tab/content | group=stories | " + " | ".join(tab_contents) + " }}")
 
 
 def print_event_tasks(event: Event):
@@ -83,5 +94,9 @@ def print_event_tasks(event: Event):
 
 def print_event_tasks_main():
     events = parse_events()
-    event = events[10051]
+    event = events[10042]
     print_event_tasks(event)
+
+
+if __name__ == '__main__':
+    print_spring_blessings_event_story()
