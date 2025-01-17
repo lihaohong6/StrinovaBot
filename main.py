@@ -10,6 +10,7 @@ from page_generator.decal import make_all_decals
 from page_generator.events import save_wiki_events
 from page_generator.id_card import make_id_cards
 from page_generator.items import save_all_items
+from page_generator.shop import make_gacha_drop_data, make_gacha_banners
 from page_generator.strinova_comms import strinova_comms_main
 from page_generator.translations import generate_translations
 from page_generator.weapons import process_weapon_pages, process_weapon_skins
@@ -49,6 +50,8 @@ def make_everything():
     process_weapon_pages()
     process_weapon_skins()
     misc_uploads()
+    make_gacha_drop_data()
+    make_gacha_banners()
 
 
 if __name__ == "__main__":

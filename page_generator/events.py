@@ -86,7 +86,7 @@ class WikiEvent:
 
 def parse_wiki_events() -> list[WikiEvent]:
     gen = GeneratorFactory(s)
-    gen.handle_args(['-cat:Events'])
+    gen.handle_args(['-cat:Events', '-titleregexnot:Patch'])
     result = []
     for page in gen.getCombinedGenerator(preload=True):
         parsed = wtp.parse(page.text)

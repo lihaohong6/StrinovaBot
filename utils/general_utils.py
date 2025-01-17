@@ -150,7 +150,7 @@ def download_file(url: str, target: Path):
 
 def get_cn_wiki_skins():
     from pywikibot import Page
-    p = Page(bwiki(), "模块:皮肤/RoleSkinData")
+    p = Page(bwiki(), "模块:角色/SkinData")
     matches = re.findall(r'"([^"]+)"[^"]+\s+Role = "([^"]+)"', p.text)
     result = dict((match[0], match[1]) for match in matches)
     assert len(result) > 100

@@ -137,7 +137,7 @@ def make_gacha_drop_data():
 
 
 def main():
-    # make_gacha_drop_data()
+    make_gacha_drop_data()
     make_gacha_banners()
 
 
