@@ -15,6 +15,7 @@ from page_generator.shop import make_gacha_drop_data, make_gacha_banners
 from page_generator.strinova_comms import strinova_comms_main
 from page_generator.translations import generate_translations
 from page_generator.weapons import process_weapon_pages, process_weapon_skins
+from utils.general_utils import get_char_pages, get_char_pages2
 from utils.lang import available_languages, set_language
 
 
@@ -37,10 +38,17 @@ def make_all_character_info():
     strinova_comms_main()
     for lang in available_languages:
         set_language(lang)
-        generate_infobox()
-        generate_skills()
-        generate_string_energy_network()
-        generate_weapons()
+        pages = get_char_pages2(lang=lang)
+        originals = set(p.text for _, p in pages)
+
+        generate_infobox(pages)
+        generate_skills(pages)
+        generate_string_energy_network(pages)
+        generate_weapons(pages)
+
+        for c, p in pages:
+            if p.text not in originals:
+                p.save(summary="Update character page")
 
 
 def make_everything():

@@ -3,14 +3,14 @@ from dataclasses import dataclass
 from typing import Final
 
 import wikitextparser as wtp
-from pywikibot import FilePage
+from pywikibot import FilePage, Page
 from wikitextparser import parse
 
 from global_config import char_id_mapper, Character, get_characters
 from utils.asset_utils import resource_root
-from utils.general_utils import get_table, get_char_pages, pick_two, get_table_global, save_json_page
+from utils.general_utils import get_table, get_char_pages, pick_two, get_table_global, save_json_page, get_char_pages2
 from utils.json_utils import get_game_json, get_all_game_json
-from utils.lang import get_language
+from utils.lang import get_language, ENGLISH
 from utils.lang_utils import get_multilanguage_dict
 from utils.upload_utils import UploadRequest, process_uploads
 from utils.wiki_utils import s
@@ -51,10 +51,63 @@ def parse_skills() -> dict[str, CharacterSkills]:
     return dict((r.char.name, r) for r in result)
 
 
-def generate_skills():
+def generate_character_skills(skill_table, skill_texts, char, p, save: bool = True):
+    templates = []
+    valid = True
+    parsed = wtp.parse(p.text)
+    for t in parsed.templates:
+        if t.name.strip() == "Skill":
+            break
+    else:
+        print("No skill template found for " + char.name)
+        return
+
+    def add_arg(name, value):
+        if t.has_arg(name) and value.strip() == "":
+            return
+        t.set_arg(name, value + "\n")
+
+    for skill_num in range(1, 4):
+        key = char.id * 10 + skill_num
+
+        try:
+            name_cn = skill_table[key]['Name']['SourceString']
+            description_cn = skill_table[key]['Intro']['SourceString']
+            add_arg(f"Name{skill_num}", pick_two(skill_texts.get(f"{key}_Name"), name_cn))
+            add_arg(f"DisplayName{skill_num}", pick_two(skill_texts.get(f"{key}_DisplayName"), ""))
+            add_arg(f"Description{skill_num}", pick_two(skill_texts.get(f"{key}_Intro"), description_cn))
+        except Exception:
+            valid = False
+            break
+
+        templates.append(str(t))
+    if not valid:
+        return
+    if p.text.strip() == str(parsed).strip():
+        return
+    p.text = str(parsed)
+    if save:
+        p.save(summary="generate skills", minor=False)
+
+
+def generate_skills(pages: list[tuple[Character, Page]] = None):
     lang = get_language()
     skill_texts = get_game_json(lang)['Skill']
     skill_table = get_table("Skill")
+    # Only need this check once. Do it for English.
+    # Disable auto-uploads since they need to be preprocessed with imagemagick
+    if lang == ENGLISH and False:
+        upload_skill_icons()
+
+    save = False
+    if pages is None:
+        pages = get_char_pages2(lang=lang)
+        save = True
+    for char, p in pages:
+        generate_character_skills(skill_table, skill_texts, char, p, save=save)
+
+
+def upload_skill_icons():
     requests: list[UploadRequest] = []
     for char_id, char_name in char_id_mapper.items():
         for num in range(1, 4):
@@ -64,45 +117,8 @@ def generate_skills():
             requests.append(req)
     process_uploads(requests)
 
-    for char_id, char_name, p in get_char_pages(lang=lang):
-        templates = []
-        valid = True
-        parsed = wtp.parse(p.text)
-        for t in parsed.templates:
-            if t.name.strip() == "Skill":
-                break
-        else:
-            print("No skill template found for " + char_name)
-            continue
 
-        def add_arg(name, value):
-            if t.has_arg(name) and value.strip() == "":
-                return
-            t.set_arg(name, value + "\n")
-
-        for skill_num in range(1, 4):
-            key = char_id * 10 + skill_num
-
-            try:
-                name_cn = skill_table[key]['Name']['SourceString']
-                description_cn = skill_table[key]['Intro']['SourceString']
-                add_arg(f"Name{skill_num}", pick_two(skill_texts.get(f"{key}_Name"), name_cn))
-                add_arg(f"DisplayName{skill_num}", pick_two(skill_texts.get(f"{key}_DisplayName"),  ""))
-                add_arg(f"Description{skill_num}", pick_two(skill_texts.get(f"{key}_Intro"), description_cn))
-            except Exception:
-                valid = False
-                break
-
-            templates.append(str(t))
-        if not valid:
-            continue
-        if p.text.strip() == str(parsed).strip():
-            continue
-        p.text = str(parsed)
-        p.save(summary="generate skills", minor=False)
-
-
-def generate_string_energy_network():
+def generate_string_energy_network(pages: list[tuple[Character, Page]] = None):
     """
 Growth_Bomb
 
@@ -131,7 +147,13 @@ Growth_Team
     role_json = get_table("Role")
     skill_json = get_table_global("Skill")
     growth_bomb = get_table_global("Growth_Bomb")
-    for char_id, char_name, p in get_char_pages(lang=lang):
+    save = False
+    if pages is None:
+        pages = get_char_pages2(lang=lang)
+        save = True
+    for char, p in pages:
+        char_id = char.id
+        char_name = char.name
         # FIXME: bwiki api is too slow
         # bwiki_base_page = Page(bwiki(), en_name_to_zh[char_name])
         # if bwiki_base_page.isRedirectPage():
@@ -152,11 +174,11 @@ Growth_Team
         except Exception as e:
             print(f"Failed to process string energy network for {char_name} due to {e}")
             continue
-
         if p.text.strip() == str(parsed).strip():
             continue
         p.text = str(parsed)
-        p.save(summary="generate string energy network", minor=True)
+        if save:
+            p.save(summary="generate string energy network", minor=True)
 
 
 def char_string_energy_network(char_id, char_name, growth_bomb, i18n, i18n_skill, p, role_json, skill_json, t):

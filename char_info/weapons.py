@@ -1,18 +1,26 @@
 import wikitextparser as wtp
+from pywikibot import Page
 
+from global_config import Character
 from utils.general_utils import get_default_weapon_id, get_weapon_name, \
-    get_weapon_type, get_char_pages
+    get_weapon_type, get_char_pages, get_char_pages2
 from utils.json_utils import get_game_json
 from utils.lang import ENGLISH, get_language
 from utils.lang_utils import RedirectRequest, redirect_pages
 
 
-def generate_weapons():
+def generate_weapons(pages: list[tuple[Character, Page]] = None):
     from utils.upload_utils import upload_weapon
     lang = get_language()
     i18n = get_game_json(lang)['Weapon']
     redirect_requests: list[RedirectRequest] = []
-    for char_id, char_name, p in get_char_pages(lang=lang):
+    save = False
+    if pages is None:
+        pages = get_char_pages2(lang=lang)
+        save = True
+    for char, p in pages:
+        char_id = char.id
+        char_name = char.name
         parsed = wtp.parse(p.text)
         t = None
         for template in parsed.templates:
@@ -55,7 +63,8 @@ def generate_weapons():
         if p.text.strip() == str(parsed).strip():
             continue
         p.text = str(parsed)
-        p.save(summary="generate weapon", minor=True)
+        if save:
+            p.save(summary="generate weapon", minor=True)
 
     # Do NOT redirect: weapon pages are not yet ready
     # redirect_pages(redirect_requests)

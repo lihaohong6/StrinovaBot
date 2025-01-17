@@ -4,8 +4,8 @@ from typing import Callable
 import wikitextparser as wtp
 from pywikibot import Page
 
-from global_config import name_to_cn
-from utils.general_utils import get_table, get_char_pages, get_camp, get_role_name
+from global_config import name_to_cn, Character
+from utils.general_utils import get_table, get_char_pages, get_camp, get_role_name, get_char_pages2
 from utils.json_utils import get_game_json, get_game_json_ja
 from utils.lang import get_language
 
@@ -36,23 +36,22 @@ infobox_args: list[tuple[list[str] | str, str, Callable[[list[str] | str], str]]
 ]
 
 
-def make_infobox(char_id, char_name, p: Page, save=True) -> dict:
+def make_infobox(char, p: Page, save=True) -> dict:
     lang = get_language()
     i18n = get_game_json(lang)['RoleProfile']
-    char_profile = get_table("RoleProfile")[char_id]
+    char_profile = get_table("RoleProfile")[char.id]
     data: dict[str, str] = {}
     parsed = wtp.parse(p.text)
-    if save:
-        for template in parsed.templates:
-            if template.name.strip() == "CharacterInfobox":
-                t = template
-                break
+    for template in parsed.templates:
+        if template.name.strip() == "CharacterInfobox":
+            t = template
+            break
+    else:
+        if not save:
+            t = wtp.Template("{{CharacterInfobox}}")
         else:
             print("Infobox template not found on " + p.title())
             return data
-    else:
-        t = wtp.Template("{{CharacterInfobox}}")
-
     def add_arg(name, value):
         value = str(value)
         if t.has_arg(name) and value.strip() == "":
@@ -62,10 +61,10 @@ def make_infobox(char_id, char_name, p: Page, save=True) -> dict:
         t.set_arg(name, value + "\n")
         data[name] = value
 
-    add_arg("Id", char_id)
+    add_arg("Id", char.id)
     for args, key, mapper in infobox_args:
         def get_arg(arg: str) -> str:
-            k = f"{char_id}_{arg}"
+            k = f"{char.id}_{arg}"
             return i18n.get(k, char_profile.get(arg, {}).get('SourceString', ''))
 
         if isinstance(args, list):
@@ -79,19 +78,24 @@ def make_infobox(char_id, char_name, p: Page, save=True) -> dict:
         add_arg("Role", get_role_name(char_profile['Profession']))
         add_arg("RoleText", get_role_name(char_profile['Profession'], lang=lang))
     except Exception as e:
-        print("Insufficient info for " + char_name)
+        print("Insufficient info for " + char.name)
         print(e)
         return data
-    if save and p.text.strip() != str(parsed).strip():
+    if p.text.strip() != str(parsed).strip():
         p.text = str(parsed)
-        p.save(summary="generate infobox")
+        if save:
+            p.save(summary="generate infobox")
     return data
 
 
-def generate_infobox():
+def generate_infobox(pages: list[tuple[Character, Page]] = None):
     language = get_language()
-    for char_id, char_name, p in get_char_pages(lang=language):
-        make_infobox(char_id, char_name, p, save=True)
+    save = False
+    if pages is None:
+        pages = get_char_pages2(lang=language)
+        save = True
+    for char, p in pages:
+        make_infobox(char, p, save=save)
 
 
 if __name__ == "__main__":
