@@ -6,8 +6,7 @@ from pywikibot import FilePage, Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from utils.asset_utils import resource_root
-from utils.general_utils import get_table, get_char_by_id, get_cn_wiki_skins, \
-    en_name_to_zh, cn_name_to_en, save_json_page, merge_dict2
+from utils.general_utils import get_table, get_char_by_id, en_name_to_zh, save_json_page, merge_dict2
 from utils.json_utils import get_all_game_json
 from utils.lang import CHINESE
 from utils.lang_utils import get_multilanguage_dict
@@ -73,7 +72,7 @@ def generate_emotes():
 
 @dataclass
 class SkinInfo:
-    id: list[int]
+    id: int
     quality: int
     name: dict[str, str]
     description: dict[str, str]
@@ -104,36 +103,13 @@ class SkinInfo:
 
     @property
     def icon(self):
-        if len(self.id) == 1:
-            return f"File:Item Icon {self.id[0]}.png"
-        else:
-            good_id = [sid for sid in self.id if str(sid).startswith("20")]
-            assert len(good_id) == 1
-            return f"File:Item Icon {good_id[0]}.png"
+        return f"File:Item Icon {self.id}.png"
 
 
 @cache
 def parse_skin_tables() -> dict[str, list[SkinInfo]]:
     skins_table = get_table("RoleSkin")
-    store_skins_table = get_table("Goods")
     skins: dict[str, list[SkinInfo]] = {}
-
-    def add_skin(char_name, skin_id, quality, name, description):
-        lst = skins.get(char_name, [])
-        # avoid dups
-        duplicates = [skin for skin in lst if skin.name[CHINESE.code] == name[CHINESE.code]]
-        if len(duplicates) > 0:
-            assert len(duplicates) == 1
-            d = duplicates[0]
-            if skin_id not in d.id:
-                d.id.append(skin_id)
-            if d.quality != quality:
-                print(f"Quality mismatch for {char_name}: {skin_id} and {d.id}")
-                d.quality = 0 if min(quality, d.quality) == 0 else max(quality, d.quality)
-                d.description = merge_dict2(d.description, description)
-            return
-        lst.append(SkinInfo([skin_id], quality, name, description))
-        skins[char_name] = lst
 
     for k, v in skins_table.items():
         skin_id = k
@@ -143,22 +119,9 @@ def parse_skin_tables() -> dict[str, list[SkinInfo]]:
         if char_name is None:
             continue
         description = {CHINESE.code: v['Description'].get("SourceString", "")}
-        add_skin(char_name, skin_id, quality, name, description)
-    cn_skin_name_to_char_name = get_cn_wiki_skins()
-    for k, v in store_skins_table.items():
-        # 4: skin; 8: IDCard
-        if v['ItemType'] not in {4, 8}:
-            continue
-        skin_id = v['Id']
-        name_cn = v['Name']['SourceString']
-        quality = v['Quality']
-        if name_cn not in cn_skin_name_to_char_name:
-            continue
-        char_name = cn_name_to_en(cn_skin_name_to_char_name[name_cn])
-        assert char_name is not None
-        add_skin(char_name, skin_id, quality,
-                 {CHINESE.code: name_cn},
-                 {CHINESE.code: v['Desc'].get('SourceString', "")})
+        lst = skins.get(char_name, [])
+        lst.append(SkinInfo(skin_id, quality, name, description))
+        skins[char_name] = lst
 
     for _, skin_list in skins.items():
         localize_skins(skin_list)
@@ -199,8 +162,7 @@ def upload_skins(char_name: str, skin_list: list[SkinInfo]) -> list[SkinInfo]:
 
     icons: list[int] = []
     for skin in skin_list:
-        ids = [sid for sid in skin.id if str(sid).startswith("20")]
-        icons.extend(ids)
+        icons.append(skin.id)
     upload_item_icons(icons)
 
     return skin_list
@@ -241,11 +203,11 @@ def localize_skins(skin_list: list[SkinInfo]):
     for skin in skin_list:
         name = skin.name
         description = skin.description
-        for skin_id in skin.id:
-            name = merge_dict2(name, get_multilanguage_dict(i18n, key=f'{skin_id}_NameCn'))
-            name = merge_dict2(name, get_multilanguage_dict(i18n, key=f'{skin_id}_Name'))
-            description = merge_dict2(description, get_multilanguage_dict(i18n, key=f'{skin_id}_Description'))
-            description = merge_dict2(description, get_multilanguage_dict(i18n, key=f'{skin_id}_Desc'))
+        skin_id = skin.id
+        name = merge_dict2(name, get_multilanguage_dict(i18n, key=f'{skin_id}_NameCn'))
+        name = merge_dict2(name, get_multilanguage_dict(i18n, key=f'{skin_id}_Name'))
+        description = merge_dict2(description, get_multilanguage_dict(i18n, key=f'{skin_id}_Description'))
+        description = merge_dict2(description, get_multilanguage_dict(i18n, key=f'{skin_id}_Desc'))
         skin.name = name
         skin.description = description
 

@@ -36,7 +36,7 @@ infobox_args: list[tuple[list[str] | str, str, Callable[[list[str] | str], str]]
 ]
 
 
-def make_infobox(char, p: Page, save=True) -> dict:
+def make_infobox(char: Character, p: Page, save=True) -> dict:
     lang = get_language()
     i18n = get_game_json(lang)['RoleProfile']
     char_profile = get_table("RoleProfile")[char.id]

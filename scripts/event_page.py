@@ -42,7 +42,7 @@ def print_phantom_night_event_story():
         print(f";Day {message.id}&#58; {message.title_display}")
         print(message.content)
 
-    message_by_group = {}
+    message_by_group: dict[int, list[EventMessage]] = {}
     for message in messages:
         group = message.group
         if group not in message_by_group:
@@ -55,6 +55,7 @@ def print_phantom_night_event_story():
         tab_titles.append(messages[0].title)
         content = []
         for message in messages:
+            message: EventMessage
             content.append(f";Day {message.id}&#58; {message.title_display}")
             content.append(message.content)
         tab_contents.append("\n".join(content))
@@ -94,9 +95,9 @@ def print_event_tasks(event: Event):
 
 def print_event_tasks_main():
     events = parse_events()
-    event = events[10042]
+    event = events[10025]
     print_event_tasks(event)
 
 
 if __name__ == '__main__':
-    print_spring_blessings_event_story()
+    print_event_tasks_main()

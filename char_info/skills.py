@@ -51,7 +51,7 @@ def parse_skills() -> dict[str, CharacterSkills]:
     return dict((r.char.name, r) for r in result)
 
 
-def generate_character_skills(skill_table, skill_texts, char, p, save: bool = True):
+def generate_character_skills(skill_table, skill_texts, char: Character, p, save: bool = True):
     templates = []
     valid = True
     parsed = wtp.parse(p.text)

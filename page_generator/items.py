@@ -92,8 +92,7 @@ def get_all_items() -> dict[int, Item | Badge | Decal | SkinInfo | Weapon | Emot
     skins: dict[int, SkinInfo] = {}
     for _, skin_list in parse_skin_tables().items():
         for skin in skin_list:
-            for sid in skin.id:
-                skins[sid] = skin
+            skins[skin.id] = skin
     weapons: dict[int, Weapon] = parse_weapons()
     emotes: dict[int, Emote] = {}
     for _, emote_list in parse_emotes().items():
