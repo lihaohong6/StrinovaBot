@@ -135,7 +135,7 @@ class UploadRequest:
     comment: str = "batch upload file"
 
 
-def process_uploads(requests: list[UploadRequest]) -> None:
+def process_uploads(requests: list[UploadRequest], force: bool = False) -> None:
     for r in requests:
         if isinstance(r.target, str):
             if "File" not in r.target:
@@ -145,10 +145,11 @@ def process_uploads(requests: list[UploadRequest]) -> None:
     for r in requests:
         if r.target.title() in existing:
             continue
+        upload_args = [r.text, r.target, r.comment]
         if isinstance(r.source, str):
-            upload_file(r.text, r.target, r.comment, url=r.source)
+            upload_file(*upload_args, url=r.source, force=force)
         elif isinstance(r.source, FilePage):
-            upload_file(r.text, r.target, r.comment, url=r.source.get_file_url())
+            upload_file(*upload_args, url=r.source.get_file_url(), force=force)
         elif isinstance(r.source, Path):
             assert r.source.exists(), f"File {r.source} does not exist"
-            upload_file(r.text, r.target, r.comment, file=r.source)
+            upload_file(*upload_args, file=r.source, force=force)

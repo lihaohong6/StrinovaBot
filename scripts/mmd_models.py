@@ -88,8 +88,8 @@ def main():
                 comment="Batch upload MMD model"
             ))
     # FIXME: perform uploads after script is finalized
-    # process_uploads(uploads)
-    # save_mmd_json_object(result)
+    process_uploads(uploads, force=True)
+    save_mmd_json_object(result)
     print(result)
 
 
