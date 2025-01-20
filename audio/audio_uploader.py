@@ -68,14 +68,15 @@ def upload_audio_file(voices: list[Voice],
                     upload_audio(local_path, file_page, text, force=force_replace)
 
 
-def ensure_audio_files_exist(voices):
+def ensure_audio_files_exist(voices: list[Voice]):
     for v in voices:
         has_file = False
         for lang in languages_with_audio():
             file_name = v.file.get(lang.code, '')
             audio_path = audio_root / lang.audio_dir_name / f"{file_name}"
             if file_name != '':
-                assert audio_path.exists()
+                if not v.non_local:
+                    assert audio_path.exists(), f"{audio_path} does not exist"
                 has_file = True
                 v.set_file_page(lang)
         assert has_file

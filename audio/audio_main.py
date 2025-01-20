@@ -28,15 +28,16 @@ from utils.json_utils import load_json
 from utils.wiki_utils import bwiki
 
 
-def merge_results(previous: VoiceJson, current: VoiceJson, discard: bool = False) -> VoiceJson:
+def merge_results(previous: VoiceJson, current: VoiceJson, discard_non_local: bool = False) -> VoiceJson:
     """
     Goal: use current as base and override certain attributes with previous
     :return: merged dict
     """
     for vid, voice in previous.items():
         if vid not in current:
-            if not discard:
+            if not discard_non_local:
                 current[vid] = voice
+                voice['non_local'] = True
             else:
                 continue
             print(f"{vid} not in current. Prev: {voice}")
@@ -79,7 +80,7 @@ def make_character_json(triggers: list[Trigger], char_id: int, discard: bool = F
     previous = dict((int(k), v) for k, v in previous.items())
     result = merge_results(previous=previous,
                            current=result,
-                           discard=discard)
+                           discard_non_local=discard)
     with open(get_json_path(char_name), "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=4)
 

@@ -26,6 +26,9 @@ class Voice:
     file: dict[str, str] = field(default_factory=dict)
     file_page: dict[str, str] = field(default_factory=dict)
     upgrade: VoiceUpgrade = VoiceUpgrade.REGULAR
+    # non_local = True indicates that the file no longer exists in the game, but might have been uploaded to the wiki
+    # already
+    non_local: bool = False
 
     def merge(self, o: "Voice"):
         assert self.path == o.path

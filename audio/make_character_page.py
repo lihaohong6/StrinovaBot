@@ -77,10 +77,10 @@ def make_character_audio_pages():
     for char_id, char_name in char_id_mapper.items():
         # Be very careful with audio: do one character at a time and watch for problems in the upload.
         # Try to do a dry run to make sure everything looks alright.
-        if char_name not in ["Yugiri", "Leona"]:
+        if char_name not in ["Leona"]:
             make_character_audio_page(char_id, lang,
                                       dry_run=False,
-                                      upload_audio_files=False,
+                                      upload_audio_files=True,
                                       force_replace=False)
 
 

@@ -9,10 +9,9 @@ from pathlib import Path
 from queue import Queue
 from subprocess import Popen
 
-from audio.audio_utils import audio_is_silent
-
 sys.path.append("../..")
 
+from audio.audio_utils import audio_is_silent
 from utils.asset_utils import wem_root, global_wem_root
 
 
