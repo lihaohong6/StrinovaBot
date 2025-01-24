@@ -236,7 +236,7 @@ def apply_trigger_fix(triggers: list[Trigger]) -> None:
     use internal names to sort them. This function detects this situation and lets the base voice steal
     the file of the derived event.
     """
-    dont_steal_list = {"HuiXing.*066_org", "Lawine.*067_red"}
+    dont_steal_list = {"HuiXing.*066_org", "Lawine.*067_red", "Fuchsia.*066_red"}
     for t in triggers:
         if t.id not in [66, 67]:
             continue
