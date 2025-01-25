@@ -35,7 +35,9 @@ def rename_emotes():
         for emote in emote_list:
             local_path = resource_root / emote.get_local_path
             if local_path.exists() and 'en' in emote.name:
-                copyfile(local_path, out_path / f"{emote.name['en']}.png")
+                name_en = emote.name['en']
+                name_en = "".join(filter(lambda c: c.isalnum() or c == " " or c == "-", name_en))
+                copyfile(local_path, out_path / f"{name_en}.png")
 
 
 
