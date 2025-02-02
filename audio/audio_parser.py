@@ -1,5 +1,6 @@
 import re
 from dataclasses import dataclass, fields, field
+from functools import cache
 from pathlib import Path
 
 from audio.audio_utils import audio_is_silent
@@ -50,7 +51,7 @@ class UpgradeTrigger:
     skins: list[int]
 
 
-def find_audio_file(event_file: Path, table: dict, bank_name_to_files: dict[str, list[Path]], lang: Language) -> str | None:
+def find_audio_file(event_file: Path, table: dict, bank_name_to_files: dict[str, list[Path]]) -> str | None:
     assert len(table) > 0
     if not event_file.exists():
         # print(event_file.name + " does not exist")
@@ -95,13 +96,17 @@ def parse_bank(bank_file: Path, table: dict[str, str]):
                 table[sid] = ix
 
 
-def parse_banks_xml(lang: Language):
+@cache
+def parse_banks_xml(lang: Language | str):
+    if isinstance(lang, Language):
+        lang = lang.code
     sid_to_ix = {}
-    bank_file = audio_root / f"banks/{lang.code}_banks.xml"
+    bank_file = audio_root / f"banks/{lang}_banks.xml"
     parse_bank(bank_file, sid_to_ix)
     return sid_to_ix
 
 
+@cache
 def map_bank_name_to_files(p: Path) -> dict[str, list[Path]]:
     table = {}
     for f in p.iterdir():
@@ -215,7 +220,7 @@ def role_voice() -> dict[int, Voice]:
             event_file = audio_event_root_global / f"{path}.json"
             # FIXME: should source CN events too (as a bonus)
             # event_file = audio_event_root / f"{path}.json"
-            audio_file = find_audio_file(event_file, tables[lang.code], bank_name_to_files[lang.code], lang)
+            audio_file = find_audio_file(event_file, tables[lang.code], bank_name_to_files[lang.code])
             if audio_file is None:
                 audio_file = ""
             else:

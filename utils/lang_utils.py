@@ -116,3 +116,10 @@ def get_multilanguage_dict(i18n: dict[str, dict], key: str | list[str] | None, d
         elif default is not None:
             result[lang] = converter(default)
     return result
+
+
+def get_text(i18n, d: dict) -> dict[str, str] | None:
+    if d is None or "Key" not in d:
+        return None
+    key = d["Key"]
+    return get_multilanguage_dict(i18n, key, extra=d["SourceString"])
