@@ -17,14 +17,15 @@ def story_to_template(story) -> str:
     return "\n\n".join(result)
 
 
-def perform_story_uploads(story: Story) -> None:
+def perform_story_uploads(stories: list[Story]) -> None:
     image_uploads = []
     existing: set[str] = set()
-    for req in story.background_images:
-        if req.target in existing:
-            continue
-        existing.add(req.target)
-        image_uploads.append(req)
+    for story in stories:
+        for req in story.background_images:
+            if req.target in existing:
+                continue
+            existing.add(req.target)
+            image_uploads.append(req)
     process_uploads(image_uploads)
 
 
@@ -32,14 +33,15 @@ def parse_event_stories():
     table = get_table_global("Cinematic/AVGEvent/AVGEvent_Activity")
     event_starts, predecessors, successors = get_event_start_ids(table)
     event_lists = event_bfs(event_starts, successors, table)
+    stories: list[Story] = []
     for event_list in event_lists:
         if str(list(event_list)[0]).startswith("1042"):
             raw_events = get_raw_events(event_list, predecessors)
             story = parse_raw_events(raw_events)
             template_string = story_to_template(story)
-            perform_story_uploads(story)
+            stories.append(story)
             print(template_string)
-
+    # perform_story_uploads(stories)
 
 
 def get_event_start_ids(table):
