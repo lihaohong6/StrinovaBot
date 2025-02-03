@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -94,3 +95,18 @@ def audio_is_silent(source: Path):
         return True
 
     return False
+
+
+def wav_to_ogg(wav_path: Path, ogg_path: Path):
+    subprocess.run(["ffmpeg", "-i", wav_path, "-c:a", "libopus", "-y", ogg_path],
+                   check=True,
+                   stdout=subprocess.DEVNULL,
+                   stderr=subprocess.DEVNULL
+                   )
+
+
+def wem_to_wav(wem_path: Path, wav_path: Path):
+    subprocess.run(["vgmstream-cli", wem_path, "-o", wav_path],
+                   check=True,
+                   stdout=subprocess.DEVNULL,
+                   stderr=subprocess.DEVNULL)

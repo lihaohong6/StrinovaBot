@@ -1,11 +1,13 @@
+import re
 from abc import ABC
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
-from audio.audio_parser import parse_banks_xml, map_bank_name_to_files, find_audio_file
-from story.story_preprocessor import RawEvent
+from audio.audio_parser import parse_banks_xml, map_bank_name_to_files, find_audio_file, get_bgm_file_by_event_id
+from story.story_preprocessor import RawEvent, EventType
 from utils.asset_utils import cn_export_root, audio_root, audio_event_root_global, global_export_root
+from utils.json_utils import load_json
 from utils.lang import ENGLISH, CHINESE
 from utils.upload_utils import UploadRequest
 
@@ -52,7 +54,7 @@ class PlayerLine(StoryRow):
 @dataclass
 class PlayerReply(StoryRow):
     options: list[dict[str, str]]
-    group: int
+    group: int = -1
 
     @property
     def type(self):
@@ -62,7 +64,7 @@ class PlayerReply(StoryRow):
     def data(self):
         result = {'': "reply",
                 'group': self.group}
-        options = dict(('option{}_' + str(index), option) for index, option in enumerate(self.options, 1))
+        options = dict(('option{}_' + str(index), option[ENGLISH.code]) for index, option in enumerate(self.options, 1))
         return result | options
 
 
@@ -96,6 +98,7 @@ class CharacterLine(StoryRow):
 class BGMChange(StoryRow):
     filename: str
     name: str
+    loop: bool = True
 
     @property
     def type(self):
@@ -103,7 +106,18 @@ class BGMChange(StoryRow):
 
     @property
     def data(self):
-        return {'': 'bgm', 'bgm': self.filename, 'name': self.name}
+        return {'': 'bgm', 'bgm': self.filename, 'name': self.name, 'loop': 'true' if self.loop else 'false'}
+
+
+@dataclass
+class BGMStop(StoryRow):
+    @property
+    def type(self):
+        return StoryRowType.BGM
+
+    @property
+    def data(self):
+        return {'': 'bgm-stop'}
 
 
 @dataclass
@@ -157,12 +171,36 @@ class Story:
     background_images: list[UploadRequest] = field(default_factory=list)
 
 
+def merge_options(story: Story):
+    prev_replies: list[PlayerReply] = []
+    result = []
+    group = 0
+    for row in story.rows:
+        if isinstance(row, PlayerReply):
+            prev_replies.append(row)
+            continue
+        # not a player reply
+        if len(prev_replies) > 0:
+            if len(prev_replies) > 1:
+                # process prev replies
+                group += 1
+                options = [r.options[0] for r in prev_replies]
+                result.append(PlayerReply(prev_replies[0].id, options=options, group=group))
+            else:
+                prev = prev_replies[0]
+                result.append(PlayerLine(prev.id, prev.options[0]))
+            prev_replies = []
+        result.append(row)
+    story.rows = result
+
+
 def parse_raw_events(raw_events: list[RawEvent]) -> Story:
     story = Story()
     for event in raw_events:
         parse_background(event, story)
         parse_bgm(event, story)
         parse_conversation(event, story)
+    merge_options(story)
     return story
 
 
@@ -176,7 +214,9 @@ def parse_conversation(event: RawEvent, story):
             story.rows.append(InfoRow(event.id, text=ext))
     if event.role_id == 0 and talker is None and event.text is not None:
         story.rows.append(PlayerLine(event.id, text=event.text))
-    if event.role_id != 0 and talker is not None:
+    elif event.event_type == EventType.SUB_OPTION_EVENT:
+        story.rows.append(PlayerReply(event.id, options=[event.text]))
+    elif talker is not None:
         name = event.talker_name[ENGLISH.code]
         story.rows.append(CharacterLine(
             id=event.id,
@@ -194,32 +234,46 @@ def get_story_audio_local_path(name: str) -> Path | None:
     banks = parse_banks_xml("sfx")
     mapping = map_bank_name_to_files(sfx_dir)
     local_file = find_audio_file(json_file, banks, mapping)
-    if local_file is None:
-        return None
-    return sfx_dir / local_file
+    if local_file is not None:
+        return sfx_dir / local_file
+    # Special treatment for BGMs
+    event_id = load_json(json_file)["Properties"]["ShortID"]
+    path = get_bgm_file_by_event_id(event_id)
+    return path
 
 
 def parse_bgm(event: RawEvent, story: Story):
     if event.bgm:
         bgm = event.bgm.split(".")[-1]
-        wiki_file = f"BGM {bgm}.ogg"
+        if bgm == "Bgm_Date_Play":
+            return
+        if bgm == "Bgm_Date_Stop":
+            story.rows.append(BGMStop(event.id))
+            return
+        bgm_name = re.sub(r"^Bgm[_ ]", "", bgm)
+        bgm_name = bgm_name.replace("_", " ")
+        wiki_file = f"BGM {bgm_name}.ogg"
         local_path = get_story_audio_local_path(bgm)
         if local_path is None:
-            print(f"Could not find {bgm}")
+            print(f"Could not find bgm {bgm}")
         else:
-            print(f"Found {bgm}")
             story.bgm.append(UploadRequest(local_path, wiki_file, "[[Category:Story BGMs]]"))
-            story.rows.append(BGMChange(event.id, wiki_file, name=bgm))
-    if event.sound_effect:
-        se = event.sound_effect.split(".")[-1]
-        wiki_file = f"SE {se}.ogg"
-        local_path = get_story_audio_local_path(se)
-        if local_path is None:
-            print(f"Could not find {se}")
-        else:
-            print(f"Found {se}")
-            story.bgm.append(UploadRequest(local_path, wiki_file, "[[Category:Sound effects]]"))
-            story.rows.append(SoundEffectChange(event.id, wiki_file, name=se))
+            is_bgm = bgm_name.startswith("Date")
+            if is_bgm:
+                story.rows.append(BGMChange(event.id, wiki_file, name=bgm_name))
+            else:
+                story.rows.append(SoundEffectChange(event.id, wiki_file, name=bgm_name))
+    # Sound effects cannot be found. Skip for now.
+    # if event.sound_effect:
+    #     se = event.sound_effect.split(".")[-1]
+    #     wiki_file = f"SE {se}.ogg"
+    #     local_path = get_story_audio_local_path(se)
+    #     if local_path is None:
+    #         print(f"Could not find se {se}")
+    #     else:
+    #         print(f"Found se {se}: {local_path}")
+    #         story.bgm.append(UploadRequest(local_path, wiki_file, "[[Category:Sound effects]]"))
+    #         story.rows.append(SoundEffectChange(event.id, wiki_file, name=se))
 
 
 def parse_background(event: RawEvent, story: Story):

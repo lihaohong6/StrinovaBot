@@ -4,7 +4,7 @@ from pathlib import Path
 from pywikibot import FilePage
 from pywikibot.pagegenerators import GeneratorFactory
 
-from audio.audio_utils import audio_is_same
+from audio.audio_utils import audio_is_same, wav_to_ogg
 from audio.voice import Voice
 from utils.asset_utils import audio_root
 from utils.general_utils import download_file
@@ -17,11 +17,7 @@ from utils.wiki_utils import s
 def upload_audio(source: Path, target: FilePage, text: str, force: bool = False):
     assert source.exists()
     temp_file = Path("temp.ogg")
-    subprocess.run(["ffmpeg", "-i", source, "-c:a", "libopus", "-y", temp_file],
-                   check=True,
-                   stdout=subprocess.DEVNULL,
-                   stderr=subprocess.DEVNULL
-                   )
+    wav_to_ogg(source, temp_file)
     upload_file(text=text, target=target, file=temp_file, force=force)
     temp_file.unlink()
 
@@ -35,7 +31,7 @@ def upload_audio_file(voices: list[Voice],
     gen = gen.getCombinedGenerator()
     existing: set[str] = set(p.title(underscore=True, with_ns=False) for p in gen)
     text = f"[[Category:{char_name} voice lines]]"
-    temp_download_dir = Path("files/cache")
+    temp_download_dir = Path("files/cache/audio")
     temp_download_dir.mkdir(parents=True, exist_ok=True)
     for v in voices:
         for lang in languages_with_audio():

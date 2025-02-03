@@ -1,3 +1,6 @@
+from pathlib import Path
+
+from audio.audio_utils import wem_to_wav, wav_to_ogg
 from story.story_parser import parse_raw_events, Story
 from story.story_preprocessor import get_raw_events
 from utils.general_utils import get_table_global
@@ -17,7 +20,7 @@ def story_to_template(story) -> str:
     return "\n\n".join(result)
 
 
-def perform_story_uploads(stories: list[Story]) -> None:
+def upload_story_images(stories: list[Story]) -> None:
     image_uploads = []
     existing: set[str] = set()
     for story in stories:
@@ -29,19 +32,59 @@ def perform_story_uploads(stories: list[Story]) -> None:
     process_uploads(image_uploads)
 
 
+def upload_story_audio(stories: list[Story]) -> None:
+    upload_cache_dir = Path("files/temp")
+    upload_cache_dir.mkdir(parents=True, exist_ok=True)
+    requests = []
+    # deduplicate requests
+    existing: set[str] = set()
+    for story in stories:
+        for req in story.bgm:
+            if req.target in existing:
+                continue
+            existing.add(req.target)
+            requests.append(req)
+    # convert wem to ogg
+    temp_wav_file = upload_cache_dir / "temp.wav"
+    for r in requests:
+        original_name = r.source.name
+        if original_name.endswith("ogg"):
+            continue
+        if original_name.endswith("wem"):
+            wem_to_wav(r.source, temp_wav_file)
+            wav_file = temp_wav_file
+        elif original_name.endswith("wav"):
+            wav_file = r.source
+        else:
+            raise ValueError(f"unknown file type: {original_name}")
+        ogg_file = upload_cache_dir / f"{original_name}.ogg"
+        wav_to_ogg(wav_file, ogg_file)
+        r.source = ogg_file
+    process_uploads(requests)
+
+
+def perform_story_uploads(stories: list[Story]) -> None:
+    upload_story_images(stories)
+    upload_story_audio(stories)
+
+
 def parse_event_stories():
     table = get_table_global("Cinematic/AVGEvent/AVGEvent_Activity")
     event_starts, predecessors, successors = get_event_start_ids(table)
     event_lists = event_bfs(event_starts, successors, table)
     stories: list[Story] = []
+    out_dir = Path("files/out")
+    out_dir.mkdir(parents=True, exist_ok=True)
     for event_list in event_lists:
-        if str(list(event_list)[0]).startswith("1042"):
+        first_event_id = list(event_list)[0]
+        if str(first_event_id).startswith("1042"):
             raw_events = get_raw_events(event_list, predecessors)
             story = parse_raw_events(raw_events)
             template_string = story_to_template(story)
             stories.append(story)
-            print(template_string)
-    # perform_story_uploads(stories)
+            with open(out_dir / f"{first_event_id}.txt", "w", encoding="utf-8") as f:
+                f.write(template_string)
+    perform_story_uploads(stories)
 
 
 def get_event_start_ids(table):

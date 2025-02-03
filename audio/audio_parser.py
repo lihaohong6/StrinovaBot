@@ -1,12 +1,15 @@
+import pickle
 import re
 from dataclasses import dataclass, fields, field
 from functools import cache
 from pathlib import Path
 
+from bs4 import BeautifulSoup
+
 from audio.audio_utils import audio_is_silent
 from audio.data.conversion_table import VoiceType, voice_conversion_table, table_languages
 from audio.voice import VoiceUpgrade, Voice
-from utils.asset_utils import audio_root, audio_event_root_global
+from utils.asset_utils import audio_root, audio_event_root_global, global_export_root, global_wem_root
 from utils.general_utils import get_table, get_table_global
 from utils.json_utils import load_json, get_all_game_json
 from utils.lang import CHINESE, Language, languages_with_audio
@@ -104,6 +107,70 @@ def parse_banks_xml(lang: Language | str):
     bank_file = audio_root / f"banks/{lang}_banks.xml"
     parse_bank(bank_file, sid_to_ix)
     return sid_to_ix
+
+
+cached_soup = None
+
+
+def parse_bgm_banks_xml():
+    global cached_soup
+    from bs4 import BeautifulSoup
+    if cached_soup is None:
+        bank_file = audio_root / f"banks/cn_banks.xml"
+        with open(bank_file, "r", encoding="utf-8") as f:
+            text = f.read()
+        cached_soup = BeautifulSoup(text, "xml")
+    return cached_soup
+
+fld_cache = None
+
+def get_fld(soup: BeautifulSoup):
+    global fld_cache
+    if fld_cache is None:
+        result: dict[str, dict[int, BeautifulSoup]] = {}
+        for fld in soup.find_all("fld"):
+            na = fld.attrs.get("na")
+            if na not in {"key", "DirectParentID"}:
+                continue
+            if na not in result:
+                result[na] = {}
+            result[na][int(fld.attrs.get("va"))] = fld
+        fld_cache = result
+    return fld_cache
+
+
+bgm_cache: dict[int, Path] = {}
+
+
+def get_bgm_file_by_event_id(event_id: int) -> Path | None:
+    global bgm_cache
+    bgm_cache_location = Path("files/cache/bgm/table.pickle")
+    if len(bgm_cache) == 0 and bgm_cache_location.exists():
+        with open(bgm_cache_location, "rb") as f:
+            bgm_cache = pickle.load(f)
+    if event_id in bgm_cache:
+        return bgm_cache[event_id]
+    soup = parse_bgm_banks_xml()
+    fld_table = get_fld(soup)
+    try:
+        target = fld_table["key"][event_id]
+        sibling = target.parent.find("fld", attrs={"na": "audioNodeId"})
+        va = sibling.attrs["va"]
+        parent = fld_table["DirectParentID"][int(va)].parent.parent.parent.parent
+        sibling = parent.find("fld", attrs={"na": "ulID"})
+        va = sibling.attrs["va"]
+        parent = fld_table["DirectParentID"][int(va)].parent.parent
+        target = parent.find("obj", attrs={"na": "AkMediaInformation"}).find("fld", attrs={"na": "sourceID"})
+        audio_id = target.attrs["va"]
+    except Exception as e:
+        print(f"Could not find event {event_id}: {e}")
+        return None
+    result_path = global_wem_root / "Wem" / "BGM_Date" / f"{audio_id}.wem"
+    bgm_cache[event_id] = result_path
+    bgm_cache_location.parent.mkdir(parents=True, exist_ok=True)
+    with open(bgm_cache_location, "wb") as f:
+        pickle.dump(bgm_cache, f)
+    return result_path
 
 
 @cache
