@@ -1,16 +1,18 @@
+import enum
 from dataclasses import dataclass, field
 from functools import cache
-from pathlib import Path
 
-from pywikibot import FilePage
-
-from utils.asset_utils import resource_root
+from utils.asset_utils import resource_root, global_resources_root
 from utils.general_utils import get_table, get_table_global, save_json_page
 from utils.json_utils import get_all_game_json
-from utils.lang import CHINESE
 from utils.lang_utils import get_multilanguage_dict, compose, StringConverters
 from utils.upload_utils import UploadRequest, process_uploads
-from utils.wiki_utils import s
+
+
+class IdCardType(enum.Enum):
+    FRAME = "Frame"
+    AVATAR = "Avatar"
+    UNKNOWN = ""
 
 
 @dataclass
@@ -20,6 +22,7 @@ class IdCard:
     description: dict[str, str] = field(default_factory=dict)
     unlock: dict[str, str] = field(default_factory=dict)
     quality: int = -1
+    type: IdCardType = IdCardType.UNKNOWN
 
     @property
     def icon(self):
@@ -36,10 +39,10 @@ def get_all_id_cards(use_cn: bool = True) -> dict[int, IdCard]:
     i18n = get_all_game_json("IdCard")
     id_cards: dict[int, IdCard] = {}
     for id_card_id, v in id_card_json.items():
-        if "::Avatar" not in v['Type']:
-            continue
+        id_card_type = IdCardType.AVATAR if "::Avatar" in v['Type'] else IdCardType.FRAME
         try:
             id_card = IdCard(id_card_id)
+            id_card.type = id_card_type
             id_card.name = get_multilanguage_dict(i18n, f"{id_card.id}_Name", extra=v['Name']['SourceString'])
             id_card.description = get_multilanguage_dict(
                 i18n, f"{id_card.id}_Desc", extra=v['Desc']['SourceString'],
@@ -54,13 +57,27 @@ def get_all_id_cards(use_cn: bool = True) -> dict[int, IdCard]:
     return id_cards
 
 
-def upload_all_id_cards(id_cards: dict[int, IdCard]):
-    root = resource_root / "IdCard" / "Appearance"
+def upload_all_id_cards(id_cards: dict[int, IdCard], use_cn: bool = True):
+    if use_cn:
+        root = resource_root / "IdCard"
+    else:
+        root = global_resources_root / "IdCard"
+    avatar_root = root / "Appearance"
+    frame_root = root / "Background"
     requests: list[UploadRequest] = []
     for d in id_cards.values():
-        source_icon = root / f"T_Dynamic_IdCard_{d.id}_icon.png"
-        source_full = root / f"T_Dynamic_IdCard_{d.id}.png"
-        if not source_full.exists() or not source_icon.exists():
+
+        if d.type == IdCardType.AVATAR:
+            cur_root = avatar_root
+        elif d.type == IdCardType.FRAME:
+            cur_root = frame_root
+        else:
+            raise RuntimeError(f"Unknown type {d.type}")
+        source_icon = cur_root / f"T_Dynamic_IdCard_{d.id}_icon.png"
+        suffix = "" if d.type == IdCardType.AVATAR else "_L"
+        source_full = cur_root / f"T_Dynamic_IdCard_{d.id}{suffix}.png"
+
+        if not source_icon.exists() or not source_full.exists():
             continue
         requests.append(UploadRequest(source_icon,
                                       d.icon,
@@ -75,7 +92,11 @@ def make_id_cards():
     id_cards = get_all_id_cards()
     upload_all_id_cards(id_cards)
     id_cards = get_all_id_cards(use_cn=False)
-    save_json_page("Module:IdCard/data.json", id_cards)
+    upload_all_id_cards(id_cards, use_cn=False)
+    avatars = dict((k, v) for k, v in id_cards.items() if v.type == IdCardType.AVATAR)
+    save_json_page("Module:IdCard/data.json", avatars)
+    frames = dict((k, v) for k, v in id_cards.items() if v.type == IdCardType.FRAME)
+    save_json_page("Module:IdCard/frames.json", frames)
 
 
 def main():

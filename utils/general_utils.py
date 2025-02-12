@@ -1,4 +1,5 @@
 import dataclasses
+import enum
 import json
 import re
 from copy import deepcopy
@@ -220,6 +221,8 @@ def save_json_page(page: Page | str, obj, summary: str = "update json page", mer
         def default(self, o):
             if dataclasses.is_dataclass(o):
                 return dataclasses.asdict(o)
+            if isinstance(o, enum.Enum):
+                return o.value
             return super().default(o)
 
     def dump(o):
