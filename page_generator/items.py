@@ -2,6 +2,8 @@ import re
 from dataclasses import dataclass, field
 from functools import cache
 
+from numba.parfors.parfor_lowering import compute_def_once
+
 from audio.audio_parser import role_voice, parse_role_voice
 from audio.voice import Voice
 from char_info.gallery import parse_skin_tables, SkinInfo, Emote, parse_emotes
@@ -106,38 +108,37 @@ def get_all_items() -> dict[int, Item | Badge | Decal | SkinInfo | Weapon | Emot
 
 
 @cache
-def get_en_items() -> dict[str, Item]:
+def get_en_items() -> list[Item]:
     items = get_all_items()
-    result = {}
+    result = []
     for item in items.values():
         name_en = item.name.get(ENGLISH.code, None)
         if name_en is None:
             continue
-        result[name_en] = item
+        result.append(item)
     return result
-
-
-def get_item(item: str | int) -> Item:
-    items = get_all_items()
-    if type(item) is int:
-        return items[item]
-    en_items = get_en_items()
-    return en_items[item]
 
 
 def save_all_items():
     items = get_en_items()
-    result = {}
-    for name_en, item in items.items():
-        result[name_en] = {
-            'id': item.id,
+    result_name = {}
+    result_id = {}
+    for item in items:
+        if isinstance(item.id, list):
+            item_id = item.id[0]
+        else:
+            item_id = item.id
+        name_en = item.name.get(ENGLISH.code, None)
+        result_name[name_en] = item_id
+        result_id[item_id] = {
             'name': {
                 'en': name_en,
             },
             'icon': item.icon,
             'quality': item.quality,
         }
-    save_json_page("Module:Item/data.json", result)
+    save_json_page("Module:Item/by_name.json", result_name)
+    save_json_page("Module:Item/by_id.json", result_id)
 
 
 def main():
