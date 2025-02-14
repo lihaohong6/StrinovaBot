@@ -51,6 +51,19 @@ def parse_skills() -> dict[str, CharacterSkills]:
     return dict((r.char.name, r) for r in result)
 
 
+def make_skills() -> None:
+    all_skills = parse_skills()
+    result: dict[str, dict[int, Skill]] = {}
+    for char, char_skills in all_skills.items():
+        skills = {}
+        for index, skill in enumerate(
+                [char_skills.active_skill, char_skills.passive_skill, char_skills.ultimate_skill],
+                1):
+            skills[index] = skill
+        result[char] = skills
+    save_json_page("Module:Skill/data.json", result)
+
+
 def generate_character_skills(skill_table, skill_texts, char: Character, p, save: bool = True):
     templates = []
     valid = True
@@ -271,7 +284,7 @@ def char_string_energy_network(char_id, char_name, growth_bomb, i18n, i18n_skill
 
 @dataclass
 class StringEnergyNetworkStats:
-    rate_of_fire:int
+    rate_of_fire: int
     ads_speed: int
     accuracy: int
     handling: int
@@ -282,11 +295,13 @@ class StringEnergyNetworkStats:
     scope_zoom: str
     movement_speed: int
 
+
 EXTRAS: Final[dict] = {
     "MagazineCapacity": -1,
     "Armor": -1,
     "ShootSpeed": -1,
 }
+
 
 def parse_string_energy_network_stats():
     table = get_table_global("Growth_Bomb")
@@ -312,6 +327,7 @@ def parse_string_energy_network_stats():
 
 def make_string_energy_network_stats():
     stats = parse_string_energy_network_stats()
+
     def merge_function(n1: int, n2: int) -> int:
         if n1 is None:
             return n2
@@ -320,10 +336,12 @@ def make_string_energy_network_stats():
         if n1 == 0 or n1 == -1:
             return n2
         return n1
+
     save_json_page("Module:SENStats/data.json", stats, merge=merge_function)
 
 
 def main():
+    make_skills()
     generate_skills()
     generate_string_energy_network()
     make_string_energy_network_stats()
@@ -331,4 +349,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
