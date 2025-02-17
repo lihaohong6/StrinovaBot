@@ -8,7 +8,8 @@ from wikitextparser import parse
 
 from global_config import char_id_mapper, Character, get_characters
 from utils.asset_utils import resource_root
-from utils.general_utils import get_table, get_char_pages, pick_two, get_table_global, save_json_page, get_char_pages2
+from utils.general_utils import get_table, get_char_pages, pick_two, get_table_global, save_json_page, get_char_pages2, \
+    save_lua_table
 from utils.json_utils import get_game_json, get_all_game_json
 from utils.lang import get_language, ENGLISH
 from utils.lang_utils import get_multilanguage_dict
@@ -19,9 +20,18 @@ from utils.wtp_utils import get_templates_by_name
 
 @dataclass
 class Skill:
+    id: int
     name: dict[str, str]
     type: dict[str, str]
     description: dict[str, str]
+
+
+@dataclass
+class Awakening:
+    id: int
+    name: dict[str, str]
+    description: dict[str, str]
+    cond: tuple[int, int, int]
 
 
 @dataclass
@@ -30,15 +40,21 @@ class CharacterSkills:
     active_skill: Skill
     passive_skill: Skill
     ultimate_skill: Skill
+    awakening1: Awakening
+    awakening2: Awakening
+    awakening3: Awakening
 
 
 def parse_skills() -> dict[str, CharacterSkills]:
     i18n = get_all_game_json('Skill')
     skill_table = get_table("Skill")
+    role_table = get_table("Role")
+    growth_bomb = get_table_global("Growth_Bomb")
     result: list[CharacterSkills] = []
 
     for char in get_characters():
         skills = []
+        # Active, passive, and ultimate skills
         for skill_num in range(1, 4):
             key = char.id * 10 + skill_num
             name_cn = skill_table[key]['Name']['SourceString']
@@ -46,7 +62,15 @@ def parse_skills() -> dict[str, CharacterSkills]:
             name = get_multilanguage_dict(i18n, f"{key}_Name", extra=name_cn)
             skill_type = get_multilanguage_dict(i18n, f"{key}_DisplayName")
             description = get_multilanguage_dict(i18n, f"{key}_Intro", extra=description_cn)
-            skills.append(Skill(name=name, type=skill_type, description=description))
+            skills.append(Skill(id=key, name=name, type=skill_type, description=description))
+        # Awakenings
+        wake_ids = role_table[char.id]["SkillWake"]
+        for wake_index, wake_id in enumerate(wake_ids, 1):
+            char_growth = growth_bomb[char.id]
+            activate_condition = tuple[int, int, int](char_growth[f'Arousal{wake_index}ActivateNeed'])
+            name = get_multilanguage_dict(i18n , f'{wake_id}_Name')
+            text = get_multilanguage_dict(i18n, f'{wake_id}_Intro')
+            skills.append(Awakening(id=wake_id, name=name, description=text, cond=activate_condition))
         result.append(CharacterSkills(char, *skills))
     return dict((r.char.name, r) for r in result)
 
@@ -54,14 +78,17 @@ def parse_skills() -> dict[str, CharacterSkills]:
 def make_skills() -> None:
     all_skills = parse_skills()
     result: dict[str, dict[int, Skill]] = {}
+    id_lookup: dict[int, tuple[str, int]] = {}
     for char, char_skills in all_skills.items():
         skills = {}
-        for index, skill in enumerate(
-                [char_skills.active_skill, char_skills.passive_skill, char_skills.ultimate_skill],
-                1):
+        skill_list = [char_skills.active_skill, char_skills.passive_skill, char_skills.ultimate_skill,
+                      char_skills.awakening1, char_skills.awakening2, char_skills.awakening3]
+        for index, skill in enumerate(skill_list,1):
             skills[index] = skill
+            id_lookup[skill.id] = (char, index)
         result[char] = skills
-    save_json_page("Module:Skill/data.json", result)
+    save_lua_table("Module:Skill/data", result)
+    # save_lua_table("Module:Skill/id_lookup", id_lookup)
 
 
 def generate_character_skills(skill_table, skill_texts, char: Character, p, save: bool = True):

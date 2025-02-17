@@ -5,9 +5,10 @@ import re
 from copy import deepcopy
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Any
 
 import requests
+from numba.core.ir_utils import visit_vars
 from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
@@ -215,25 +216,65 @@ def save_page(page: Page | str, text, summary: str = "update page"):
 
 MergeFunction = Callable[[str | int | None, str | int | None], str | int]
 
+class EnhancedJSONEncoder(json.JSONEncoder):
+    def default(self, o):
+        if dataclasses.is_dataclass(o):
+            return dataclasses.asdict(o)
+        if isinstance(o, enum.Enum):
+            return o.value
+        return super().default(o)
+
+
+def dump_json(o):
+    return json.dumps(o, indent=4, cls=EnhancedJSONEncoder)
+
+
+def obj_to_lua_string(obj):
+    def lua_kv(key: Any, value: Any):
+        if isinstance(key, int) or re.match(r"^\d+$", key):
+            return f'[{key}]={dump_lua(value)}'
+        if isinstance(key, str):
+            return f'["{key}"]={dump_lua(value)}'
+
+    def dump_lua(data):
+        if type(data) is str:
+            return f'"{data}"'
+        if type(data) in (int, float):
+            return f'{data}'
+        if type(data) is bool:
+            return data and "true" or "false"
+        if type(data) is list:
+            l = "{"
+            l += ",\n".join([dump_lua(item) for item in data])
+            l += "}"
+            return l
+        if type(data) is dict:
+            t = "{"
+            t += ",\n".join([lua_kv(k, v) for k, v in data.items()])
+            t += "}"
+            return t
+        raise TypeError("Unsupported data type")
+    return dump_lua(json.loads(dump_json(obj)))
+
+
+def save_lua_table(page: Page | str, obj, summary: str = "update lua table"):
+    lua_string = "return " + obj_to_lua_string(obj)
+    if isinstance(page, str):
+        page = Page(s, page)
+    if page.text.strip() == lua_string.strip():
+        return
+    page.text = lua_string
+    page.save(summary=summary)
+
 
 def save_json_page(page: Page | str, obj, summary: str = "update json page", merge: bool | None | MergeFunction = False):
-    class EnhancedJSONEncoder(json.JSONEncoder):
-        def default(self, o):
-            if dataclasses.is_dataclass(o):
-                return dataclasses.asdict(o)
-            if isinstance(o, enum.Enum):
-                return o.value
-            return super().default(o)
-
-    def dump(o):
-        return json.dumps(o, indent=4, cls=EnhancedJSONEncoder)
 
     if isinstance(page, str):
         page = Page(s, page)
 
     if page.text != "":
         original_json = json.loads(page.text)
-        original = dump(original_json)
+        original = dump_json(original_json)
     else:
         original_json = {}
         original = ""
@@ -250,8 +291,8 @@ def save_json_page(page: Page | str, obj, summary: str = "update json page", mer
             if check_no_bot(s2):
                 return s2
             return s1
-        obj = merge_dict2(json.loads(dump(obj)), original_json, merge=merge_function if merge is True else merge)
-    modified = dump(obj)
+        obj = merge_dict2(json.loads(dump_json(obj)), original_json, merge=merge_function if merge is True else merge)
+    modified = dump_json(obj)
     if original != modified:
         page.text = modified
         page.save(summary=summary)
