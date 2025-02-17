@@ -9,7 +9,7 @@ from global_config import char_id_mapper
 from utils.asset_utils import csv_root
 from utils.general_utils import make_tab_group
 from utils.json_utils import load_json, get_game_json, get_game_json_cn
-from utils.lang import Language, get_language
+from utils.lang import Language, get_language, ENGLISH
 from utils.wiki_utils import s
 
 group_counter = 1
@@ -190,10 +190,12 @@ def process_file(p: Path, lang: Language) -> str:
     return "\n\n".join(result)
 
 
+ka_phone_root = csv_root.joinpath("KaPhone")
+
+
 def strinova_comms_main():
     # TODO: KaChatOption.json has character favorability boosts
     lang = get_language()
-    ka_phone_root = csv_root.joinpath("KaPhone")
     name_mapper = {
         'Huixing': 'Celestia'
     }
@@ -238,5 +240,19 @@ def strinova_comms_main():
         group_counter = 1
 
 
+def event_strinova_comms():
+    tabs = []
+    contents = []
+    files = [f for f in ka_phone_root.rglob("*.json") if f.name.startswith("Amusement")]
+    for index, file in enumerate(files, 1):
+        content = process_file(file, ENGLISH)
+        tabs.append(f"Conversation {index}")
+        contents.append(content)
+    group = "event_strinova_comms"
+    print(f"{{{{Tab/tabs | group={group} | {' | '.join(tabs)} }}}}")
+    print(f"{{{{Tab/content | group={group} | {' | '.join(contents)} }}}}")
+
+
 if __name__ == "__main__":
-    strinova_comms_main()
+    event_strinova_comms()
+    # strinova_comms_main()
