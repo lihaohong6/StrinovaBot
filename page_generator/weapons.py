@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from dataclasses import dataclass
 from enum import Enum
 from functools import cache
 
@@ -7,6 +6,7 @@ from pywikibot import FilePage
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from global_config import char_id_mapper
+from utils.asset_utils import global_resources_root
 from utils.general_utils import get_table, save_json_page, get_char_id_to_weapon_id
 from utils.json_utils import get_all_game_json
 from utils.lang import CHINESE, ENGLISH
@@ -237,9 +237,24 @@ def process_weapon_skins(*args):
     save_json_page("Module:WeaponSkins/data.json", result)
 
 
+def upload_weapon_white_icons():
+    weapons = [w for w in get_weapons_by_type() if w.parent is None]
+    req = []
+    for w in weapons:
+        source = global_resources_root / "Weapon" / "WeaponIconWhite" / f"T_Dynamic_WeaponWhite_{w.id}.png"
+        if not source.exists():
+            print(w.name_en)
+            continue
+        target = f"{w.name_en} icon white.png"
+        req.append(UploadRequest(source, target, "[[Category:Weapon white icons]]"))
+    process_uploads(req)
+
+
+
 def main():
     process_weapon_pages()
     process_weapon_skins()
+    upload_weapon_white_icons()
 
 
 if __name__ == '__main__':
