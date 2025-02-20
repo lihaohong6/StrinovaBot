@@ -7,7 +7,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 
 from global_config import char_id_mapper
 from utils.asset_utils import global_resources_root
-from utils.general_utils import get_table, save_json_page, get_char_id_to_weapon_id
+from utils.general_utils import get_table, save_json_page, get_char_id_to_weapon_id, split_dict
 from utils.json_utils import get_all_game_json
 from utils.lang import CHINESE, ENGLISH
 from utils.lang_utils import get_multilanguage_dict
@@ -234,7 +234,9 @@ def process_weapon_skins(*args):
                 'scope': v.get_variant_scope_name() if v.file_scope is not None else "",
                 'parent': -1 if v.parent is None else v.parent.id
             })
-    save_json_page("Module:WeaponSkins/data.json", result)
+    dicts = list(split_dict(result))
+    for index, d in enumerate(dicts, 1):
+        save_json_page(f"Module:WeaponSkins/data{index}.json", d)
 
 
 def upload_weapon_white_icons():
@@ -247,7 +249,8 @@ def upload_weapon_white_icons():
             continue
         target = f"{w.name_en} icon white.png"
         req.append(UploadRequest(source, target, "[[Category:Weapon white icons]]"))
-    process_uploads(req)
+    # Ignore dups for now because of Lawine's weapon name change
+    process_uploads(req, ignore_dup=True)
 
 
 

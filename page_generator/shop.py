@@ -61,7 +61,7 @@ def reverse_skin_lookup_table() -> dict[int, str]:
 def get_role_legendary_skin(banner_id: int) -> SkinInfo:
     for drop in parse_gacha_drops()[banner_id]:
         if drop.item.quality == 5 and isinstance(drop.item, SkinInfo):
-            role_name = reverse_skin_lookup_table()[drop.item.id[0]]
+            role_name = reverse_skin_lookup_table()[drop.item.id]
             return drop.item.get_mh_portrait_title(role_name)
     raise RuntimeError(f"No legendary skin found for banner {banner_id}")
 

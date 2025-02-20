@@ -14,8 +14,8 @@ from page_generator.items import save_all_items
 from page_generator.shop import make_gacha_drop_data, make_gacha_banners
 from page_generator.strinova_comms import strinova_comms_main
 from page_generator.translations import generate_translations
-from page_generator.weapons import process_weapon_pages, process_weapon_skins
-from utils.general_utils import get_char_pages, get_char_pages2
+from page_generator.weapons import process_weapon_pages, process_weapon_skins, upload_weapon_white_icons
+from utils.general_utils import get_char_pages2
 from utils.lang import available_languages, set_language
 
 
@@ -23,6 +23,7 @@ def misc_uploads():
     upload_all_badges()
     make_all_decals()
     make_id_cards()
+    upload_weapon_white_icons()
 
 
 def character_info_part1():

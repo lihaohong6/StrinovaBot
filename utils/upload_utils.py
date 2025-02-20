@@ -71,7 +71,8 @@ def upload_item_icons(items: list[int | str], text: str = "[[Category:Item icons
 
 
 def upload_file(text: str, target: FilePage, summary: str = "batch upload file",
-                file: str | Path = None, url: str = None, force: bool = False):
+                file: str | Path = None, url: str = None, force: bool = False,
+                ignore_dup: bool = False, redirect_dup: bool = False, move_dup: bool = False):
     while True:
         try:
             if url is not None:
@@ -94,15 +95,16 @@ def upload_file(text: str, target: FilePage, summary: str = "batch upload file",
                 return
             assert search is not None, str(e)
             existing_page = f"File:{search.group(1)}"
-            # comment/uncomment to change behavior for dups
+            if ignore_dup:
+                return
+            if redirect_dup:
+                target.set_redirect_target(existing_page, create=True, summary="redirect to existing file")
+            if move_dup:
+                FilePage(s, existing_page).move(
+                    target.title(with_ns=True, underscore=True),
+                    reason="rename file")
             raise RuntimeError(f"{existing_page} already exists and so {target.title()} is a dup") from e
-            # redirect
-            # target.set_redirect_target(existing_page, create=True, summary="redirect to existing file")
-            # move
-            # FilePage(s, existing_page).move(
-            #     target.title(with_ns=True, underscore=True),
-            #     reason="rename file")
-            return
+
 
 
 def main():
@@ -135,7 +137,7 @@ class UploadRequest:
     comment: str = "batch upload file"
 
 
-def process_uploads(requests: list[UploadRequest], force: bool = False) -> None:
+def process_uploads(requests: list[UploadRequest], force: bool = False, **kwargs) -> None:
     for r in requests:
         if isinstance(r.target, str):
             if "File" not in r.target:
@@ -147,9 +149,9 @@ def process_uploads(requests: list[UploadRequest], force: bool = False) -> None:
             continue
         upload_args = [r.text, r.target, r.comment]
         if isinstance(r.source, str):
-            upload_file(*upload_args, url=r.source, force=force)
+            upload_file(*upload_args, url=r.source, force=force, **kwargs)
         elif isinstance(r.source, FilePage):
-            upload_file(*upload_args, url=r.source.get_file_url(), force=force)
+            upload_file(*upload_args, url=r.source.get_file_url(), force=force, **kwargs)
         elif isinstance(r.source, Path):
             assert r.source.exists(), f"File {r.source} does not exist"
-            upload_file(*upload_args, file=r.source, force=force)
+            upload_file(*upload_args, file=r.source, force=force, **kwargs)

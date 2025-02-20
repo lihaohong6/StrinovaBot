@@ -393,3 +393,10 @@ def parse_ticks(ts: int) -> datetime:
     t_0 = datetime(2023, 8, 3)
     seconds_passed = (ts - 638266176000000000) / 10000000
     return t_0 + timedelta(seconds=seconds_passed)
+
+
+def split_dict(d: dict[Any, Any]) -> tuple[dict[Any, Any], dict[Any, Any]]:
+    lst = list(d.items())
+    assert len(lst) >= 2, f"{len(lst)} items in dict"
+    mid_index = len(lst) // 2
+    return dict(lst[:mid_index]), dict(lst[mid_index:])
