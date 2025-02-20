@@ -103,9 +103,11 @@ def generate_character_skills(skill_table, skill_texts, char: Character, p, save
         return
 
     def add_arg(name, value):
-        if t.has_arg(name) and value.strip() == "":
-            return
-        t.set_arg(name, value + "\n")
+        # delete arg instead because we have modules now
+        t.del_arg(name)
+        # if t.has_arg(name) and value.strip() == "":
+        #     return
+        # t.set_arg(name, value + "\n")
 
     for skill_num in range(1, 4):
         key = char.id * 10 + skill_num

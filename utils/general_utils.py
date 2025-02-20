@@ -229,6 +229,10 @@ def dump_json(o):
     return json.dumps(o, indent=4, cls=EnhancedJSONEncoder)
 
 
+def dump_minimal_json(o):
+    return json.dumps(o, indent=None, separators=(',', ':'), cls=EnhancedJSONEncoder)
+
+
 def obj_to_lua_string(obj):
     def lua_kv(key: Any, value: Any):
         if isinstance(key, int) or re.match(r"^\d+$", key):

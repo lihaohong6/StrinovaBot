@@ -29,7 +29,7 @@ def get_biography() -> dict[str, list[CharStory]]:
         title = get_multilanguage_dict(i18n, f'{k}_StoryTitle')
         unlock = get_multilanguage_dict(i18n, f'{k}_UnlockTip')
         content = get_multilanguage_dict(i18n, f'{k}_StoryContent',
-                                         converter=lambda x: re.subn(f"\s*\n\s*", "\n\n", x)[0])
+                                         converter=lambda x: re.subn(rf"\s*\n\s*", "\n\n", x)[0])
         lst.append(CharStory(title, unlock, content))
         char_stories[char_name] = lst
     return char_stories

@@ -25,7 +25,7 @@ def misc_uploads():
     make_id_cards()
 
 
-def make_all_character_info():
+def character_info_part1():
     generate_biography()
     generate_bond_items()
     generate_return_letter()
@@ -36,6 +36,10 @@ def make_all_character_info():
     generate_friendship_gifts()
     # need transition to lua?
     strinova_comms_main()
+
+
+def make_all_character_info():
+    character_info_part1()
     for lang in available_languages:
         set_language(lang)
         pages = get_char_pages2(lang=lang)
@@ -54,7 +58,7 @@ def make_all_character_info():
 def make_everything():
     make_all_character_info()
     generate_translations()
-    # save_all_items()
+    save_all_items()
     save_wiki_events()
     process_weapon_pages()
     process_weapon_skins()
