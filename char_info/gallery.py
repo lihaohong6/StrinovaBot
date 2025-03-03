@@ -42,8 +42,12 @@ def parse_emotes() -> dict[str, list[Emote]]:
         # if v['ItemType'] != 13:
         #     continue
         name_source = v['Name']['SourceString']
-        role_id = v['RoleSkinId'] // 1000 % 1000
-        name_en = get_char_by_id(role_id)
+        # This algorithm sometimes mis-classifies emotes
+        if k in {60000140, 60000141}:
+            name_en = "Leona"
+        else:
+            role_id = v['RoleSkinId'] // 1000 % 1000
+            name_en = get_char_by_id(role_id)
         if name_en is None:
             print(f"{name_source} has no EN character name")
             continue
