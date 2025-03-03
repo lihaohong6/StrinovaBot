@@ -10,6 +10,7 @@ from utils.wtp_utils import get_templates_by_name
 @dataclass
 class Guide:
     title: str
+    link: str
     description: str
     category: str
     author: str
@@ -48,6 +49,7 @@ def update_guides():
             return val.value.strip()
 
         title = get("Title")
+        link = page.title(underscore=True)
         description = get("Description")
         if description == "":
             description = get("Summary")
@@ -58,7 +60,7 @@ def update_guides():
 
         rating = get_rating(page.get_parsed_page())
 
-        guides.append(Guide(title=title, description=description, category=category, author=author, rating=rating))
+        guides.append(Guide(title=title, link=link, description=description, category=category, author=author, rating=rating))
 
     save_json_page("Module:Guide/data.json", guides)
 
