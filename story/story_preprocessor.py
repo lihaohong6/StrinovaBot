@@ -35,9 +35,9 @@ def get_asset_path_name(v: dict, key: str) -> str | None:
     return r
 
 
-def get_raw_events(events: dict[int, dict], pred: dict[int, list[int]]) -> list[RawEvent]:
+def get_raw_events(events: dict[int, dict], pred: dict[int, list[int]], i18n_name: str) -> list[RawEvent]:
     result: list[RawEvent] = []
-    i18n = get_all_game_json("AVGEvent_Activity")
+    i18n = get_all_game_json(i18n_name)
 
     for event_id, v in events.items():
         type_candidates = [event_type for event_type in EventType if event_type.value in v["EventType"]]

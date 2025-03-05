@@ -99,10 +99,12 @@ def upload_file(text: str, target: FilePage, summary: str = "batch upload file",
                 return
             if redirect_dup:
                 target.set_redirect_target(existing_page, create=True, summary="redirect to existing file")
+                return
             if move_dup:
                 FilePage(s, existing_page).move(
                     target.title(with_ns=True, underscore=True),
                     reason="rename file")
+                return
             raise RuntimeError(f"{existing_page} already exists and so {target.title()} is a dup") from e
 
 

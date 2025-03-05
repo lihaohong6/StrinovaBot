@@ -5,10 +5,12 @@ from enum import Enum
 from pathlib import Path
 
 from audio.audio_parser import parse_banks_xml, map_bank_name_to_files, find_audio_file, get_bgm_file_by_event_id
+from global_config import is_valid_char_name
 from story.story_preprocessor import RawEvent, EventType
-from utils.asset_utils import cn_export_root, audio_root, audio_event_root_global, global_export_root
+from utils.asset_utils import audio_root, audio_event_root_global, global_export_root
+from utils.general_utils import en_name_to_cn
 from utils.json_utils import load_json
-from utils.lang import ENGLISH, CHINESE
+from utils.lang_utils import get_english_version
 from utils.upload_utils import UploadRequest
 
 
@@ -47,7 +49,7 @@ class PlayerLine(StoryRow):
     def data(self):
         return {
             '': 'sensei',
-            'text': self.text.get(ENGLISH.code, self.text.get(CHINESE.code))
+            'text': get_english_version(self.text),
         }
 
 
@@ -64,7 +66,7 @@ class PlayerReply(StoryRow):
     def data(self):
         result = {'': "reply",
                 'group': self.group}
-        options = dict(('option{}_' + str(index), option[ENGLISH.code]) for index, option in enumerate(self.options, 1))
+        options = dict(('option{}_' + str(index), get_english_version(option)) for index, option in enumerate(self.options, 1))
         return result | options
 
 
@@ -85,7 +87,7 @@ class CharacterLine(StoryRow):
         result = {
             "": "student-text",
             "name": self.name,
-            "text": self.text[ENGLISH.code],
+            "text": get_english_version(self.text),
             "portrait": self.profile
         }
         if self.group >= 0:
@@ -161,7 +163,7 @@ class InfoRow(StoryRow):
 
     @property
     def data(self):
-        return {'': 'info', 'text': self.text.get(ENGLISH.code, self.text.get(CHINESE.code))}
+        return {'': 'info', 'text': get_english_version(self.text)}
 
 
 @dataclass
@@ -217,12 +219,16 @@ def parse_conversation(event: RawEvent, story):
     elif event.event_type == EventType.SUB_OPTION_EVENT:
         story.rows.append(PlayerReply(event.id, options=[event.text]))
     elif talker is not None:
-        name = event.talker_name[ENGLISH.code]
+        name = get_english_version(event.talker_name)
+        if name != "" and is_valid_char_name(name):
+            profile = f"{name}_Profile.png"
+        else:
+            profile = ""
         story.rows.append(CharacterLine(
             id=event.id,
             name=name,
             text=event.text,
-            profile=f"{name}_Profile.png"
+            profile=profile
         ))
 
 
@@ -245,9 +251,9 @@ def get_story_audio_local_path(name: str) -> Path | None:
 def parse_bgm(event: RawEvent, story: Story):
     if event.bgm:
         bgm = event.bgm.split(".")[-1]
-        if bgm == "Bgm_Date_Play":
+        if bgm.lower() == "bgm_date_play":
             return
-        if bgm == "Bgm_Date_Stop":
+        if bgm.lower() == "bgm_date_stop":
             story.rows.append(BGMStop(event.id))
             return
         bgm_name = re.sub(r"^Bgm[_ ]", "", bgm)
@@ -293,6 +299,8 @@ def parse_background(event: RawEvent, story: Story):
         # story.background_images.append(UploadRequest(local_file, wiki_file, "[[Category:Background images]]"))
     elif "T_DefaultBlack_Gamma" in background:
         wiki_file = "BG Black.png"
+    elif "T_DefaultWhite_Gamma" in background:
+        wiki_file = "BG White.png"
     else:
         raise RuntimeError(f"Unknown background type: {background}")
     bg_change = BackgroundChange(event.id, wiki_file)

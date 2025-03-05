@@ -46,3 +46,10 @@ def get_characters() -> list[Character]:
 
 internal_names: dict[str, int] = dict((c.name, c.id)for c in get_characters())
 internal_names.update({"HuiXing": 146, "MoBai": 110, "Aika": 119, "Michelle": 101})
+
+def is_valid_char_name(name: str) -> bool:
+    chars = get_characters()
+    for c in chars:
+        if c.name == name:
+            return True
+    return False

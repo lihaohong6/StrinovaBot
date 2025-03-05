@@ -123,3 +123,10 @@ def get_text(i18n, d: dict) -> dict[str, str] | None:
         return None
     key = d["Key"]
     return get_multilanguage_dict(i18n, key, extra=d["SourceString"])
+
+
+def get_english_version(d: dict[str, str], candidates: list[str] = [ENGLISH.code, CHINESE.code]) -> str:
+    for k in candidates:
+        if k in d:
+            return d[k]
+    return ""

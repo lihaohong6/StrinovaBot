@@ -1,9 +1,10 @@
 from pathlib import Path
+from typing import Callable
 
 from audio.audio_utils import wem_to_wav, wav_to_ogg
 from story.story_parser import parse_raw_events, Story
 from story.story_preprocessor import get_raw_events
-from utils.general_utils import get_table_global
+from utils.general_utils import get_table_global, save_page
 from utils.upload_utils import process_uploads
 
 
@@ -29,7 +30,7 @@ def upload_story_images(stories: list[Story]) -> None:
                 continue
             existing.add(req.target)
             image_uploads.append(req)
-    process_uploads(image_uploads)
+    process_uploads(image_uploads, redirect_dup=True)
 
 
 def upload_story_audio(stories: list[Story]) -> None:
@@ -87,6 +88,40 @@ def parse_event_stories():
     perform_story_uploads(stories)
 
 
+def parse_stories(table_name: str, i18n_name: str,
+                  filter_function: Callable[[int], bool] = lambda x: True,
+                  upload: bool = True,
+                  output: Callable[[int], str] = None) -> None:
+    table = get_table_global(table_name)
+    event_starts, predecessors, successors = get_event_start_ids(table)
+    event_lists = event_bfs(event_starts, successors, table)
+    stories: list[Story] = []
+    out_dir = Path("files/out")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for index, event_list in enumerate(event_lists, 1):
+        first_event_id = list(event_list)[0]
+        if not filter_function(first_event_id):
+            continue
+        raw_events = get_raw_events(event_list, predecessors, i18n_name)
+        story = parse_raw_events(raw_events)
+        template_string = story_to_template(story)
+        stories.append(story)
+        if output:
+            # output to wiki page
+            has_next = "true" if index < len(event_lists) else "false"
+            page_name = output(index)
+            page_text = f"{{{{StoryTop | has_next = {has_next} }}}}\n" \
+                        f"{template_string}" \
+                        f"{{{{StoryBottom | has_next = {has_next} }}}}\n"
+            save_page(page_name, page_text)
+        else:
+            # output to file
+            with open(out_dir / f"{first_event_id}.txt", "w", encoding="utf-8") as f:
+                f.write(template_string)
+    if upload:
+        perform_story_uploads(stories)
+
+
 def get_event_start_ids(table):
     predecessors: dict[int, list[int]] = {}
     successors: dict[int, list[int]] = {}
@@ -126,5 +161,16 @@ def event_bfs(event_starts, successors, table):
     return event_lists
 
 
+def parse_seasonal_story(season: int) -> None:
+    parse_stories(f"Cinematic/AVGEvent/AVGEvent_Season{season}",
+                  f"AVGEvent_Season{season}",
+                  upload=True,
+                  output=lambda i: f"Story/Season_{season}/{i}")
+
+
+def parse_main_stories():
+    parse_seasonal_story(3)
+
+
 if __name__ == '__main__':
-    parse_event_stories()
+    parse_main_stories()
