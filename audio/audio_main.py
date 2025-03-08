@@ -145,7 +145,8 @@ def make_json():
     voices = role_voice()
     # noinspection PyUnreachableCode
     if False:
-        match_role_voice_with_bwiki(list(voices.values())) # Do not call this function: CC BY-NC-SA 4.0
+        # Do not call this function: CC BY-NC-SA 4.0
+        match_role_voice_with_bwiki(list(voices.values()))
     triggers = match_custom_triggers(list(voices.values()))
     for char_id, char_name in char_id_mapper.items():
         make_character_json(triggers, char_id, discard=False)

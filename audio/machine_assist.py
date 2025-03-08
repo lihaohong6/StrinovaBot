@@ -70,8 +70,7 @@ def load_whisper_model():
     return model
 
 
-def transcribe_char(char_name: str, model = None):
-    lang = CHINESE
+def transcribe_char(char_name: str, model = None, lang: Language = ENGLISH):
     json_path = get_json_path(char_name)
     assert json_path.exists()
     voices = load_json(json_path)

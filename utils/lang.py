@@ -49,6 +49,9 @@ class Language:
             return 'zh'
         return self.code
 
+    def __hash__(self):
+        return hash(self.code)
+
 
 class LanguageVariants(Enum):
     ENGLISH = Language('en', 'English')
