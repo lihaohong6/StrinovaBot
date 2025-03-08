@@ -243,7 +243,7 @@ def strinova_comms_main():
 def event_strinova_comms():
     tabs = []
     contents = []
-    files = [f for f in ka_phone_root.rglob("*.json") if f.name.startswith("Amusement")]
+    files = [f for f in ka_phone_root.rglob("*.json") if f.name.startswith("BeautyStyle")]
     for index, file in enumerate(files, 1):
         content = process_file(file, ENGLISH)
         tabs.append(f"Conversation {index}")

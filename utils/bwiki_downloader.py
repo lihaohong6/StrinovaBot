@@ -66,8 +66,23 @@ def download_wallpapers():
         print(f"{file_name} downloaded")
 
 
+def category_downloader(cat: str, target: str):
+    target_dir = file_dir / target
+    target_dir.mkdir(exist_ok=True)
+    gen = GeneratorFactory(bwiki)
+    gen.handle_args([f'-catr:{cat}'])
+    gen = gen.getCombinedGenerator(preload=False)
+    for page in gen:
+        file_page = FilePage(bwiki, page.title())
+        local_file_name = target_dir / file_page.title(as_filename=True)
+        if local_file_name.exists():
+            continue
+        url = file_page.get_file_url()
+        download_file(url, local_file_name)
+
+
 def bwiki_downloader_main(*args):
-    download_wallpapers()
+    category_downloader("表情包", "emotes_outgame")
 
 
 if __name__ == "__main__":
