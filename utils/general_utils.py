@@ -13,7 +13,7 @@ from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from global_config import name_to_en, char_id_mapper, internal_names, get_characters, Character
-from utils.asset_utils import csv_root, global_csv_root
+from utils.asset_utils import csv_root, global_csv_root, string_table_root
 from utils.json_utils import load_json, get_game_json
 from utils.lang import Language, ENGLISH
 from utils.wiki_utils import bwiki, s
@@ -85,6 +85,14 @@ def get_table(file_name: str) -> dict[int, dict]:
     if file_name in table_cache:
         return table_cache[file_name]
     table = dict((int(k), v) for k, v in load_json(csv_root / f"{file_name}.json")['Rows'].items())
+    table_cache[file_name] = table
+    return table
+
+
+def get_string_table(file_name: str) -> dict[int, str]:
+    if file_name in table_cache:
+        return table_cache[file_name]
+    table = load_json(string_table_root / f"{file_name}.json")['StringTable']['KeysToMetaData']
     table_cache[file_name] = table
     return table
 
