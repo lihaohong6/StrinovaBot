@@ -6,12 +6,13 @@ from pywikibot import FilePage, Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from utils.asset_utils import resource_root
-from utils.general_utils import get_table, get_char_by_id, en_name_to_zh, save_json_page, merge_dict2
-from utils.json_utils import get_all_game_json
+from utils.general_utils import get_char_by_id, en_name_to_zh
+from utils.dict_utils import merge_dict2
+from utils.json_utils import get_all_game_json, get_table
 from utils.lang import CHINESE
 from utils.lang_utils import get_multilanguage_dict
 from utils.upload_utils import upload_file, UploadRequest, process_uploads, upload_item_icons
-from utils.wiki_utils import bwiki, s
+from utils.wiki_utils import bwiki, s, save_json_page
 
 
 @dataclass

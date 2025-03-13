@@ -4,8 +4,9 @@ from functools import cache
 
 from char_info.gallery import SkinInfo, parse_skin_tables
 from page_generator.items import Item, get_all_items
-from utils.general_utils import get_table_global, parse_ticks, get_table, save_json_page
-from utils.json_utils import get_all_game_json
+from utils.general_utils import parse_ticks
+from utils.wiki_utils import save_json_page
+from utils.json_utils import get_all_game_json, get_table, get_table_global
 from utils.lang import ENGLISH, CHINESE
 from utils.lang_utils import get_multilanguage_dict, compose, StringConverters
 

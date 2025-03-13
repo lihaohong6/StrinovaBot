@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 
-from utils.general_utils import get_table
-from utils.json_utils import get_game_json, get_all_game_json
+from utils.json_utils import get_game_json, get_all_game_json, get_table
 from utils.lang import ENGLISH
 from utils.lang_utils import get_multilanguage_dict
 

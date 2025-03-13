@@ -3,7 +3,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from char_info.gallery import parse_skin_tables, SkinInfo
-from utils.general_utils import cn_name_to_en, save_json_page, en_name_to_zh, en_name_to_cn
+from utils.general_utils import cn_name_to_en, en_name_to_zh, en_name_to_cn
+from utils.wiki_utils import save_json_page
 from utils.lang import CHINESE
 from utils.upload_utils import UploadRequest, process_uploads
 

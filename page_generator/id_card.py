@@ -3,8 +3,8 @@ from dataclasses import dataclass, field
 from functools import cache
 
 from utils.asset_utils import resource_root, global_resources_root
-from utils.general_utils import get_table, get_table_global, save_json_page
-from utils.json_utils import get_all_game_json
+from utils.wiki_utils import save_json_page
+from utils.json_utils import get_all_game_json, get_table, get_table_global
 from utils.lang_utils import get_multilanguage_dict, compose, StringConverters
 from utils.upload_utils import UploadRequest, process_uploads
 

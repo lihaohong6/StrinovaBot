@@ -2,7 +2,7 @@ from pywikibot import Page
 
 from audio_utils import load_json_voices
 from audio.audio_uploader import upload_audio_file, ensure_audio_files_exist
-from utils.general_utils import pick_string
+from utils.string_utils import pick_string
 from audio_parser import Trigger, match_custom_triggers
 from data.conversion_table import VoiceType
 from global_config import char_id_mapper

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from utils.asset_utils import localization_root
+from utils.asset_utils import localization_root, csv_root, string_table_root, global_csv_root
 from utils.lang import Language, LanguageVariants
 
 json_cache: dict[str, dict | None] = {}
@@ -41,3 +41,31 @@ def get_all_game_json(table_name: str) -> dict[str, dict]:
         if r is not None:
             i18n[lang.code] = r[table_name]
     return i18n
+
+
+table_cache: dict[str, dict] = {}
+
+
+def get_table(file_name: str) -> dict[int, dict]:
+    if file_name in table_cache:
+        return table_cache[file_name]
+    table = dict((int(k), v) for k, v in load_json(csv_root / f"{file_name}.json")['Rows'].items())
+    table_cache[file_name] = table
+    return table
+
+
+def get_string_table(file_name: str) -> dict[int, str]:
+    if file_name in table_cache:
+        return table_cache[file_name]
+    table = load_json(string_table_root / f"{file_name}.json")['StringTable']['KeysToMetaData']
+    table_cache[file_name] = table
+    return table
+
+
+def get_table_global(file_name: str) -> dict[int, dict]:
+    table_entry = "EN" + file_name
+    if table_entry in table_cache:
+        return table_cache[table_entry]
+    table = dict((int(k), v) for k, v in load_json(global_csv_root / f"{file_name}.json")['Rows'].items())
+    table_cache[table_entry] = table
+    return table

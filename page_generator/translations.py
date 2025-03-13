@@ -9,11 +9,12 @@ from char_info.skills import parse_string_energy_network_stats
 from global_config import char_id_mapper, internal_names
 from page_generator.maps import parse_maps
 from page_generator.weapons import parse_weapons
-from utils.general_utils import save_json_page, merge_dict, camp_id_to_string
+from utils.general_utils import camp_id_to_string
+from utils.dict_utils import merge_dict
 from utils.json_utils import get_all_game_json
 from utils.lang import Language, ENGLISH
 from utils.lang_utils import get_multilanguage_dict, char_name_table, StringConverters, compose
-from utils.wiki_utils import s
+from utils.wiki_utils import s, save_json_page
 
 
 def replace_placeholders(original: str) -> str:

@@ -1,8 +1,7 @@
 from dataclasses import dataclass, field
 
 from utils.asset_utils import string_table_root
-from utils.general_utils import get_table, get_table_global
-from utils.json_utils import get_game_json, load_json
+from utils.json_utils import get_game_json, load_json, get_table, get_table_global
 
 
 @dataclass

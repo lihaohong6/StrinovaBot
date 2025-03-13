@@ -4,7 +4,8 @@ from typing import Callable
 from audio.audio_utils import wem_to_wav, wav_to_ogg
 from story.story_parser import parse_raw_events, Story
 from story.story_preprocessor import get_raw_events
-from utils.general_utils import get_table_global, save_page
+from utils.wiki_utils import save_page
+from utils.json_utils import get_table_global
 from utils.upload_utils import process_uploads
 
 

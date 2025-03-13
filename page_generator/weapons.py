@@ -7,12 +7,12 @@ from pywikibot.pagegenerators import PreloadingGenerator
 
 from global_config import char_id_mapper
 from utils.asset_utils import global_resources_root
-from utils.general_utils import get_table, save_json_page, get_char_id_to_weapon_id, split_dict
-from utils.json_utils import get_all_game_json
+from utils.general_utils import get_char_id_to_weapon_id, split_dict
+from utils.json_utils import get_all_game_json, get_table
 from utils.lang import CHINESE, ENGLISH
 from utils.lang_utils import get_multilanguage_dict
 from utils.upload_utils import upload_item_icons, UploadRequest, process_uploads
-from utils.wiki_utils import bwiki, s
+from utils.wiki_utils import bwiki, s, save_json_page
 
 
 class WeaponType(Enum):

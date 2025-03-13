@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 
-from utils.general_utils import get_table, get_string_table
+from utils.json_utils import get_table, get_string_table
 from utils.lang import CHINESE
 
 

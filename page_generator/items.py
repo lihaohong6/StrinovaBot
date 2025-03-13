@@ -11,8 +11,9 @@ from page_generator.badges import get_all_badges, Badge
 from page_generator.decal import get_all_decals, Decal
 from page_generator.id_card import get_all_id_cards, IdCard
 from page_generator.weapons import Weapon, parse_weapons
-from utils.general_utils import get_table, save_json_page, get_table_global, merge_dict2
-from utils.json_utils import get_all_game_json
+from utils.dict_utils import merge_dict2
+from utils.wiki_utils import save_json_page
+from utils.json_utils import get_all_game_json, get_table, get_table_global
 from utils.lang import CHINESE, ENGLISH
 from utils.lang_utils import get_multilanguage_dict
 

@@ -5,8 +5,8 @@ import wikitextparser as wtp
 from pywikibot import Page
 
 from global_config import name_to_cn, Character
-from utils.general_utils import get_table, get_char_pages, get_camp, get_role_name, get_char_pages2
-from utils.json_utils import get_game_json, get_game_json_ja
+from utils.general_utils import get_char_pages, get_camp, get_role_name, get_char_pages2
+from utils.json_utils import get_game_json, get_game_json_ja, get_table
 from utils.lang import get_language
 
 

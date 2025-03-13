@@ -8,13 +8,13 @@ from wikitextparser import parse
 
 from global_config import char_id_mapper, Character, get_characters
 from utils.asset_utils import resource_root
-from utils.general_utils import get_table, get_char_pages, pick_two, get_table_global, save_json_page, get_char_pages2, \
-    save_lua_table
-from utils.json_utils import get_game_json, get_all_game_json
+from utils.general_utils import get_char_pages, get_char_pages2
+from utils.string_utils import pick_two
+from utils.json_utils import get_game_json, get_all_game_json, get_table, get_table_global
 from utils.lang import get_language, ENGLISH
 from utils.lang_utils import get_multilanguage_dict
 from utils.upload_utils import UploadRequest, process_uploads
-from utils.wiki_utils import s
+from utils.wiki_utils import s, save_lua_table, save_json_page
 from utils.wtp_utils import get_templates_by_name
 
 

@@ -2,8 +2,9 @@ import re
 from dataclasses import dataclass
 
 from page_generator.items import get_all_items, Item
-from utils.general_utils import get_table, get_table_global, save_json_page, save_page, parse_ticks
-from utils.json_utils import get_all_game_json
+from utils.general_utils import parse_ticks
+from utils.wiki_utils import save_page, save_json_page
+from utils.json_utils import get_all_game_json, get_table, get_table_global
 from utils.lang import ENGLISH, CHINESE, Language, LanguageVariants
 from utils.lang_utils import get_multilanguage_dict
 

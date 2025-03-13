@@ -3,11 +3,10 @@ from dataclasses import dataclass, field
 from pywikibot.pagegenerators import GeneratorFactory
 
 from page_generator.items import Item
-from utils.general_utils import get_table_global, save_json_page
-from utils.json_utils import get_all_game_json
+from utils.json_utils import get_all_game_json, get_table_global
 from utils.lang import ENGLISH
 from utils.lang_utils import get_multilanguage_dict, StringConverters
-from utils.wiki_utils import s
+from utils.wiki_utils import s, save_json_page
 from utils.wtp_utils import get_templates_by_name
 
 import wikitextparser as wtp

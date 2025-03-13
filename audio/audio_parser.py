@@ -10,8 +10,7 @@ from audio.audio_utils import audio_is_silent
 from audio.data.conversion_table import VoiceType, voice_conversion_table, table_languages
 from audio.voice import VoiceUpgrade, Voice
 from utils.asset_utils import audio_root, audio_event_root_global, global_export_root, global_wem_root
-from utils.general_utils import get_table, get_table_global
-from utils.json_utils import load_json, get_all_game_json
+from utils.json_utils import load_json, get_all_game_json, get_table, get_table_global
 from utils.lang import CHINESE, Language, languages_with_audio
 from utils.lang_utils import get_multilanguage_dict
 

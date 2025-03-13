@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pywikibot.pagegenerators import GeneratorFactory
 import wikitextparser as wtp
 
-from utils.general_utils import save_json_page
+from utils.wiki_utils import save_json_page
 from utils.wtp_utils import get_templates_by_name
 
 @dataclass

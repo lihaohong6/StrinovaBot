@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 
 from page_generator.events import Event, EventTask, parse_events
-from utils.general_utils import get_table_global
-from utils.json_utils import get_game_json
+from utils.json_utils import get_game_json, get_table_global
 
 
 @dataclass

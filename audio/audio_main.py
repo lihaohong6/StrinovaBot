@@ -23,7 +23,8 @@ from audio_utils import VoiceJson, get_json_path
 from machine_assist import transcribe, translate
 from global_config import char_id_mapper
 from utils.asset_utils import audio_root
-from utils.general_utils import get_bwiki_char_pages, merge_dict
+from utils.general_utils import get_bwiki_char_pages
+from utils.dict_utils import merge_dict
 from utils.json_utils import load_json
 from utils.wiki_utils import bwiki
 

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from page_generator.items import get_all_items, get_en_items
-from utils.general_utils import get_table, get_table_global
+from utils.json_utils import get_table, get_table_global
 from utils.lang import ENGLISH
 
 

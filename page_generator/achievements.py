@@ -5,11 +5,11 @@ from functools import cache
 from pywikibot import FilePage
 
 from utils.asset_utils import resource_root
-from utils.general_utils import get_table, get_char_by_id, save_json_page, get_table_global
-from utils.json_utils import get_all_game_json
+from utils.general_utils import get_char_by_id
+from utils.json_utils import get_all_game_json, get_table, get_table_global
 from utils.lang_utils import get_multilanguage_dict, StringConverters, compose
 from utils.upload_utils import UploadRequest, process_uploads
-from utils.wiki_utils import s
+from utils.wiki_utils import s, save_json_page
 
 
 @dataclass

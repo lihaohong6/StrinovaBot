@@ -5,8 +5,7 @@ from pathlib import Path
 from pywikibot import FilePage
 
 from utils.asset_utils import resource_root
-from utils.general_utils import get_table
-from utils.json_utils import get_all_game_json
+from utils.json_utils import get_all_game_json, get_table
 from utils.lang import CHINESE
 from utils.lang_utils import get_multilanguage_dict
 from utils.upload_utils import UploadRequest, process_uploads
