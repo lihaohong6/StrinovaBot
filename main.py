@@ -1,7 +1,7 @@
 from char_info.char_infobox import generate_infobox
 from char_info.dorm import generate_bond_items, generate_gifts, generate_friendship_gifts
 from char_info.gallery import generate_skins, generate_emotes
-from char_info.skills import generate_string_energy_network, generate_skills
+from char_info.skills import generate_string_energy_network, make_skills
 from char_info.story import generate_return_letter, generate_biography
 from char_info.weapons import generate_weapons
 from page_generator.achievements import generate_all_achievements
@@ -27,6 +27,7 @@ def misc_uploads():
 
 
 def character_info_part1():
+    make_skills()
     generate_biography()
     generate_bond_items()
     generate_return_letter()
@@ -47,7 +48,6 @@ def make_all_character_info():
         originals = set(p.text for _, p in pages)
 
         generate_infobox(pages)
-        generate_skills(pages)
         generate_string_energy_network(pages)
         generate_weapons(pages)
 

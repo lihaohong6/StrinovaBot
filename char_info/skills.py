@@ -1,4 +1,5 @@
 import re
+import subprocess
 from dataclasses import dataclass
 from typing import Final
 
@@ -39,6 +40,7 @@ class CharacterSkills:
     char: Character
     active_skill: Skill
     passive_skill: Skill
+    tactical_skill: Skill
     ultimate_skill: Skill
     awakening1: Awakening
     awakening2: Awakening
@@ -54,8 +56,8 @@ def parse_skills() -> dict[str, CharacterSkills]:
 
     for char in get_characters():
         skills = []
-        # Active, passive, and ultimate skills
-        for skill_num in range(1, 4):
+        # Active, passive, tactical, and ultimate skills
+        for skill_num in [1, 2, 9, 3]:
             key = char.id * 10 + skill_num
             name_cn = skill_table[key]['Name']['SourceString']
             description_cn = skill_table[key]['Intro']['SourceString']
@@ -78,82 +80,26 @@ def parse_skills() -> dict[str, CharacterSkills]:
 def make_skills() -> None:
     all_skills = parse_skills()
     result: dict[str, dict[int, Skill]] = {}
-    id_lookup: dict[int, tuple[str, int]] = {}
     for char, char_skills in all_skills.items():
-        skills = {}
+        skills: dict[int, Skill] = {}
         skill_list = [char_skills.active_skill, char_skills.passive_skill, char_skills.ultimate_skill,
                       char_skills.awakening1, char_skills.awakening2, char_skills.awakening3]
-        for index, skill in enumerate(skill_list,1):
+        for index, skill in enumerate(skill_list, 1):
             skills[index] = skill
-            id_lookup[skill.id] = (char, index)
+        skills[9] = char_skills.tactical_skill
         result[char] = skills
+    upload_skill_icons()
     save_lua_table("Module:Skill/data", result)
-    # save_lua_table("Module:Skill/id_lookup", id_lookup)
-
-
-def generate_character_skills(skill_table, skill_texts, char: Character, p, save: bool = True):
-    templates = []
-    valid = True
-    parsed = wtp.parse(p.text)
-    for t in parsed.templates:
-        if t.name.strip() == "Skill":
-            break
-    else:
-        print("No skill template found for " + char.name)
-        return
-
-    def add_arg(name, value):
-        # delete arg instead because we have modules now
-        t.del_arg(name)
-        # if t.has_arg(name) and value.strip() == "":
-        #     return
-        # t.set_arg(name, value + "\n")
-
-    for skill_num in range(1, 4):
-        key = char.id * 10 + skill_num
-
-        try:
-            name_cn = skill_table[key]['Name']['SourceString']
-            description_cn = skill_table[key]['Intro']['SourceString']
-            add_arg(f"Name{skill_num}", pick_two(skill_texts.get(f"{key}_Name"), name_cn))
-            add_arg(f"DisplayName{skill_num}", pick_two(skill_texts.get(f"{key}_DisplayName"), ""))
-            add_arg(f"Description{skill_num}", pick_two(skill_texts.get(f"{key}_Intro"), description_cn))
-        except Exception:
-            valid = False
-            break
-
-        templates.append(str(t))
-    if not valid:
-        return
-    if p.text.strip() == str(parsed).strip():
-        return
-    p.text = str(parsed)
-    if save:
-        p.save(summary="generate skills", minor=False)
-
-
-def generate_skills(pages: list[tuple[Character, Page]] = None):
-    lang = get_language()
-    skill_texts = get_game_json(lang)['Skill']
-    skill_table = get_table("Skill")
-    # Only need this check once. Do it for English.
-    # Disable auto-uploads since they need to be preprocessed with imagemagick
-    if lang == ENGLISH and False:
-        upload_skill_icons()
-
-    save = False
-    if pages is None:
-        pages = get_char_pages2(lang=lang)
-        save = True
-    for char, p in pages:
-        generate_character_skills(skill_table, skill_texts, char, p, save=save)
 
 
 def upload_skill_icons():
+    skill_root = resource_root / "Skill"
+    subprocess.run(["magick", "mogrify", "-fill", "#efcb5d", "-colorize", "100%", "*.png"],
+                   shell=True, check=True, cwd=skill_root)
     requests: list[UploadRequest] = []
     for char_id, char_name in char_id_mapper.items():
-        for num in range(1, 4):
-            source = resource_root / "Skill" / f"T_Dynamic_Skill_{char_id}{num:02}.png"
+        for num in [1, 2, 3, 9]:
+            source = skill_root / f"T_Dynamic_Skill_{char_id}{num:02}.png"
             target = FilePage(s, f"File:{char_name}_Skill_{num}.png")
             req = UploadRequest(source, target, text="", comment="batch upload skill icons")
             requests.append(req)
@@ -371,7 +317,6 @@ def make_string_energy_network_stats():
 
 def main():
     make_skills()
-    generate_skills()
     generate_string_energy_network()
     make_string_energy_network_stats()
 

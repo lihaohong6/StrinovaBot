@@ -57,7 +57,48 @@ def obj_to_lua_string(obj):
             t += "}"
             return t
         raise TypeError("Unsupported data type")
-    return dump_lua(json.loads(dump_json(obj)))
+
+    def adjust_curly_bracket(lua: str) -> str:
+        """
+        If the scope of curly brackets spans multiple lines, then add more linebreaks to convert
+        a = {x,\ny} to a = {\nx,\ny}
+        :param lua: original lua string
+        :return: adjusted lua string
+        """
+        result = []
+        for line in lua.splitlines():
+            if line.count("{") > 0 and line.count("}") == 0:
+                parts = line.split("{")
+                for i, part in enumerate(parts):
+                    if i != len(parts) - 1:
+                        result.append(part + " {")
+                    else:
+                        result.append(part)
+            else:
+                result.append(line)
+        return "\n".join(result)
+
+    def indent_lua(lua: str) -> str:
+        """
+        Indent lua string based on nesting
+        :param lua: original lua string
+        :return: indented lua string
+        """
+        counter = 0
+        result = []
+        for line in lua.splitlines():
+            result.append("    " * counter + line)
+            counter += line.count("{")
+            counter -= line.count("}")
+        assert counter == 0
+        return "\n".join(result)
+
+
+    def format_lua_string(lua: str) -> str:
+        return indent_lua(adjust_curly_bracket(lua))
+
+
+    return format_lua_string(dump_lua(json.loads(dump_json(obj))))
 
 
 def save_lua_table(page: Page | str, obj, summary: str = "update lua table"):
