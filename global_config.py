@@ -23,6 +23,7 @@ name_to_en: dict[str, str] = {
     "珐格兰丝": "Fragrans",
     "忧雾": "Yugiri",
     "蕾欧娜": "Leona",
+    "玛拉": "Mara"
 }
 
 name_to_cn: dict[str, str] = dict((v, k) for k, v in name_to_en.items())
@@ -35,9 +36,14 @@ class Character:
 char_id_mapper: dict[int, str] = {101: 'Michele', 105: 'Audrey', 107: 'Maddelena', 108: 'Nobunaga', 109: 'Reiichi',
                                   110: 'Bai Mo', 112: 'Fuchsia', 115: 'Flavia', 119: 'Eika', 120: 'Fragrans',
                                   121: 'Yugiri',
+                                  122: 'Mara',
                                   123: 'Leona',
                                   124: 'Kokona',
-                                  128: 'Lawine', 131: 'Yvette', 132: 'Ming', 133: 'Meredith', 137: 'Kanami',
+                                  128: 'Lawine',
+                                  131: 'Yvette',
+                                  132: 'Ming',
+                                  133: 'Meredith',
+                                  137: 'Kanami',
                                   146: 'Celestia',
                                   205: 'Galatea'}
 
