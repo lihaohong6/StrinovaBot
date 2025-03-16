@@ -85,7 +85,7 @@ def get_translations() -> dict[str, dict[str, str]]:
 
     # skills
     i18n = get_all_game_json("ST_Common")
-    for i in range(1, 4):
+    for i in [1, 2, 3, 6]:
         d = get_multilanguage_dict(i18n, f"SkillTypeName_{i}")
         result[d[ENGLISH.code]] = d
 

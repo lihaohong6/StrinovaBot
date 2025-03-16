@@ -9,10 +9,9 @@ from wikitextparser import parse
 
 from global_config import char_id_mapper, Character, get_characters
 from utils.asset_utils import resource_root
-from utils.general_utils import get_char_pages, get_char_pages2
-from utils.string_utils import pick_two
+from utils.general_utils import get_char_pages2
 from utils.json_utils import get_game_json, get_all_game_json, get_table, get_table_global
-from utils.lang import get_language, ENGLISH
+from utils.lang import get_language
 from utils.lang_utils import get_multilanguage_dict
 from utils.upload_utils import UploadRequest, process_uploads
 from utils.wiki_utils import s, save_lua_table, save_json_page
@@ -186,8 +185,10 @@ def char_string_energy_network(char_id, char_name, growth_bomb, i18n, i18n_skill
             for arg in growth_dict['Arguments']:
                 formatted = formatted.replace(f"{{{arg['Type']}}}", str(arg['Value']))
                 formatted, _ = re.subn(r"\{\d}", str(arg['Value']), formatted)
-        else:
+        elif 'Key' in growth_dict:
             formatted = i18n[growth_dict['Key']]
+        else:
+            return "FIXME"
         return formatted
 
     t.set_arg("char", char_name + "\n")
@@ -216,7 +217,7 @@ def char_string_energy_network(char_id, char_name, growth_bomb, i18n, i18n_skill
         part = wtp.Template("{{StringEnergyNetwork/group}}")
         add_arg("type", 2)
         add_arg("name", i18n_skill[f"{skill_id}_Name"])
-        add_arg("icon", re.search(r"\d+$", skill_info['IconSkill']['AssetPathName']).group(0))
+        add_arg("icon", f"{char_name} Skill {skill_index + 1}.png")
 
         skill_growths = char_growth[localization_keys[skill_index]]
         for index, skill_growth in enumerate(skill_growths):
@@ -282,7 +283,9 @@ def parse_string_energy_network_stats():
     table = get_table_global("Growth_Bomb")
     result: dict = {}
     for role_id, v in table.items():
-        char_name = char_id_mapper[role_id]
+        char_name = char_id_mapper.get(role_id, None)
+        if char_name is None:
+            continue
         attributes = {}
         for row in v['DefaultProperty1']:
             x = row.split("|")
