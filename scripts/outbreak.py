@@ -1,8 +1,12 @@
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 
-from utils.json_utils import get_table, get_string_table
-from utils.lang import CHINESE
+from utils.asset_utils import global_resources_root
+from utils.json_utils import get_table, get_string_table, get_all_game_json
+from utils.lang import ENGLISH
+from utils.lang_utils import get_multilanguage_dict
+from utils.upload_utils import UploadRequest, process_uploads
 
 
 class TeamType(Enum):
@@ -24,7 +28,7 @@ class UpgradeRarity(Enum):
         return table[self]
 
 
-LANG = CHINESE.code
+LANG = ENGLISH.code
 
 
 @dataclass
@@ -37,6 +41,7 @@ class OutbreakUpgrade:
     team_type: TeamType
     rarity: UpgradeRarity
     weights: list[float]
+    image: Path
 
     def make_descriptions(self) -> list[str]:
         if len(self.description_params) == 0:
@@ -54,7 +59,23 @@ class OutbreakUpgrade:
 
         return levels
 
+    def filename(self):
+        return f"File:Outbreak icon {self.id}.png"
+
     def __str__(self):
+        import wikitextparser as wtp
+        template = wtp.parse("{{OutbreakUpgrade}}").templates[0]
+        template.set_arg("Name", self.name[LANG])
+        template.set_arg("Image", self.filename())
+        desc = self.make_descriptions()
+        if len(desc) == 1:
+            template.set_arg("Description", f"Description: {desc[0]}")
+        else:
+            template.set_arg("Description", "<br/>".join(f"Level {i}: {d}" for i, d in enumerate(desc, 1)))
+        template.set_arg("Rarity", self.rarity.value)
+        return str(template)
+
+    def __str2__(self):
         result = [
             f"*Name: {self.name[LANG]}",
         ]
@@ -77,12 +98,13 @@ def outbreak_upgrades() -> dict[int, OutbreakUpgrade]:
     cards = get_table("GameplayCard_Zombie")
     card_details = get_table("GameplayCardData_Zombie")
     card_strings = get_string_table("ST_GameplayCard")
+    i18n = get_all_game_json("ST_GameplayCard")
     result: dict[int, OutbreakUpgrade] = {}
     for card_id, v in cards.items():
         name_key = v["Name"]["Key"]
         description_key = v["Desc"]["Key"]
-        name = {CHINESE.code: card_strings[name_key]}
-        description = {CHINESE.code: card_strings[description_key]}
+        name = get_multilanguage_dict(i18n, name_key, extra=card_strings[name_key])
+        description = get_multilanguage_dict(i18n, description_key, extra=card_strings[description_key])
         description_params = []
         for i in range(1, 10):
             k = f"DescParamLevel{i}"
@@ -95,21 +117,26 @@ def outbreak_upgrades() -> dict[int, OutbreakUpgrade]:
         team_type = TeamType.HUMAN if "Human" in v["TeamType"] else TeamType.ZOMBIE
         rarity = UpgradeRarity(v["Rarity"].split(":")[-1])
         weights = [card_details[card_id][f"WeightStage{i}"] for i in range(1, 5)]
+
+        image_path = v["Icon"]["AssetPathName"].split(".")[-1] + ".png"
+        image_path = global_resources_root / "RoguelikeCard" / image_path
+
         result[card_id] = OutbreakUpgrade(
-            card_id, name, description, description_params, max_level, team_type, rarity, weights
+            card_id, name, description, description_params, max_level, team_type, rarity, weights, image_path
         )
     return result
 
 
 def print_upgrades(upgrades: list[OutbreakUpgrade]) -> str:
     upgrades.sort(key=lambda x: x.rarity.sort_weight())
-    result = []
+    result = ["{{#invoke:ItemBox|container|mode=grid|min_width=200px|width=max|"]
     for upgrade in upgrades:
         result.append(str(upgrade))
-    return "\n<hr>\n".join(result)
+    result.append("}}")
+    return "\n".join(result)
 
 
-def main():
+def print_all_upgrades():
     upgrades = outbreak_upgrades()
     human = [u for u in upgrades.values() if u.team_type == TeamType.HUMAN]
     zombie = [u for u in upgrades.values() if u.team_type == TeamType.ZOMBIE]
@@ -120,5 +147,31 @@ def main():
     print(print_upgrades(zombie))
 
 
+def upload_icons(upgrades: list[OutbreakUpgrade]):
+    r = []
+    for u in upgrades:
+        r.append(UploadRequest(u.image, u.filename(), "[[Category:Outbreak upgrade icons]]"))
+    process_uploads(r)
+
+
+def save_upgrades():
+    upgrades = outbreak_upgrades()
+    upgrades = list(upgrades.values())
+    upgrades.sort(key=lambda x: x.rarity.sort_weight())
+    upload_icons(upgrades)
+    # result = []
+    # for u in upgrades:
+    #     result.append({
+    #         "id": u.id,
+    #         "name": u.name,
+    #         "descriptions": u.make_descriptions(),
+    #         "team_type": u.team_type.value,
+    #         "rarity": u.rarity.value,
+    #         "weights": u.weights,
+    #         "file": u.filename()
+    #     })
+    # save_json_page("Module:Outbreak/data.json", result)
+
+
 if __name__ == '__main__':
-    main()
+    print_all_upgrades()
