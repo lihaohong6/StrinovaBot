@@ -14,36 +14,36 @@ class MMDModel:
     name: dict[str, str]
     char: str
     default: bool
+    local_file: Path
+    suffix: str | None
+    author: str | None
 
     @property
     def file(self) -> str:
-        return f"MMD_{self.char}_{self.name[CHINESE.code]}.zip"
-
-    @property
-    def local_file_name(self) -> str:
-        char_cn = en_name_to_cn(self.char)
-
-        if self.default:
-            return f"{char_cn}.zip"
-        return f"{char_cn}_{self.name[CHINESE.code]}.zip"
+        suffix = ""
+        if self.suffix:
+            suffix = f"_{self.suffix}"
+        return f"MMD_{self.char}_{self.name[CHINESE.code]}{suffix}.zip"
 
 
-def save_mmd_json_object(result: dict[str, list[MMDModel]]) -> None:
-    obj = {}
-    for char, models in result.items():
-        obj[char] = []
+def save_mmd_json_object(models: dict[str, list[MMDModel]]) -> None:
+    result = {}
+    for char, models in models.items():
+        result[char] = []
         models.sort(key=lambda m: (0 if m.default else 1, m.name[CHINESE.code]))
         for model in models:
-            obj[char].append({
+            obj = {
                 'name': model.name,
                 'file': model.file
-            })
-    save_json_page("Module:MMD/data.json", obj)
+            }
+            if model.author:
+                obj['author'] = model.author
+            result[char].append(obj)
+    save_json_page("Module:MMD/data.json", result)
 
 
 def main():
-    models_root = Path("~/Downloads").expanduser() / "models"
-    rar_to_zip(models_root)
+    models_root = Path("files/mmd")
 
     skin_table = parse_skin_tables()
     name_mapper: dict[str, str] = {}
@@ -56,7 +56,10 @@ def main():
 
     result: dict[str, list[MMDModel]] = {}
 
-    for file in models_root.iterdir():
+    rar_to_zip(models_root / "models")
+    files = list((models_root / "models").iterdir()) + list((models_root / "user_models").rglob("*.zip"))
+
+    for file in files:
         file: Path
         if file.suffix != ".zip":
             continue
@@ -74,13 +77,17 @@ def main():
                 continue
         if char_name not in result:
             result[char_name] = []
-        result[char_name].append(MMDModel(skin.name, char_name, skin.quality == 0))
+        suffix = None if len(components) <= 2 else components[2]
+        author = None
+        if file.parent.name != "models":
+            author = file.parent.name
+        result[char_name].append(MMDModel(skin.name, char_name, skin.quality == 0, file, suffix, author))
 
     print(sum(len(lst) for lst in result.values()))
     uploads: list[UploadRequest] = []
     for char, models in result.items():
         for model in models:
-            path = models_root / model.local_file_name
+            path = model.local_file
             assert path.exists()
             uploads.append(UploadRequest(
                 path,
