@@ -67,6 +67,7 @@ def upload_all_decals(decals: dict[int, Decal]):
 def make_all_decals():
     en_decals = get_all_decals(use_cn=False)
     upload_all_decals(en_decals)
+    upload_all_decals(get_all_decals(use_cn=True))
     save_json_page("Module:Decal/data.json", en_decals)
 
 
