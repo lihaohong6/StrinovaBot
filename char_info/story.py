@@ -37,7 +37,7 @@ def get_biography() -> dict[str, list[CharStory]]:
 
 def generate_biography():
     bio = get_biography()
-    save_json_page(Page(s, "Module:Biography/data.json"), bio)
+    save_json_page(Page(s, "Module:Biography/data.json"), bio, merge=True)
 
 
 def generate_return_letter():
