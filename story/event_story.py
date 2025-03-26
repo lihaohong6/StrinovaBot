@@ -4,9 +4,10 @@ from typing import Callable
 from audio.audio_utils import wem_to_wav, wav_to_ogg
 from story.story_parser import parse_raw_events, Story
 from story.story_preprocessor import get_raw_events
-from utils.wiki_utils import save_page
+from utils.general_utils import get_id_by_char
 from utils.json_utils import get_table_global
 from utils.upload_utils import process_uploads
+from utils.wiki_utils import save_page
 
 
 def story_to_template(story) -> str:
@@ -92,17 +93,18 @@ def parse_event_stories():
 def parse_stories(table_name: str, i18n_name: str,
                   filter_function: Callable[[int], bool] = lambda x: True,
                   upload: bool = True,
-                  output: Callable[[int], str] = None) -> None:
+                  output: Callable[[int, int], str] = None,
+                  sorter: Callable = None) -> list[Story]:
     table = get_table_global(table_name)
     event_starts, predecessors, successors = get_event_start_ids(table)
     event_lists = event_bfs(event_starts, successors, table)
     stories: list[Story] = []
     out_dir = Path("files/out")
     out_dir.mkdir(parents=True, exist_ok=True)
+    event_lists = [event_list for event_list in event_lists if filter_function(list(event_list)[0])]
+    event_lists.sort(key=(lambda el: sorter(list(el)[0])) if sorter is not None else None)
     for index, event_list in enumerate(event_lists, 1):
         first_event_id = list(event_list)[0]
-        if not filter_function(first_event_id):
-            continue
         raw_events = get_raw_events(event_list, predecessors, i18n_name)
         story = parse_raw_events(raw_events)
         template_string = story_to_template(story)
@@ -110,7 +112,7 @@ def parse_stories(table_name: str, i18n_name: str,
         if output:
             # output to wiki page
             has_next = "true" if index < len(event_lists) else "false"
-            page_name = output(index)
+            page_name = output(index, first_event_id)
             page_text = f"{{{{StoryTop | has_next = {has_next} }}}}\n" \
                         f"{template_string}" \
                         f"{{{{StoryBottom | has_next = {has_next} }}}}\n"
@@ -121,6 +123,7 @@ def parse_stories(table_name: str, i18n_name: str,
                 f.write(template_string)
     if upload:
         perform_story_uploads(stories)
+    return stories
 
 
 def get_event_start_ids(table):
@@ -166,12 +169,40 @@ def parse_seasonal_story(season: int) -> None:
     parse_stories(f"Cinematic/AVGEvent/AVGEvent_Season{season}",
                   f"AVGEvent_Season{season}",
                   upload=True,
-                  output=lambda i: f"Story/Season_{season}/{i}")
+                  output=lambda i, story_id: f"Story/Season_{season}/{i}")
 
 
 def parse_main_stories():
-    parse_seasonal_story(3)
+    for s in [2, 3]:
+        parse_seasonal_story(s)
+
+
+def parse_character_stories():
+    internal_names: dict[str, str] = {
+        "Michele": "Michel",
+        "Celestia": "XingHui"
+    }
+    intro_stories: set[int] = {101101000, }
+    final_stories: set[int] = {101102000, 146101000}
+    for char_name in internal_names.keys():
+        char = internal_names[char_name]
+        char_id = get_id_by_char(char_name)
+
+        def key_function(story_id):
+            if story_id in intro_stories:
+                return 0, story_id
+            if story_id in final_stories:
+                return 2, story_id
+            assert str(story_id).startswith(f"{char_id}20"), f"{story_id}'s priority cannot be determined"
+            return 1, story_id
+
+        parse_stories(f"Cinematic/AVGEvent/AVGEvent_{char}",
+                      f"AVGEvent_{char}",
+                      filter_function=lambda i: str(i).startswith(f"{char_id}"),
+                      upload=True,
+                      output=lambda i, story_index: f"{char_name}/Story/{i}",
+                      sorter=key_function)
 
 
 if __name__ == '__main__':
-    parse_main_stories()
+    parse_character_stories()

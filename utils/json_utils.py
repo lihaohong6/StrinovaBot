@@ -66,6 +66,9 @@ def get_table_global(file_name: str) -> dict[int, dict]:
     table_entry = "EN" + file_name
     if table_entry in table_cache:
         return table_cache[table_entry]
-    table = dict((int(k), v) for k, v in load_json(global_csv_root / f"{file_name}.json")['Rows'].items())
+    json_data = load_json(global_csv_root / f"{file_name}.json")
+    if json_data is None:
+        raise FileNotFoundError(f"File {file_name}.json not found")
+    table = dict((int(k), v) for k, v in json_data['Rows'].items())
     table_cache[table_entry] = table
     return table

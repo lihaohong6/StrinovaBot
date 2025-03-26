@@ -7,7 +7,7 @@ from pathlib import Path
 from audio.audio_parser import parse_banks_xml, map_bank_name_to_files, find_audio_file, get_bgm_file_by_event_id
 from global_config import is_valid_char_name
 from story.story_preprocessor import RawEvent, EventType
-from utils.asset_utils import audio_root, audio_event_root_global, global_export_root
+from utils.asset_utils import audio_root, audio_event_root_global, global_export_root, global_resources_root
 from utils.general_utils import en_name_to_cn
 from utils.json_utils import load_json
 from utils.lang_utils import get_english_version
@@ -253,7 +253,7 @@ def parse_bgm(event: RawEvent, story: Story):
         bgm = event.bgm.split(".")[-1]
         if bgm.lower() == "bgm_date_play":
             return
-        if bgm.lower() == "bgm_date_stop":
+        if bgm.lower() == "bgm_date_stop" or bgm.lower().endswith("_stop"):
             story.rows.append(BGMStop(event.id))
             return
         bgm_name = re.sub(r"^Bgm[_ ]", "", bgm)
@@ -301,6 +301,13 @@ def parse_background(event: RawEvent, story: Story):
         wiki_file = "BG Black.png"
     elif "T_DefaultWhite_Gamma" in background:
         wiki_file = "BG White.png"
+    elif "T_Dynamic_Talent" in background:
+        file_name = background.split(".")[-1]
+        local_file = global_resources_root / "Talent" / (file_name + ".png")
+        wiki_file = f"BG {file_name}.png"
+        story.background_images.append(UploadRequest(local_file, wiki_file, "[[Category:Background images]]"))
+    elif "None" in background:
+        return
     else:
         raise RuntimeError(f"Unknown background type: {background}")
     bg_change = BackgroundChange(event.id, wiki_file)
