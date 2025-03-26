@@ -161,7 +161,15 @@ def event_bfs(event_starts, successors, table):
                 if successor not in visited:
                     bfs.append(successor)
                     visited.add(successor)
-        event_lists.append(dict((event_id, table[event_id]) for event_id in event_ids if event_id != 99999))
+        d: dict[int, dict] = {}
+        for event_id in event_ids:
+            if event_id == 99999:
+                continue
+            if event_id not in table:
+                continue
+                raise RuntimeError(f"Event {event_id} not found")
+            d[event_id] = table[event_id]
+        event_lists.append(d)
     return event_lists
 
 
@@ -180,10 +188,14 @@ def parse_main_stories():
 def parse_character_stories():
     internal_names: dict[str, str] = {
         "Michele": "Michel",
-        "Celestia": "XingHui"
+        "Celestia": "XingHui",
+        "Audrey": "Audrey",
+        "Maddelena": "Maddelena",
+        "Lawine": "Lawine",
+        "Kokona": "KokonaShiki",
     }
-    intro_stories: set[int] = {101101000, }
-    final_stories: set[int] = {101102000, 146101000}
+    intro_stories: set[int] = set()
+    final_stories: set[int] = {146101000}
     for char_name in internal_names.keys():
         char = internal_names[char_name]
         char_id = get_id_by_char(char_name)
@@ -193,14 +205,18 @@ def parse_character_stories():
                 return 0, story_id
             if story_id in final_stories:
                 return 2, story_id
+            if str(story_id).startswith(f"{char_id}101"):
+                return 0, story_id
+            if str(story_id).startswith(f"{char_id}102"):
+                return 2, story_id
             assert str(story_id).startswith(f"{char_id}20"), f"{story_id}'s priority cannot be determined"
             return 1, story_id
 
         parse_stories(f"Cinematic/AVGEvent/AVGEvent_{char}",
                       f"AVGEvent_{char}",
                       filter_function=lambda i: str(i).startswith(f"{char_id}"),
-                      upload=True,
-                      output=lambda i, story_index: f"{char_name}/Story/{i}",
+                      upload=False,
+                      # output=lambda i, story_index: f"{char_name}/Story/{i}",
                       sorter=key_function)
 
 

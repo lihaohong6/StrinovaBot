@@ -126,6 +126,8 @@ def get_text(i18n, d: dict) -> dict[str, str] | None:
 
 
 def get_english_version(d: dict[str, str], candidates: list[str] = [ENGLISH.code, CHINESE.code]) -> str:
+    if d is None:
+        return ""
     for k in candidates:
         if k in d:
             return d[k]
