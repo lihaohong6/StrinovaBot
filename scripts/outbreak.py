@@ -2,9 +2,9 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from utils.asset_utils import global_resources_root
+from utils.asset_utils import global_resources_root, resource_root
 from utils.json_utils import get_table, get_string_table, get_all_game_json
-from utils.lang import ENGLISH
+from utils.lang import ENGLISH, CHINESE
 from utils.lang_utils import get_multilanguage_dict
 from utils.upload_utils import UploadRequest, process_uploads
 
@@ -44,16 +44,19 @@ class OutbreakUpgrade:
     image: Path
 
     def make_descriptions(self) -> list[str]:
+        description = self.description.get(LANG, self.description.get(CHINESE.code))
         if len(self.description_params) == 0:
-            return [self.description[LANG]]
+            return [description]
 
         # assert len(self.description_params) == self.max_level, \
         #     f"{len(self.description_params)} != {self.max_level} for {self.name[LANG]} (id: {self.id})"
 
         levels = []
         for params in self.description_params:
-            original = self.description[LANG]
+            original = description
             for index, param in enumerate(params):
+                if abs(param - round(param)) < 0.0001:
+                    param = int(param)
                 original = original.replace("{" + str(index) + "}", str(param))
             levels.append(original)
 
@@ -65,7 +68,7 @@ class OutbreakUpgrade:
     def __str__(self):
         import wikitextparser as wtp
         template = wtp.parse("{{OutbreakUpgrade}}").templates[0]
-        template.set_arg("Name", self.name[LANG])
+        template.set_arg("Name", self.name.get(LANG, self.name.get(CHINESE.code)))
         template.set_arg("Image", self.filename())
         desc = self.make_descriptions()
         if len(desc) == 1:
@@ -119,7 +122,7 @@ def outbreak_upgrades() -> dict[int, OutbreakUpgrade]:
         weights = [card_details[card_id][f"WeightStage{i}"] for i in range(1, 5)]
 
         image_path = v["Icon"]["AssetPathName"].split(".")[-1] + ".png"
-        image_path = global_resources_root / "RoguelikeCard" / image_path
+        image_path = resource_root / "RoguelikeCard" / image_path
 
         result[card_id] = OutbreakUpgrade(
             card_id, name, description, description_params, max_level, team_type, rarity, weights, image_path
@@ -175,3 +178,4 @@ def save_upgrades():
 
 if __name__ == '__main__':
     print_all_upgrades()
+    upload_icons(list(outbreak_upgrades().values()))
