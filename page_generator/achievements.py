@@ -7,7 +7,7 @@ from pywikibot import FilePage
 from utils.asset_utils import resource_root
 from utils.general_utils import get_char_by_id
 from utils.json_utils import get_all_game_json, get_table, get_table_global
-from utils.lang_utils import get_multilanguage_dict, StringConverters, compose
+from utils.lang_utils import get_multilanguage_dict, StringConverters, compose, get_text
 from utils.upload_utils import UploadRequest, process_uploads
 from utils.wiki_utils import s, save_json_page
 
@@ -55,12 +55,9 @@ def parse_achievements(use_cn: bool = False) -> list[Achievement]:
             return string
 
         converter = compose(StringConverters.basic_converter, sub_condition)
-        name = get_multilanguage_dict(i18n, f"{key}_Name", converter=converter,
-                                      extra=value['Name']['SourceString'])
-        unlock = get_multilanguage_dict(i18n, f"{key}_Explain", converter=converter,
-                                        extra=value['Explain']['SourceString'])
-        details = get_multilanguage_dict(i18n, f"{key}_Details", converter=converter,
-                                         extra=value['Details']['SourceString'])
+        name = get_text(i18n, value['Name'], converter=converter)
+        unlock = get_text(i18n, value['Explain'], converter=converter)
+        details = get_text(i18n, value['Details'], converter=converter)
         achievement = Achievement(key, value['Level'], value['Type'], value['Quality'], role_id, role_name,
                                   name, unlock, details)
         achievements.append(achievement)

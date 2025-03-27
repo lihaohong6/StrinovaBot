@@ -60,7 +60,7 @@ def parse_battle_pass_rewards(use_cn: bool = False) -> dict[int, list[BattlePass
 
 
 def parse_battle_pass_seasons() -> list[BattlePassSeason]:
-    i18n = get_all_game_json("BattlePassSeason")
+    i18n = get_all_game_json("BattlePassSeason_I18N")
     result: list[BattlePassSeason] = []
     for k, v in get_table_global("BattlePassSeason").items():
         image_id = re.search(r"BattlePassLogo_(\d+)", v['SeasonLogo']['AssetPathName']).group(1)

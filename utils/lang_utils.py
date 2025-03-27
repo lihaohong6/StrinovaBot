@@ -118,11 +118,11 @@ def get_multilanguage_dict(i18n: dict[str, dict], key: str | list[str] | None, d
     return result
 
 
-def get_text(i18n, d: dict) -> dict[str, str] | None:
+def get_text(i18n, d: dict, converter: StringConverter = StringConverters.basic_converter) -> dict[str, str] | None:
     if d is None or "Key" not in d:
         return None
     key = d["Key"]
-    return get_multilanguage_dict(i18n, key, extra=d["SourceString"])
+    return get_multilanguage_dict(i18n, key, extra=d["SourceString"], converter=converter)
 
 
 def get_english_version(d: dict[str, str], candidates: list[str] = [ENGLISH.code, CHINESE.code]) -> str:

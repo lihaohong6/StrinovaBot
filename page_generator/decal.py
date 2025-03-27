@@ -61,7 +61,7 @@ def upload_all_decals(decals: dict[int, Decal]):
         requests.append(UploadRequest(source,
                                       FilePage(s, d.file),
                                       '[[Category:Decal icons]]'))
-    process_uploads(requests)
+    process_uploads(requests, redirect_dup=True)
 
 
 def make_all_decals():

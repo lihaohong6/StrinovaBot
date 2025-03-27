@@ -39,7 +39,8 @@ def get_all_game_json(table_name: str) -> dict[str, dict]:
         lang = lang.value
         r = get_game_json(language=lang)
         if r is not None:
-            i18n[lang.code] = r[table_name]
+            alt_table = r.get(f"{table_name}_I18N", {})
+            i18n[lang.code] = r[table_name] | alt_table
     return i18n
 
 

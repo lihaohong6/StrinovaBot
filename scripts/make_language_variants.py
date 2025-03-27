@@ -69,7 +69,7 @@ def copy_lang_pages():
                  for l in LanguageVariants
                  if l.value not in [ENGLISH]]
     gen = GeneratorFactory()
-    gen.handle_arg("-catr:Weapons")
+    gen.handle_args(["-catr:Weapons", "-catr:Characters", "-catr:Character galleries"])
     en_pages: dict[str, Page] = dict((p.title(), p)
                                      for p in gen.getCombinedGenerator(preload=True)
                                      if "/" not in p.title())
@@ -141,5 +141,5 @@ def make_interlanguage_links():
 
 
 if __name__ == "__main__":
-    make_interlanguage_links()
+    copy_lang_pages()
 
