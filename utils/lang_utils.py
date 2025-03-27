@@ -122,7 +122,7 @@ def get_text(i18n, d: dict, converter: StringConverter = StringConverters.basic_
     if d is None or "Key" not in d:
         return None
     key = d["Key"]
-    return get_multilanguage_dict(i18n, key, extra=d["SourceString"], converter=converter)
+    return get_multilanguage_dict(i18n, key, extra=d.get("SourceString", None), converter=converter)
 
 
 def get_english_version(d: dict[str, str], candidates: list[str] = [ENGLISH.code, CHINESE.code]) -> str:

@@ -40,8 +40,7 @@ def character_info_part1():
     strinova_comms_main()
 
 
-def make_all_character_info():
-    character_info_part1()
+def character_info_part2():
     for lang in available_languages:
         set_language(lang)
         pages = get_char_pages2(lang=lang)
@@ -54,6 +53,11 @@ def make_all_character_info():
         for c, p in pages:
             if p.text not in originals:
                 p.save(summary="Update character page")
+
+
+def make_all_character_info():
+    character_info_part1()
+    character_info_part2()
 
 
 def make_everything():
