@@ -11,7 +11,7 @@ from page_generator.items import get_all_items
 from utils.general_utils import get_char_by_id
 from utils.json_utils import get_all_game_json, get_table, get_table_global
 from utils.lang import LanguageVariants
-from utils.lang_utils import get_multilanguage_dict
+from utils.lang_utils import get_text
 from utils.upload_utils import upload_item_icons
 from utils.wiki_utils import s, save_json_page
 
@@ -54,10 +54,8 @@ def generate_gifts():
         g = item_table[gift.id]
         gift.file = re.search(r"_(\d+)$", g['IconItem']['AssetPathName']).group(1)
         gift.quality = g['Quality']
-        name_cn = g['Name']['SourceString']
-        gift.name = get_multilanguage_dict(i18n, f"{gift.id}_Name", extra=name_cn)
-        desc_cn = g['Desc']['SourceString']
-        gift.description = get_multilanguage_dict(i18n, f"{gift.id}_Desc", extra=desc_cn)
+        gift.name = get_text(i18n, g['Name'])
+        gift.description = get_text(i18n, g['Desc'])
 
     gifts = [g
              for g in sorted(gifts, key=lambda t: t.quality, reverse=True)
@@ -116,9 +114,9 @@ def generate_bond_items():
         role_id = v['OwnerRoleId']
         char_name = get_char_by_id(role_id)
         try:
-            name = get_multilanguage_dict(i18n, f"{k}_Name", extra=v['Name']['SourceString'])
-            desc = get_multilanguage_dict(i18n, f"{k}_Desc", extra=v['Desc']['SourceString'])
-            story = get_multilanguage_dict(i18n, f"{k}_ItemStory", extra=v['ItemStory']['SourceString'])
+            name = get_text(i18n, v['Name'])
+            desc = get_text(i18n, v['Desc'])
+            story = get_text(i18n, v['ItemStory'])
             item = PledgeItem(v['Id'], v['ItemIcon']['AssetPathName'].split("_")[-1],
                               name,
                               desc,
@@ -180,7 +178,7 @@ def parse_friendship_rewards():
 
     for v in table2.values():
         prizes = v['Prize']
-        desc = get_multilanguage_dict(i18n, v["Desc"]["Key"], extra=v["Desc"]["SourceString"])
+        desc = get_text(i18n, v["Desc"])
         make_rewards(v['RoleId'], v['RoleLevel'], prizes, desc)
 
     return friendship_gifts

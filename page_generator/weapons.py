@@ -10,7 +10,7 @@ from utils.asset_utils import global_resources_root
 from utils.general_utils import get_char_id_to_weapon_id, split_dict
 from utils.json_utils import get_all_game_json, get_table
 from utils.lang import CHINESE, ENGLISH
-from utils.lang_utils import get_multilanguage_dict
+from utils.lang_utils import get_multilanguage_dict, get_text
 from utils.upload_utils import upload_item_icons, UploadRequest, process_uploads
 from utils.wiki_utils import bwiki, s, save_json_page
 
@@ -85,8 +85,7 @@ def parse_weapons() -> dict[int, Weapon]:
         assert len(type_list) == 1
         weapon_type = type_list[0]
         weapon_id = k
-        name_key = f"{weapon_id}_Name"
-        name = get_multilanguage_dict(i18n, name_key, extra=v['Name']['SourceString'])
+        name = get_text(i18n, v['Name'])
         quality = v['Quality']
         unlock = None
         if "GainParam2" in v:
@@ -99,8 +98,7 @@ def parse_weapons() -> dict[int, Weapon]:
         if unlock is None:
             unlock = get_multilanguage_dict(i18n, f"{weapon_id}_GainParam2",
                                             default=None)
-        description = get_multilanguage_dict(i18n, f"{weapon_id}_Tips",
-                                             extra=v.get('Tips', {}).get('LocalizedString', None))
+        description = get_text(i18n, v['Tips'])
         parent = v['SubType']
         parent_dict[weapon_id] = parent
         w = Weapon(weapon_id, name, quality, unlock, description, type=weapon_type)

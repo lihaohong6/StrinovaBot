@@ -1,15 +1,15 @@
 from dataclasses import dataclass, field
 
+import wikitextparser as wtp
 from pywikibot.pagegenerators import GeneratorFactory
 
 from page_generator.items import Item
 from utils.json_utils import get_all_game_json, get_table_global
 from utils.lang import ENGLISH
-from utils.lang_utils import get_multilanguage_dict, StringConverters
+from utils.lang_utils import StringConverters, get_text
 from utils.wiki_utils import s, save_json_page
 from utils.wtp_utils import get_templates_by_name
 
-import wikitextparser as wtp
 
 @dataclass
 class EventTask:
@@ -55,11 +55,11 @@ def parse_events():
     task_table = get_table_global("ActivityTask")
     result: dict[int, Event] = {}
     for event_id, v in activity_table.items():
-        name = get_multilanguage_dict(i18n, v['Name']['Key'], converter=StringConverters.all_caps_remove)
+        name = get_text(i18n, v['Name'], converter=StringConverters.all_caps_remove)
         result[event_id] = Event(id=event_id, name=name, tasks=[])
     for task_id, v in task_table.items():
         activity_id = v["ActivityId"]
-        desc = get_multilanguage_dict(i18n_task, v['Desc']['Key'])
+        desc = get_text(i18n, v['Desc'])
         rewards = v["Prize"]
         if len(rewards) == 0:
             reward = -1

@@ -3,10 +3,10 @@ from dataclasses import dataclass
 
 from page_generator.items import get_all_items, Item
 from utils.general_utils import parse_ticks
-from utils.wiki_utils import save_page, save_json_page
 from utils.json_utils import get_all_game_json, get_table, get_table_global
-from utils.lang import ENGLISH, CHINESE, Language, LanguageVariants
-from utils.lang_utils import get_multilanguage_dict
+from utils.lang import ENGLISH, CHINESE, LanguageVariants
+from utils.lang_utils import get_text
+from utils.wiki_utils import save_page, save_json_page
 
 
 @dataclass
@@ -67,7 +67,7 @@ def parse_battle_pass_seasons() -> list[BattlePassSeason]:
         result.append(
             BattlePassSeason(
                 v['Id'],
-                get_multilanguage_dict(i18n, v['Name']['Key']),
+                get_text(i18n, v['Name']),
                 str(parse_ticks(v['Start']['Ticks'])),
                 str(parse_ticks(v['Finish']['Ticks'])),
                 f"File:Season {image_id} wallpaper.png"

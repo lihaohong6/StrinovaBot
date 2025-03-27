@@ -1,13 +1,11 @@
 from dataclasses import dataclass, field
 from functools import cache
-from pathlib import Path
 
 from pywikibot import FilePage
 
 from utils.asset_utils import resource_root
 from utils.json_utils import get_all_game_json, get_table
-from utils.lang import CHINESE
-from utils.lang_utils import get_multilanguage_dict
+from utils.lang_utils import get_text
 from utils.upload_utils import UploadRequest, process_uploads
 from utils.wiki_utils import s
 
@@ -30,28 +28,19 @@ class Badge:
         return self.file
 
 
-def localize_badges(badges: list[Badge]):
-    table_name = "Badge"
-    i18n = get_all_game_json(table_name)
-    for badge in badges:
-        badge.name |= get_multilanguage_dict(i18n, f"{badge.id}_Name")
-        badge.description |= get_multilanguage_dict(i18n, f"{badge.id}_Desc")
-        badge.gain |= get_multilanguage_dict(i18n, f"{badge.id}_GainParam2")
-
-
 @cache
 def get_all_badges() -> dict[int, Badge]:
     badge_json = get_table("Badge")
+    i18n = get_all_game_json("Badge")
     badges: dict[int, Badge] = {}
     for badge_id, v in badge_json.items():
         badge = Badge(badge_id)
         badges[badge_id] = badge
-        badge.name[CHINESE.code] = v['Name']['SourceString']
-        badge.description[CHINESE.code] = v['Desc']['SourceString']
-        badge.gain[CHINESE.code] = v['GainParam2'].get('SourceString', "")
+        badge.name = get_text(i18n, v["Name"])
+        badge.description = get_text(i18n, v["Desc"])
+        badge.gain = get_text(i18n, v["GainParam2"])
         badge.quality = v['Quality']
         badge.type = v['BadgeType']
-    localize_badges(list(badges.values()))
     return badges
 
 

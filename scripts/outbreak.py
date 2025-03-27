@@ -2,10 +2,10 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from utils.asset_utils import global_resources_root, resource_root
+from utils.asset_utils import resource_root
 from utils.json_utils import get_table, get_string_table, get_all_game_json
 from utils.lang import ENGLISH, CHINESE
-from utils.lang_utils import get_multilanguage_dict
+from utils.lang_utils import get_text
 from utils.upload_utils import UploadRequest, process_uploads
 
 
@@ -104,10 +104,8 @@ def outbreak_upgrades() -> dict[int, OutbreakUpgrade]:
     i18n = get_all_game_json("ST_GameplayCard")
     result: dict[int, OutbreakUpgrade] = {}
     for card_id, v in cards.items():
-        name_key = v["Name"]["Key"]
-        description_key = v["Desc"]["Key"]
-        name = get_multilanguage_dict(i18n, name_key, extra=card_strings[name_key])
-        description = get_multilanguage_dict(i18n, description_key, extra=card_strings[description_key])
+        name = get_text(i18n, v['Name'])
+        description = get_text(i18n, v['Desc'])
         description_params = []
         for i in range(1, 10):
             k = f"DescParamLevel{i}"

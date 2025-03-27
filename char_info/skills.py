@@ -12,7 +12,7 @@ from utils.asset_utils import resource_root
 from utils.general_utils import get_char_pages2
 from utils.json_utils import get_game_json, get_all_game_json, get_table, get_table_global
 from utils.lang import get_language
-from utils.lang_utils import get_multilanguage_dict
+from utils.lang_utils import get_multilanguage_dict, get_text
 from utils.upload_utils import UploadRequest, process_uploads
 from utils.wiki_utils import s, save_lua_table, save_json_page
 from utils.wtp_utils import get_templates_by_name
@@ -58,11 +58,10 @@ def parse_skills() -> dict[str, CharacterSkills]:
         # Active, passive, tactical, and ultimate skills
         for skill_num in [1, 2, 9, 3]:
             key = char.id * 10 + skill_num
-            name_cn = skill_table[key]['Name']['SourceString']
-            description_cn = skill_table[key]['Intro']['SourceString']
-            name = get_multilanguage_dict(i18n, f"{key}_Name", extra=name_cn)
-            skill_type = get_multilanguage_dict(i18n, f"{key}_DisplayName")
-            description = get_multilanguage_dict(i18n, f"{key}_Intro", extra=description_cn)
+            v = skill_table[key]
+            name = get_text(i18n, v['Name'])
+            skill_type = get_text(i18n, v['DisplayName'])
+            description = get_text(i18n, v['Intro'])
             skills.append(Skill(id=key, name=name, type=skill_type, description=description))
         # Awakenings
         wake_ids = role_table[char.id]["SkillWake"]

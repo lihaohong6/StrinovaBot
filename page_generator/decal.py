@@ -1,13 +1,11 @@
 from dataclasses import dataclass, field
 from functools import cache
-from pathlib import Path
 
 from pywikibot import FilePage
 
 from utils.asset_utils import resource_root, global_resources_root
 from utils.json_utils import get_all_game_json, get_table, get_table_global
-from utils.lang import CHINESE
-from utils.lang_utils import get_multilanguage_dict, StringConverters, compose
+from utils.lang_utils import StringConverters, compose, get_text
 from utils.upload_utils import UploadRequest, process_uploads
 from utils.wiki_utils import s, save_json_page
 
@@ -39,13 +37,10 @@ def get_all_decals(use_cn: bool = True) -> dict[int, Decal]:
     for decal_id, v in decal_json.items():
         decal = Decal(decal_id)
         decals[decal_id] = decal
-        decal.name = get_multilanguage_dict(i18n, f"{decal.id}_Name",
-                                            extra=v['Name']['SourceString'])
-        decal.description = get_multilanguage_dict(
-            i18n, f"{decal.id}_Desc",
-            converter=compose(StringConverters.basic_converter,
-                              StringConverters.newline_to_br),
-            extra=v['Desc']['SourceString'])
+        decal.name = get_text(i18n, v['Name'])
+        decal.description = get_text(i18n, v['Desc'],
+                                     converter=compose(StringConverters.basic_converter,
+                                                       StringConverters.newline_to_br))
         decal.quality = v['Quality']
     return decals
 

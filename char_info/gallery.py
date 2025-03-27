@@ -10,7 +10,7 @@ from utils.general_utils import get_char_by_id, en_name_to_zh
 from utils.dict_utils import merge_dict2
 from utils.json_utils import get_all_game_json, get_table
 from utils.lang import CHINESE
-from utils.lang_utils import get_multilanguage_dict
+from utils.lang_utils import get_multilanguage_dict, get_text
 from utils.upload_utils import upload_file, UploadRequest, process_uploads, upload_item_icons
 from utils.wiki_utils import bwiki, s, save_json_page
 
@@ -55,8 +55,8 @@ def parse_emotes() -> dict[str, list[Emote]]:
         lst = items.get(name_en, [])
         emote = Emote(k,
                       v['Quality'],
-                      get_multilanguage_dict(i18n, f'{k}_Name', extra=name_source),
-                      get_multilanguage_dict(i18n, f'{k}_Desc', extra=v['Desc']['SourceString']))
+                      get_text(i18n, v['Name']),
+                      get_text(i18n, v['Desc']))
         lst.append(emote)
         items[name_en] = lst
     return items

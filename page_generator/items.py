@@ -2,9 +2,7 @@ import re
 from dataclasses import dataclass, field
 from functools import cache
 
-from numba.parfors.parfor_lowering import compute_def_once
-
-from audio.audio_parser import role_voice, parse_role_voice
+from audio.audio_parser import parse_role_voice
 from audio.voice import Voice
 from char_info.gallery import parse_skin_tables, SkinInfo, Emote, parse_emotes
 from page_generator.badges import get_all_badges, Badge
@@ -12,10 +10,10 @@ from page_generator.decal import get_all_decals, Decal
 from page_generator.id_card import get_all_id_cards, IdCard
 from page_generator.weapons import Weapon, parse_weapons
 from utils.dict_utils import merge_dict2
-from utils.wiki_utils import save_json_page
 from utils.json_utils import get_all_game_json, get_table, get_table_global
-from utils.lang import CHINESE, ENGLISH
-from utils.lang_utils import get_multilanguage_dict
+from utils.lang import ENGLISH
+from utils.lang_utils import get_text
+from utils.wiki_utils import save_json_page
 
 
 @dataclass
@@ -39,24 +37,18 @@ class Item:
         return self.file
 
 
-def localize_items(items: list[Item]):
-    i18n = merge_dict2(get_all_game_json("Item"), get_all_game_json("Goods"))
-    for item in items:
-        item.name |= get_multilanguage_dict(i18n, f"{item.id}_Name")
-        item.description |= get_multilanguage_dict(i18n, f"{item.id}_Desc")
-
-
 @cache
 def parse_items() -> dict[int, Item]:
     items: dict[int, Item] = {}
+    i18n = merge_dict2(get_all_game_json("Item"), get_all_game_json("Goods"))
 
     def process_json(d: dict):
         for item_id, v in d.items():
             if isinstance(item_id, list):
                 item_id = item_id[0]
             item = Item(item_id)
-            item.name[CHINESE.code] = v['Name']['SourceString']
-            item.description[CHINESE.code] = v['Desc'].get("SourceString", "")
+            item.name = get_text(i18n, v['Name'])
+            item.description = get_text(i18n, v['Desc'])
             item.quality = v['Quality']
             item.type = v['ItemType']
             search_result = re.search(r"Item_(\d+)$", v.get('IconItem', {}).get('AssetPathName', ''))
@@ -67,8 +59,6 @@ def parse_items() -> dict[int, Item]:
     process_json(get_table("Item"))
     process_json(get_table("Goods"))
     process_json(get_table_global("Item"))
-
-    localize_items(list(items.values()))
     return items
 
 
@@ -78,8 +68,8 @@ def parse_currencies() -> dict[int, Item]:
     currencies: dict[int, Item] = {}
     for k, v in get_table("Currency").items():
         item = Item(k)
-        item.name = get_multilanguage_dict(i18n, f"{k}_Name")
-        item.description = get_multilanguage_dict(i18n, f"{k}_Desc")
+        item.name = get_text(i18n, v['Name'])
+        item.description = get_text(i18n, v['Desc'])
         item.quality = v['Quality']
         currencies[item.id] = item
     return currencies

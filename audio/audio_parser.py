@@ -183,7 +183,7 @@ def map_bank_name_to_files(p: Path) -> dict[str, list[Path]]:
     return table
 
 
-def get_text(i18n: dict[str, dict], v) -> tuple[dict[str, str], dict[str, str], dict[str, dict[str, str]]]:
+def get_audio_text(i18n: dict[str, dict], v) -> tuple[dict[str, str], dict[str, str], dict[str, dict[str, str]]]:
     name_obj = v['VoiceName']
     key = name_obj.get("Key", None)
     title: dict[str, str] = get_multilanguage_dict(i18n, key, "",
@@ -207,7 +207,7 @@ def in_game_triggers() -> list[Trigger]:
     table = get_table("InGameVoiceTrigger")
     result: list[Trigger] = []
     for k, v in table.items():
-        description = {CHINESE.code: v['Desc']['SourceString']} | get_multilanguage_dict(i18n, v['Desc']['Key'], "")
+        description = get_audio_text(i18n, v['Desc'])
         role_id: int = v['RoleId']
         voice_id: list[int] = [v['VoiceId']]
         if "RandomVoiceIds" in v:
@@ -243,7 +243,7 @@ def parse_role_voice() -> dict[int, Voice]:
     voices = {}
     path_to_voice: dict[str, Voice] = {}
     for k, v in voice_table.items():
-        name, transcription, translation = get_text(i18n, v)
+        name, transcription, translation = get_audio_text(i18n, v)
 
         path: str = v["AkEvent"]["AssetPathName"].split(".")[-1]
         upgrade = VoiceUpgrade.REGULAR

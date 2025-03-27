@@ -3,10 +3,10 @@ from dataclasses import dataclass, field
 from functools import cache
 
 from utils.asset_utils import resource_root, global_resources_root
-from utils.wiki_utils import save_json_page
 from utils.json_utils import get_all_game_json, get_table, get_table_global
-from utils.lang_utils import get_multilanguage_dict, compose, StringConverters
+from utils.lang_utils import compose, StringConverters, get_text
 from utils.upload_utils import UploadRequest, process_uploads
+from utils.wiki_utils import save_json_page
 
 
 class IdCardType(enum.Enum):
@@ -43,14 +43,14 @@ def get_all_id_cards(use_cn: bool = True) -> dict[int, IdCard]:
         try:
             id_card = IdCard(id_card_id)
             id_card.type = id_card_type
-            id_card.name = get_multilanguage_dict(i18n, f"{id_card.id}_Name", extra=v['Name']['SourceString'])
-            id_card.description = get_multilanguage_dict(
-                i18n, f"{id_card.id}_Desc", extra=v['Desc']['SourceString'],
-                converter=compose(StringConverters.basic_converter, StringConverters.newline_to_br))
+            id_card.name = get_text(i18n, v['Name'])
+            id_card.description = get_text(i18n, v['Desc'],
+                                           converter=compose(StringConverters.basic_converter,
+                                                             StringConverters.newline_to_br))
             id_card.quality = v['Quality']
-            id_card.unlock = get_multilanguage_dict(
-                i18n, f"{id_card.id}_GainParam2", extra=v['GainParam2'].get('SourceString', None),
-                converter=compose(StringConverters.basic_converter, StringConverters.all_caps_remove))
+            id_card.unlock = get_text(i18n, v["GainParam2"],
+                                      converter=compose(StringConverters.basic_converter,
+                                                        StringConverters.all_caps_remove))
             id_cards[id_card_id] = id_card
         except Exception:
             pass

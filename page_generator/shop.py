@@ -5,10 +5,10 @@ from functools import cache
 from char_info.gallery import SkinInfo, parse_skin_tables
 from page_generator.items import Item, get_all_items
 from utils.general_utils import parse_ticks
-from utils.wiki_utils import save_json_page
 from utils.json_utils import get_all_game_json, get_table, get_table_global
 from utils.lang import ENGLISH, CHINESE
-from utils.lang_utils import get_multilanguage_dict, compose, StringConverters
+from utils.lang_utils import compose, StringConverters, get_text
+from utils.wiki_utils import save_json_page
 
 
 @dataclass
@@ -22,6 +22,7 @@ class Banner:
     def __str__(self):
         def filter_date(d: datetime):
             return d if d.year >= 2023 else "?"
+
         return (f"=={self.name.get(ENGLISH.code, self.name.get(CHINESE.code))}==\n"
                 f"*Start: {filter_date(self.start)}\n"
                 f"*End: {filter_date(self.end)}\n"
@@ -35,9 +36,9 @@ def parse_banners(use_cn: bool = False) -> list[Banner]:
     for k, v in table:
         if v['Type'] != 1:
             continue
-        name = get_multilanguage_dict(i18n, f"{k}_Name", extra=v['Name']['SourceString'],
-                                      converter=compose(StringConverters.basic_converter,
-                                                        StringConverters.all_caps_remove))
+        name = get_text(i18n, v['Name'],
+                        converter=compose(StringConverters.basic_converter,
+                                          StringConverters.all_caps_remove))
         if len(name) == 0:
             continue
 
@@ -126,7 +127,8 @@ def save_gacha_drop_json(use_cn: bool = False):
     all_drops = parse_gacha_drops(use_cn)
     result = {}
     for group_id in all_drops:
-        result[group_id] = [d.to_dict() for d in sorted(all_drops[group_id], key=lambda x: x.item.quality, reverse=True)]
+        result[group_id] = [d.to_dict() for d in
+                            sorted(all_drops[group_id], key=lambda x: x.item.quality, reverse=True)]
     page_name = "Module:Gacha/drops_cn.json" if use_cn else "Module:Gacha/drops.json"
     save_json_page(page_name, result)
 
