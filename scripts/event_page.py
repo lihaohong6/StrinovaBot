@@ -77,6 +77,12 @@ def print_spring_blessings_event_story():
     print("{{Tab/content | group=stories | " + " | ".join(tab_contents) + " }}")
 
 
+def print_outbreak_event_story():
+    i18n = get_game_json()['ActivityBiochemicalModeTV']
+    for i in range(1, 13):
+        print(i18n[f'{i}_Content'], end="\n\n")
+
+
 def print_event_tasks(event: Event):
     rid_to_task: dict[int, list[EventTask]] = {}
     for task in event.tasks:
@@ -99,4 +105,4 @@ def print_event_tasks_main():
 
 
 if __name__ == '__main__':
-    print_event_tasks_main()
+    print_outbreak_event_story()
