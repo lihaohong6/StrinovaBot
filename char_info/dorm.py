@@ -29,7 +29,7 @@ class Gift:
 
 @cache
 def get_gifts() -> dict[int, Gift]:
-    gift_json = get_table("RoleFavorabilityGiftPresent")
+    gift_json = get_table_global("RoleFavorabilityGiftPresent")
     gift_dict: dict[int, Gift] = {}
     for gift in gift_json.values():
         gift_id = gift['Gift']
@@ -47,7 +47,7 @@ def get_gifts() -> dict[int, Gift]:
 
 def generate_gifts():
     gift_dict: dict[int, Gift] = get_gifts()
-    item_table = get_table("Item")
+    item_table = get_table_global("Item")
     gifts = list(gift_dict.values())
     i18n = get_all_game_json("Item")
     for gift in gifts:
@@ -77,23 +77,6 @@ def generate_gifts():
 
     p = Page(s, "Module:CharacterGifts/data2.json")
     save_json_page(p, gifts)
-
-    for lang in LanguageVariants:
-        all_recipients = PreloadingGenerator(Page(s, char + lang.value.page_suffix) for char in characters_with_dorms)
-        for p in all_recipients:
-            char_name = p.title().split("/")[0]
-            parsed = wtp.parse(p.text)
-            for t in parsed.templates:
-                if t.name.strip() == "CharacterGifts":
-                    break
-            else:
-                print("Gift template not found on " + p.title())
-                continue
-            if t.has_arg("1"):
-                continue
-            t.set_arg("1", char_name, positional=True)
-            p.text = str(parsed)
-            p.save("enable character gift")
 
 
 @dataclass
