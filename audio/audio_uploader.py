@@ -44,9 +44,8 @@ def upload_audio_file(voices: list[Voice],
             local_path = audio_root / lang.audio_dir_name / v.file[lang.code]
             temp_wiki_file = temp_download_dir / file_page_title
             if file_page_title in existing:
-                # FIXME: extend this comparison to non-English lines as well?
-                if not file_page_title.startswith("EN"):
-                    continue
+                # Compare local copy against wiki copy. If they are different, maybe we should upload a new
+                # version.
                 if not local_path.exists():
                     # This file is probably removed from the game, but the wiki still has a copy.
                     continue

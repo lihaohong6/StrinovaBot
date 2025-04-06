@@ -63,8 +63,10 @@ def compute_audio_distance(audio_path1: Path, audio_path2: Path, sr=22050, n_mfc
         length1, mfcc1 = extract_audio_info(audio_path1, sr, n_mfcc)
         length2, mfcc2 = extract_audio_info(audio_path2, sr, n_mfcc)
 
-        if abs(length1 - length2) > 1:
-            return 1
+        # Sometimes audio files change by increasing/decreasing the length of silence.
+        # This would mistakenly treat them as different files
+        # if abs(length1 - length2) > 1:
+        #     return 1
 
         if mfcc1.shape != mfcc2.shape:
             mfcc1 = mfcc1.T
@@ -79,7 +81,7 @@ def compute_audio_distance(audio_path1: Path, audio_path2: Path, sr=22050, n_mfc
 
 
 def audio_is_same(audio1: Path, audio2: Path):
-    return compute_audio_distance(audio1, audio2) < 0.05
+    return compute_audio_distance(audio1, audio2) < 0.08
 
 
 def audio_is_silent(source: Path):

@@ -31,9 +31,9 @@ def pull_from_miraheze():
                 templates.append(t)
         changed = False
         for t in templates:
-            args = ["FileCN", "FileJP", "FileEN"]
+            args = ["FileCN", "FileJA", "FileEN"]
             args = [t.get_arg(arg) for arg in args if t.has_arg(arg)]
-            assert len(args) >= 1
+            assert len(args) >= 1, f"For char {char_name}, there is no arg in {t}"
             path = re.sub(r"^[A-Z]{2}_", "", args[0].value).replace(".ogg", "").strip()
             assert path in path_to_voice
             voice = path_to_voice[path]
