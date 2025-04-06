@@ -4,6 +4,7 @@ from typing import Callable
 from audio.audio_utils import wem_to_wav, wav_to_ogg
 from story.story_parser import parse_raw_events, Story
 from story.story_preprocessor import get_raw_events
+from utils.file_utils import local_file_dir, temp_file_dir
 from utils.general_utils import get_id_by_char
 from utils.json_utils import get_table_global
 from utils.upload_utils import process_uploads
@@ -36,8 +37,7 @@ def upload_story_images(stories: list[Story]) -> None:
 
 
 def upload_story_audio(stories: list[Story]) -> None:
-    upload_cache_dir = Path("files/temp")
-    upload_cache_dir.mkdir(parents=True, exist_ok=True)
+
     requests = []
     # deduplicate requests
     existing: set[str] = set()
@@ -48,7 +48,7 @@ def upload_story_audio(stories: list[Story]) -> None:
             existing.add(req.target)
             requests.append(req)
     # convert wem to ogg
-    temp_wav_file = upload_cache_dir / "temp.wav"
+    temp_wav_file = temp_file_dir / "temp.wav"
     for r in requests:
         original_name = r.source.name
         if original_name.endswith("ogg"):
@@ -60,7 +60,7 @@ def upload_story_audio(stories: list[Story]) -> None:
             wav_file = r.source
         else:
             raise ValueError(f"unknown file type: {original_name}")
-        ogg_file = upload_cache_dir / f"{original_name}.ogg"
+        ogg_file = temp_file_dir / f"{original_name}.ogg"
         wav_to_ogg(wav_file, ogg_file)
         r.source = ogg_file
     process_uploads(requests)
@@ -76,7 +76,7 @@ def parse_event_stories():
     event_starts, predecessors, successors = get_event_start_ids(table)
     event_lists = event_bfs(event_starts, successors, table)
     stories: list[Story] = []
-    out_dir = Path("files/out")
+    out_dir = local_file_dir / "out"
     out_dir.mkdir(parents=True, exist_ok=True)
     for event_list in event_lists:
         first_event_id = list(event_list)[0]
@@ -99,7 +99,7 @@ def parse_stories(table_name: str, i18n_name: str,
     event_starts, predecessors, successors = get_event_start_ids(table)
     event_lists = event_bfs(event_starts, successors, table)
     stories: list[Story] = []
-    out_dir = Path("files/out")
+    out_dir = local_file_dir / "out"
     out_dir.mkdir(parents=True, exist_ok=True)
     event_lists = [event_list for event_list in event_lists if filter_function(list(event_list)[0])]
     event_lists.sort(key=(lambda el: sorter(list(el)[0])) if sorter is not None else None)

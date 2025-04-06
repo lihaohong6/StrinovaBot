@@ -9,6 +9,7 @@ from audio.audio_utils import compute_audio_distance, load_json_voices
 from audio.data.conversion_table import voice_conversion_table
 from global_config import internal_names
 from utils.asset_utils import audio_root, wav_root_cn
+from utils.file_utils import cache_dir
 from utils.general_utils import download_file
 from utils.lang import languages_with_audio, CHINESE
 from utils.wiki_utils import s
@@ -23,8 +24,7 @@ def test_audio_similarity():
         "EN_Vox_Ming_BPCHAT_143.", # diff
     ]
     voices = load_json_voices('Michele') + load_json_voices('Ming')
-    download_dir = Path("files/cache")
-    download_dir.mkdir(parents=True, exist_ok=True)
+    download_dir = cache_dir
     for v in voices:
         for lang in languages_with_audio():
             file_page_title = v.get_file_page(lang)

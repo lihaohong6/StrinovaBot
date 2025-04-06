@@ -4,6 +4,7 @@ from pywikibot import Site, FilePage
 from pywikibot.pagegenerators import GeneratorFactory
 from pywikibot.site._upload import Uploader
 
+from utils.file_utils import local_file_dir
 from utils.general_utils import download_file, cn_name_to_en
 
 bwiki = Site(code="bwiki")
@@ -43,12 +44,8 @@ def profile():
             s.upload(target_page, source_url=url, comment="upload from bwiki")
 
 
-file_dir = Path("files")
-file_dir.mkdir(exist_ok=True)
-
-
 def download_wallpapers():
-    wallpaper_dir = file_dir / "wallpapers"
+    wallpaper_dir = local_file_dir / "wallpapers"
     existing = set(f.name for f in (wallpaper_dir / 'existing').glob("*"))
     gen = GeneratorFactory(bwiki)
     gen.handle_args(["-imagesused:壁纸", "-ns:File"])
@@ -67,7 +64,7 @@ def download_wallpapers():
 
 
 def category_downloader(cat: str, target: str):
-    target_dir = file_dir / target
+    target_dir = local_file_dir / target
     target_dir.mkdir(exist_ok=True)
     gen = GeneratorFactory(bwiki)
     gen.handle_args([f'-catr:{cat}'])

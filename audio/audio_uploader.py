@@ -7,6 +7,7 @@ from pywikibot.pagegenerators import GeneratorFactory
 from audio.audio_utils import audio_is_same, wav_to_ogg
 from audio.voice import Voice
 from utils.asset_utils import audio_root
+from utils.file_utils import cache_dir
 from utils.general_utils import download_file
 from utils.lang import languages_with_audio, CHINESE
 
@@ -33,7 +34,7 @@ def upload_audio_file(voices: list[Voice],
     gen = gen.getCombinedGenerator()
     existing: set[str] = set(p.title(underscore=True, with_ns=False) for p in gen)
     text = f"[[Category:{char_name} voice lines]]"
-    temp_download_dir = Path("files/cache/audio")
+    temp_download_dir = cache_dir / "audio"
     temp_download_dir.mkdir(parents=True, exist_ok=True)
     for v in voices:
         for lang in languages_with_audio():

@@ -5,6 +5,7 @@ from pywikibot import Page
 
 from char_info.gallery import parse_skin_tables, localize_skins, parse_emotes
 from utils.asset_utils import resource_root
+from utils.file_utils import local_file_dir
 from utils.lang import set_language
 from utils.wiki_utils import s
 
@@ -28,7 +29,7 @@ def rename_outfits():
 
 
 def rename_emotes():
-    out_path = Path("files/emotes")
+    out_path = local_file_dir / "emotes"
     out_path.mkdir(parents=True, exist_ok=True)
     emotes = parse_emotes()
     for char_name, emote_list in emotes.items():

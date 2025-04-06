@@ -10,6 +10,7 @@ from audio.audio_utils import audio_is_silent
 from audio.data.conversion_table import VoiceType, voice_conversion_table, table_languages
 from audio.voice import VoiceUpgrade, Voice
 from utils.asset_utils import audio_root, audio_event_root_global, global_export_root, global_wem_root
+from utils.file_utils import cache_dir
 from utils.json_utils import load_json, get_all_game_json, get_table, get_table_global
 from utils.lang import CHINESE, Language, languages_with_audio
 from utils.lang_utils import get_multilanguage_dict
@@ -143,7 +144,7 @@ bgm_cache: dict[int, Path] = {}
 
 def get_bgm_file_by_event_id(event_id: int) -> Path | None:
     global bgm_cache
-    bgm_cache_location = Path("files/cache/bgm/table.pickle")
+    bgm_cache_location = cache_dir / "bgm/table.pickle"
     if len(bgm_cache) == 0 and bgm_cache_location.exists():
         with open(bgm_cache_location, "rb") as f:
             bgm_cache = pickle.load(f)

@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from char_info.gallery import parse_skin_tables, SkinInfo
+from utils.file_utils import local_file_dir
 from utils.general_utils import cn_name_to_en, en_name_to_zh, en_name_to_cn
 from utils.wiki_utils import save_json_page
 from utils.lang import CHINESE
@@ -43,7 +44,7 @@ def save_mmd_json_object(models: dict[str, list[MMDModel]]) -> None:
 
 
 def main():
-    models_root = Path("files/mmd")
+    models_root = local_file_dir / "mmd"
 
     skin_table = parse_skin_tables()
     name_mapper: dict[str, str] = {}

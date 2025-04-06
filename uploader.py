@@ -3,6 +3,7 @@ from pathlib import Path
 from pywikibot import FilePage, Page
 
 from global_config import get_characters
+from utils.file_utils import local_file_dir
 from utils.upload_utils import UploadRequest, process_uploads
 from utils.wiki_utils import s
 
@@ -65,7 +66,7 @@ def upload_emotes():
 
 
 def upload_local():
-    p = Path("files/upload")
+    p = local_file_dir / "upload"
     requests = []
     files = list(p.glob("*.jpg")) + list(p.glob("*.png"))
     for f in files:
