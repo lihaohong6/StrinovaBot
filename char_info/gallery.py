@@ -1,4 +1,5 @@
 import json
+import subprocess
 from dataclasses import dataclass
 from functools import cache
 
@@ -6,7 +7,8 @@ from pywikibot import FilePage, Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from utils.asset_utils import resource_root
-from utils.general_utils import get_char_by_id, en_name_to_zh
+from utils.file_utils import temp_file_dir, temp_download_dir
+from utils.general_utils import get_char_by_id, en_name_to_zh, download_file
 from utils.dict_utils import merge_dict2
 from utils.json_utils import get_all_game_json, get_table
 from utils.lang import CHINESE
@@ -92,13 +94,13 @@ class SkinInfo:
         return f"File:{char_name} Skin {self.name_cn}.png"
 
     def get_bwiki_screenshot_front_title(self, char_name: str):
-        return f"File:{char_name}时装-{self.name_cn}.png"
+        return f"File:{char_name}时装-{self.name_cn}.jpg"
 
     def get_mh_screenshot_back_title(self, char_name: str):
         return f"File:{char_name} Skin Back {self.name_cn}.png"
 
     def get_bwiki_screenshot_back_title(self, char_name: str):
-        return f"File:{char_name}时装背面-{self.name_cn}.png"
+        return f"File:{char_name}时装-{self.name_cn} 背面.jpg"
 
     def get_mh_portrait_title(self, char_name: str):
         return f"File:{char_name} Skin Portrait {self.name_cn}.png"
@@ -173,6 +175,23 @@ def upload_skins(char_name: str, skin_list: list[SkinInfo]) -> list[SkinInfo]:
     return skin_list
 
 
+def upload_skin_screenshot(source_url: str, target: FilePage, text: str, summary: str) -> None:
+    source_ext = source_url.split(".")[-1]
+    assert source_ext in ["jpg", "jpeg", "png", "webp"]
+    target_ext = target.title().split(".")[-1]
+    if source_ext == target_ext:
+        upload_file(text, target, summary, file=source_url)
+        return
+    source_file = temp_download_dir / f"temp.{source_ext}"
+    download_file(source_url, source_file)
+    temp_file = temp_file_dir / f"temp.{target_ext}"
+    subprocess.run(["magick", source_file, temp_file], check=True)
+    assert temp_file.exists()
+    upload_file(text, target, summary=summary, file=temp_file)
+    source_file.unlink()
+    temp_file.unlink()
+
+
 def process_skin_upload_requests(char_name: str, skins: list[SkinUpload],
                                  default_text: str = None,
                                  cat: str = "Skin screenshots",
@@ -195,10 +214,7 @@ def process_skin_upload_requests(char_name: str, skins: list[SkinUpload],
                       f"this image is licensed under CC BY-NC-SA 4.0."
                       f"[[Category:{char_name} images]]")
             text += f"\n[[Category:{cat}]]"
-            upload_file(text=text,
-                        target=skin.target,
-                        summary=summary,
-                        url=skin.source.get_file_url())
+            upload_skin_screenshot(skin.source.get_file_url(), skin.target, text, summary)
         skin_list.append(skin.skin)
     return skin_list
 
