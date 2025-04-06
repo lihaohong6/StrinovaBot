@@ -24,6 +24,7 @@ class RawEvent:
     sound_effect: str | None
     role_id: int
     text: dict[str, str]
+    prologue_title: dict[str, str] | None = None
     talker_name: dict[str, str] | None = None
     extend_performance_list: list[dict[str, str]] = dataclasses.field(default_factory=list)
 
@@ -52,6 +53,7 @@ def get_raw_events(events: dict[int, dict], pred: dict[int, list[int]], i18n_nam
         role_id = v["RoleId"]
         talker_name = get_text(i18n, v["TalkerName"])
         text_context = get_text(i18n, v["TextContext"])
+        prologue_title = get_text(i18n, v["PrologueTitle"])
         extend_performance_list = []
         for p in v["ExtendPerformanceList"]:
             r = get_text(i18n, p['TextParam'])
@@ -65,6 +67,7 @@ def get_raw_events(events: dict[int, dict], pred: dict[int, list[int]], i18n_nam
                      sound_effect=sound_effect,
                      role_id=role_id,
                      text=text_context,
+                     prologue_title=prologue_title,
                      talker_name=talker_name,
                      extend_performance_list=extend_performance_list))
 

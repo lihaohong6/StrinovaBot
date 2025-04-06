@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Callable
 
 from audio.audio_utils import wem_to_wav, wav_to_ogg
@@ -7,6 +6,8 @@ from story.story_preprocessor import get_raw_events
 from utils.file_utils import local_file_dir, temp_file_dir
 from utils.general_utils import get_id_by_char
 from utils.json_utils import get_table_global
+from utils.lang import ENGLISH
+from utils.lang_utils import StringConverters
 from utils.upload_utils import process_uploads
 from utils.wiki_utils import save_page
 
@@ -37,7 +38,6 @@ def upload_story_images(stories: list[Story]) -> None:
 
 
 def upload_story_audio(stories: list[Story]) -> None:
-
     requests = []
     # deduplicate requests
     existing: set[str] = set()
@@ -185,7 +185,7 @@ def parse_main_stories():
         parse_seasonal_story(s)
 
 
-def parse_character_stories():
+def make_character_stories():
     internal_names: dict[str, str] = {
         "Michele": "Michel",
         "Celestia": "XingHui",
@@ -212,13 +212,22 @@ def parse_character_stories():
             assert str(story_id).startswith(f"{char_id}20"), f"{story_id}'s priority cannot be determined"
             return 1, story_id
 
-        parse_stories(f"Cinematic/AVGEvent/AVGEvent_{char}",
-                      f"AVGEvent_{char}",
-                      filter_function=lambda i: str(i).startswith(f"{char_id}"),
-                      upload=False,
-                      # output=lambda i, story_index: f"{char_name}/Story/{i}",
-                      sorter=key_function)
+        stories = parse_stories(f"Cinematic/AVGEvent/AVGEvent_{char}",
+                                f"AVGEvent_{char}",
+                                filter_function=lambda i: str(i).startswith(f"{char_id}"),
+                                upload=True,
+                                output=lambda i, story_index: f"{char_name}/Story/{i}",
+                                sorter=key_function)
+
+        story_navigation: list[str] = [f"{char_name}'s personal stories:", ""]
+        for index, story in enumerate(stories, 1):
+            root_page = "{{ROOTPAGENAME}}"
+            story_name = story.title[ENGLISH.code] if story.title else f"Episode {index}"
+            story_name = StringConverters.all_caps_remove(story_name)
+            story_navigation.append(f"#[[{root_page}/Story/{index}|{story_name}]]")
+        story_text = "\n".join(story_navigation)
+        save_page(f"{char_name}/Story", story_text)
 
 
 if __name__ == '__main__':
-    parse_character_stories()
+    make_character_stories()

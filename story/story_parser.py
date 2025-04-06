@@ -169,6 +169,7 @@ class InfoRow(StoryRow):
 @dataclass
 class Story:
     rows: list[StoryRow] = field(default_factory=list)
+    title: dict[str, str] | None = None
     bgm: list[UploadRequest] = field(default_factory=list)
     background_images: list[UploadRequest] = field(default_factory=list)
 
@@ -199,6 +200,8 @@ def merge_options(story: Story):
 def parse_raw_events(raw_events: list[RawEvent]) -> Story:
     story = Story()
     for event in raw_events:
+        if event.prologue_title is not None:
+            story.title = event.prologue_title
         parse_background(event, story)
         parse_bgm(event, story)
         parse_conversation(event, story)
