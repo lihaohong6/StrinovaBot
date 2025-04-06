@@ -1,4 +1,4 @@
 [submodule "audio/data"]
 	path = audio/data
-	url = git@github.com:lihaohong6/Strinova-data.git
+	url = git@github.com:lihaohong6/Strinova-audio.git
 	branch = audio
