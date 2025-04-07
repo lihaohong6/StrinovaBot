@@ -2,6 +2,7 @@ import re
 from dataclasses import dataclass, field, fields
 from enum import Enum
 
+from utils.dict_utils import merge_dict2
 from utils.lang import Language
 
 
@@ -48,6 +49,11 @@ class Voice:
         if self.role_id != o.role_id:
             if self.role_id == 999:
                 self.role_id = o.role_id
+
+    def lang_merge(self, o: "Voice"):
+        # assert len(o.id) == 1, f"Other voice has more than one id: {o.id}\nPath: {o.path}\n{o}"
+        self.id.extend(o.id)
+        self.file = merge_dict2(self.file, o.file)
 
     def get_file_page(self, lang: Language):
         return f"{lang.audio_code.upper()}_{self.path}.ogg"

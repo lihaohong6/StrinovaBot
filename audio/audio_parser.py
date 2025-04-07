@@ -270,6 +270,26 @@ def parse_role_voice() -> dict[int, Voice]:
     return voices
 
 
+def merge_kanami_system_role_voice(voices: dict[int, Voice]):
+    cn_voices: dict[str, Voice] = {}
+    ja_voices: list[Voice] = []
+    for k, v in voices.items():
+        if "Communicate_Kanami_" not in v.path:
+            continue
+        if "_JP" in v.path:
+            ja_voices.append(v)
+        else:
+            cn_voices[v.path] = v
+    for v in ja_voices:
+        path = v.path.replace("_JP", "")
+        if path not in cn_voices:
+            print(f"JP voice line with path {path} is not in cn_voices")
+            continue
+        cn_voices[path].lang_merge(v)
+        for voice_id in v.id:
+            if voice_id in voices:
+                del voices[voice_id]
+
 
 def role_voice() -> dict[int, Voice]:
     tables: dict[str, dict] = {}
@@ -305,6 +325,7 @@ def role_voice() -> dict[int, Voice]:
             continue
         voice.file = files
         result[k] = voice
+    merge_kanami_system_role_voice(result)
     return result
 
 
