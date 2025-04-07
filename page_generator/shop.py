@@ -55,6 +55,7 @@ def reverse_skin_lookup_table() -> dict[int, str]:
     skins = parse_skin_tables()
     result = {}
     for char_name, skin_list in skins.items():
+        skin_list: list[SkinInfo]
         for skin in skin_list:
             result[skin.id] = char_name
     return result

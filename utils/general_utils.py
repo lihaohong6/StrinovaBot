@@ -34,9 +34,9 @@ def get_char_by_id(char_id: int) -> str:
 
 
 def get_id_by_char(char_name: str) -> int | None:
-    for k, v in char_id_mapper.items():
-        if v == char_name:
-            return k
+    for c in get_characters():
+        if c.name == char_name:
+            return c.id
     return None
 
 

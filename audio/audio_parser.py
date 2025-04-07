@@ -11,6 +11,7 @@ from audio.data.conversion_table import VoiceType, voice_conversion_table, table
 from audio.voice import VoiceUpgrade, Voice
 from utils.asset_utils import audio_root, audio_event_root_global, global_export_root, global_wem_root
 from utils.file_utils import cache_dir
+from utils.general_utils import get_id_by_char
 from utils.json_utils import load_json, get_all_game_json, get_table, get_table_global
 from utils.lang import CHINESE, Language, languages_with_audio
 from utils.lang_utils import get_multilanguage_dict
@@ -18,7 +19,7 @@ from utils.lang_utils import get_multilanguage_dict
 
 @dataclass
 class Trigger:
-    id: int
+    id: int | str
     type: VoiceType
     name: dict[str, str] = field(default_factory=dict)
     description: dict[str, str] = field(default_factory=dict)
@@ -273,9 +274,11 @@ def parse_role_voice() -> dict[int, Voice]:
 def role_voice() -> dict[int, Voice]:
     tables: dict[str, dict] = {}
     bank_name_to_files: dict[str, dict[str, list[Path]]] = {}
+    sfx_table = parse_banks_xml("sfx")
+    sfx_bank_name_to_files: dict[str, list[Path]] = map_bank_name_to_files(audio_root / "sfx")
     for lang in languages_with_audio():
-        tables[lang.code] = parse_banks_xml(lang)
-        bank_name_to_files[lang.code] = map_bank_name_to_files(audio_root / lang.audio_dir_name)
+        tables[lang.code] = parse_banks_xml(lang) | sfx_table
+        bank_name_to_files[lang.code] = map_bank_name_to_files(audio_root / lang.audio_dir_name) | sfx_bank_name_to_files
 
     voices = parse_role_voice()
     result: dict[int, Voice] = {}
@@ -288,10 +291,15 @@ def role_voice() -> dict[int, Voice]:
             # FIXME: should source CN events too (as a bonus)
             # event_file = audio_event_root / f"{path}.json"
             audio_file = find_audio_file(event_file, tables[lang.code], bank_name_to_files[lang.code])
+
             if audio_file is None:
                 audio_file = ""
             else:
-                failed = False
+                local_path = audio_root / lang.audio_dir_name / f"{audio_file}"
+                if local_path.exists():
+                    failed = False
+                else:
+                    audio_file = ""
             files[lang.code] = audio_file
         if failed:
             continue
@@ -341,19 +349,23 @@ def apply_trigger_fix(triggers: list[Trigger]) -> None:
 def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
     triggers: dict[str, Trigger] = {}
 
-    def make_trigger(key, names: dict[str, str], type: VoiceType):
+    def make_trigger(key, names: dict[str, str], voice_type: VoiceType):
+        trigger_id = int(key) if key.isdigit() else key
         triggers[key] = Trigger(
-            id=int(key),
+            id=trigger_id,
             name=names,
             description=names,
             role_id=0,
-            type=type,
+            type=voice_type,
         )
 
     for voice_type, table in voice_conversion_table.items():
         for key, names in table.items():
             names_dict = dict(zip(table_languages, names))
-            make_trigger(key, names_dict, voice_type)
+            if voice_type == VoiceType.SYSTEM:
+                make_trigger("Communicate_Kanami_" + key, names_dict, voice_type)
+            else:
+                make_trigger(key, names_dict, voice_type)
 
     voice_found: set[tuple] = set()
 
@@ -362,6 +374,15 @@ def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
         if ids in voice_found:
             continue
         voice_found.add(ids)
+        system_voice_match = re.search(r"Communicate_Kanami_(\d+)", v.path)
+        if system_voice_match:
+            trigger_name = system_voice_match.group(0)
+            if trigger_name not in triggers:
+                print(f"Skipping {v.path} because trigger {trigger_name} is not found")
+                continue
+            v.role_id = get_id_by_char("Kanami")
+            triggers[trigger_name].voices.append(v)
+            continue
         # FIXME: temporary patch to prevent birthday lines (e.g. Vox_Audrey_Birthday_001) from interfering
         #  with regular lines
         if re.search(r"(_Date|Birthday_)\d{2,3}", v.path) is not None or "_TeamGuide_" in v.path:

@@ -7,6 +7,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from queue import Queue
+from shutil import copyfile
 from subprocess import Popen
 
 sys.path.append("../..")
@@ -145,6 +146,18 @@ def remove_silent_file(path: Path):
         path.unlink()
 
 
+def postprocess():
+    # Move Kanami announcer audio files to corresponding language directories
+    for f in Path("sfx").glob("*.wav"):
+        if not f.name.startswith("Vox_Communicate_Kanami"):
+            continue
+        if "JP" in f.name:
+            copyfile(f, Path("Japanese") / f.name)
+        else:
+            copyfile(f, Path("Chinese") / f.name)
+
+
+
 def main():
 
     # Set paths
@@ -183,6 +196,8 @@ def main():
         for file in all_wav_files:
             executor.submit(remove_silent_file,
                             file)
+
+    postprocess()
 
 
 if __name__ == "__main__":

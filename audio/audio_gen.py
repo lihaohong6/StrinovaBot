@@ -126,3 +126,11 @@ def make_json():
     triggers = match_custom_triggers(list(voices.values()))
     for char_id, char_name in char_id_mapper.items():
         make_character_json(triggers, char_id, discard=False)
+
+
+def main():
+    make_json()
+
+
+if __name__ == "__main__":
+    main()

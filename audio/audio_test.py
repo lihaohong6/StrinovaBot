@@ -1,9 +1,8 @@
 import os
-from pathlib import Path
 
 from pywikibot import FilePage
 
-from audio.audio_parser import parse_role_voice, in_game_triggers, role_voice, in_game_triggers_upgrade, \
+from audio.audio_parser import role_voice, in_game_triggers_upgrade, \
     match_custom_triggers
 from audio.audio_utils import compute_audio_distance, load_json_voices
 from audio.data.conversion_table import voice_conversion_table
@@ -42,7 +41,7 @@ def test_audio_similarity():
 
 def test_audio_number_sequence():
     voices = role_voice()
-    triggers = in_game_triggers()
+    triggers = [] # in_game_triggers()
     upgrades = in_game_triggers_upgrade()
     custom_triggers = match_custom_triggers(list(voices.values()))
     can_be_triggered: set[int] = set()
@@ -84,13 +83,11 @@ def test_audio_number_sequence():
     print(f"Non-orphan voice-lines: {len(voices_non_orphan)}")
     print("\n".join(str(o) for o in orphans))
 
-    # TODO:
-    #  Role.json: UnlockVoiceId, AppearanceVoiceId, EquipSecondWeaponVoiceId, EquipGrenadeVoiceId
-    exists = set()
     while True:
         cond = input("Cond: ")
+        exists = set()
         for v in voices.values():
-            conditions = ["Birthday_" + cond.strip()]
+            conditions = ["Communicate_Kanami_" + cond]
             if any(c in v.path for c in conditions):
                 if v.path in exists:
                     continue

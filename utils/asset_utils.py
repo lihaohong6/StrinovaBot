@@ -39,7 +39,7 @@ audio_event_root_global = global_json_root / r"WwiseAssets\AkEvent"
 wav_root_cn = audio_root / "Chinese"
 wav_root_jp = audio_root / "Japanese"
 wav_root_en = audio_root / "English"
-
+wav_root_sfx = audio_root / "sfx"
 
 def main():
     pass
