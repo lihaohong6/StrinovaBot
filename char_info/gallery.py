@@ -37,17 +37,35 @@ class Emote:
         return f"Emote/T_Dynamic_Emote_{self.id}.png"
 
 
+def get_emote_exceptions() -> dict[int, str]:
+    exception_table: dict[str, list[int]] = {
+        'Leona': [60000140, 60000141],
+        'Eika': [],
+        'Bai Mo': [],
+        'Mara': [],
+        'Celestia': [],
+        'Reiichi': [],
+        'Yugiri': []
+    }
+    result: dict[int, str] = {}
+    for char_name, emote_list in exception_table.items():
+        for emote_id in emote_list:
+            result[emote_id] = char_name
+    return result
+
+
 def parse_emotes() -> dict[str, list[Emote]]:
     goods_table = get_table("Emote")
     i18n = get_all_game_json('Emote')
     items: dict[str, list[Emote]] = {}
+    emote_exceptions = get_emote_exceptions()
     for k, v in goods_table.items():
         # if v['ItemType'] != 13:
         #     continue
         name_source = v['Name']['SourceString']
         # This algorithm sometimes mis-classifies emotes
-        if k in {60000140, 60000141}:
-            name_en = "Leona"
+        if k in emote_exceptions:
+            name_en = emote_exceptions[k]
         else:
             role_id = v['RoleSkinId'] // 1000 % 1000
             name_en = get_char_by_id(role_id)
