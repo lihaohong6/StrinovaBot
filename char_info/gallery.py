@@ -39,13 +39,14 @@ class Emote:
 
 def get_emote_exceptions() -> dict[int, str]:
     exception_table: dict[str, list[int]] = {
-        'Leona': [60000140, 60000141],
-        'Eika': [],
-        'Bai Mo': [],
-        'Mara': [],
-        'Celestia': [],
-        'Reiichi': [],
-        'Yugiri': []
+        'Leona': [60000140, 60000141, 60000166, 60000167, 60000168],
+        'Fragrans': [60000157, 60000158],
+        'Eika': [60000161, 60000174],
+        'Bai Mo': [60000162, 60000163],
+        'Mara': [60000159, 60000160, 60000171, 60000172, 60000173],
+        'Celestia': [60000175, 60000176],
+        'Reiichi': [60000169, 60000170],
+        'Yugiri': [60000164, 60000165]
     }
     result: dict[int, str] = {}
     for char_name, emote_list in exception_table.items():
