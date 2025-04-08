@@ -1,16 +1,17 @@
 import os
+import re
 
 from pywikibot import FilePage
 
 from audio.audio_parser import role_voice, in_game_triggers_upgrade, \
     match_custom_triggers
-from audio.audio_utils import compute_audio_distance, load_json_voices
+from audio.audio_utils import compute_audio_distance, load_json_voices, wav_to_ogg
 from audio.data.conversion_table import voice_conversion_table
 from global_config import internal_names
-from utils.asset_utils import audio_root, wav_root_cn
-from utils.file_utils import cache_dir
+from utils.asset_utils import audio_root, wav_root_cn, wav_root_jp
+from utils.file_utils import cache_dir, temp_file_dir
 from utils.general_utils import download_file
-from utils.lang import languages_with_audio, CHINESE
+from utils.lang import languages_with_audio, CHINESE, JAPANESE
 from utils.wiki_utils import s
 
 
@@ -96,7 +97,25 @@ def test_audio_number_sequence():
                 os.startfile(wav_root_cn / v.file[CHINESE.code])
 
 
+def batch_rename_audio():
+    voices = role_voice()
+    triggers = match_custom_triggers(list(voices.values()))
+    out_dir = temp_file_dir / "kanami_communicate"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for v in voices.values():
+        if "Communicate_Kanami" not in v.path:
+            continue
+        for wav_root, file_name, is_jp in [(wav_root_cn, v.file[CHINESE.code], False),
+                                           (wav_root_jp, v.file[JAPANESE.code], True)]:
+            if file_name == "":
+                continue
+            local_file = wav_root / file_name
+            suffix = ".ogg" if not is_jp else "_JP.ogg"
+            out_file = re.search(r"\d{3}", v.path).group(0) + suffix
+            wav_to_ogg(local_file, out_dir / out_file)
+
+
 if __name__ == "__main__":
-    test_audio_number_sequence()
+    batch_rename_audio()
 else:
     raise ImportError("Do not import this module. Run it directly instead.")
