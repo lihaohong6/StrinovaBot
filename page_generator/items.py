@@ -4,7 +4,8 @@ from functools import cache
 
 from audio.audio_parser import parse_role_voice
 from audio.voice import Voice
-from char_info.gallery import parse_skin_tables, SkinInfo, Emote, parse_emotes
+from char_info.gallery import parse_skin_tables, SkinInfo
+from char_info.emote import Emote, parse_emotes
 from page_generator.badges import get_all_badges, Badge
 from page_generator.decal import get_all_decals, Decal
 from page_generator.id_card import get_all_id_cards, IdCard

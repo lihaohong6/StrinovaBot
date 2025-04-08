@@ -13,14 +13,7 @@ def bwiki():
     return Site(code="bwiki")
 
 
-__site = None
-
-@property
-def s():
-    global __site
-    if __site is None:
-        __site = Site()
-    return __site
+s = Site()
 
 
 def save_page(page: Page | str, text, summary: str = "update page"):

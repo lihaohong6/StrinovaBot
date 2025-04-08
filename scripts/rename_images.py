@@ -3,7 +3,8 @@ from shutil import copyfile
 
 from pywikibot import Page
 
-from char_info.gallery import parse_skin_tables, localize_skins, parse_emotes
+from char_info.gallery import parse_skin_tables, localize_skins
+from char_info.emote import parse_emotes
 from utils.asset_utils import resource_root
 from utils.file_utils import local_file_dir
 from utils.lang import set_language

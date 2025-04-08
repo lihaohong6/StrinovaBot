@@ -6,94 +6,14 @@ from functools import cache
 from pywikibot import FilePage, Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
-from utils.asset_utils import resource_root
+from utils.dict_utils import merge_dict2
 from utils.file_utils import temp_file_dir, temp_download_dir
 from utils.general_utils import get_char_by_id, en_name_to_zh, download_file
-from utils.dict_utils import merge_dict2
 from utils.json_utils import get_all_game_json, get_table
 from utils.lang import CHINESE
-from utils.lang_utils import get_multilanguage_dict, get_text
-from utils.upload_utils import upload_file, UploadRequest, process_uploads, upload_item_icons
+from utils.lang_utils import get_multilanguage_dict
+from utils.upload_utils import upload_file, upload_item_icons
 from utils.wiki_utils import bwiki, s, save_json_page
-
-
-@dataclass
-class Emote:
-    id: int
-    quality: int
-    name: dict[str, str]
-    text: dict[str, str]
-
-    @property
-    def icon(self):
-        return f"File:Emote_{self.id}.png"
-
-    @property
-    def description(self):
-        return self.text
-
-    @property
-    def get_local_path(self):
-        return f"Emote/T_Dynamic_Emote_{self.id}.png"
-
-
-def get_emote_exceptions() -> dict[int, str]:
-    exception_table: dict[str, list[int]] = {
-        'Leona': [60000140, 60000141, 60000166, 60000167, 60000168],
-        'Fragrans': [60000157, 60000158],
-        'Eika': [60000161, 60000174],
-        'Bai Mo': [60000162, 60000163],
-        'Mara': [60000159, 60000160, 60000171, 60000172, 60000173],
-        'Celestia': [60000175, 60000176],
-        'Reiichi': [60000169, 60000170],
-        'Yugiri': [60000164, 60000165]
-    }
-    result: dict[int, str] = {}
-    for char_name, emote_list in exception_table.items():
-        for emote_id in emote_list:
-            result[emote_id] = char_name
-    return result
-
-
-def parse_emotes() -> dict[str, list[Emote]]:
-    goods_table = get_table("Emote")
-    i18n = get_all_game_json('Emote')
-    items: dict[str, list[Emote]] = {}
-    emote_exceptions = get_emote_exceptions()
-    for k, v in goods_table.items():
-        # if v['ItemType'] != 13:
-        #     continue
-        name_source = v['Name']['SourceString']
-        # This algorithm sometimes mis-classifies emotes
-        if k in emote_exceptions:
-            name_en = emote_exceptions[k]
-        else:
-            role_id = v['RoleSkinId'] // 1000 % 1000
-            name_en = get_char_by_id(role_id)
-        if name_en is None:
-            print(f"{name_source} has no EN character name")
-            continue
-        lst = items.get(name_en, [])
-        emote = Emote(k,
-                      v['Quality'],
-                      get_text(i18n, v['Name']),
-                      get_text(i18n, v['Desc']))
-        lst.append(emote)
-        items[name_en] = lst
-    return items
-
-
-def generate_emotes():
-    upload_requests: list[UploadRequest] = []
-    emotes = parse_emotes()
-    for char_name, emote_list in emotes.items():
-        for emote in emote_list:
-            upload_requests.append(UploadRequest(resource_root / emote.get_local_path,
-                                                 FilePage(s, emote.icon),
-                                                 '[[Category:Emotes]]',
-                                                 "batch upload emotes"))
-    process_uploads(upload_requests)
-    save_json_page("Module:Emote/data.json", emotes)
 
 
 @dataclass
@@ -279,5 +199,4 @@ def generate_skins():
 
 
 if __name__ == '__main__':
-    generate_emotes()
     generate_skins()
