@@ -8,10 +8,10 @@ from audio.audio_parser import role_voice, in_game_triggers_upgrade, \
 from audio.audio_utils import compute_audio_distance, load_json_voices, wav_to_ogg
 from audio.data.conversion_table import voice_conversion_table
 from global_config import internal_names
-from utils.asset_utils import audio_root, wav_root_cn, wav_root_jp
+from utils.asset_utils import audio_root, wav_root_cn, wav_root_jp, wav_root_en
 from utils.file_utils import cache_dir, temp_file_dir
 from utils.general_utils import download_file
-from utils.lang import languages_with_audio, CHINESE, JAPANESE
+from utils.lang import languages_with_audio, CHINESE, JAPANESE, ENGLISH
 from utils.wiki_utils import s
 
 
@@ -88,7 +88,7 @@ def test_audio_number_sequence():
         cond = input("Cond: ")
         exists = set()
         for v in voices.values():
-            conditions = ["Communicate_Kanami_" + cond]
+            conditions = ["Vox_Communicate_" + cond]
             if any(c in v.path for c in conditions):
                 if v.path in exists:
                     continue
@@ -103,14 +103,17 @@ def batch_rename_audio():
     out_dir = temp_file_dir / "kanami_communicate"
     out_dir.mkdir(parents=True, exist_ok=True)
     for v in voices.values():
-        if "Communicate_Kanami" not in v.path:
+        if "Vox_Communicate_" not in v.path:
             continue
-        for wav_root, file_name, is_jp in [(wav_root_cn, v.file[CHINESE.code], False),
-                                           (wav_root_jp, v.file[JAPANESE.code], True)]:
+        for wav_root, file_name, suffix in [(wav_root_cn, v.file[CHINESE.code], "_JP"),
+                                           (wav_root_jp, v.file[JAPANESE.code], "_CN"),
+                                           (wav_root_en, v.file[ENGLISH.code], "_EN")]:
             if file_name == "":
                 continue
             local_file = wav_root / file_name
-            suffix = ".ogg" if not is_jp else "_JP.ogg"
+            suffix = f"{suffix}.ogg"
+            if "Kanami" in v.path:
+                suffix = "_Kanami" + suffix
             out_file = re.search(r"\d{3}", v.path).group(0) + suffix
             wav_to_ogg(local_file, out_dir / out_file)
 
