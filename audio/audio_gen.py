@@ -4,8 +4,8 @@ from typing import Any
 
 from pywikibot import Page
 
-from audio.audio_parser import Trigger, role_voice, match_custom_triggers
-from audio.audio_utils import VoiceJson, get_json_path
+from audio.audio_parser import role_voice, match_custom_triggers
+from audio.audio_utils import VoiceJson, get_json_path, Trigger
 from audio.voice import Voice, VoiceUpgrade
 from global_config import char_id_mapper
 from utils.dict_utils import merge_dict

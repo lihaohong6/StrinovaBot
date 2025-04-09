@@ -13,10 +13,12 @@ def upload_emotes():
         p = Path("files/emotes_outgame/renamed/卡丘丘")
         requests = []
         for d in p.iterdir():
+            d: Path
             if d.is_file():
                 continue
             char_name = d.name
             for index, f in enumerate(d.iterdir(), 1):
+                f: Path
                 assert f.name.endswith(".png")
                 target_file = FilePage(s, f"File:Emotes extra {char_name} {f.name}")
                 requests.append(UploadRequest(f, target_file, f"[[Category:Extra emotes]][[Category:{char_name} emotes]]",
@@ -27,6 +29,7 @@ def upload_emotes():
         p = Path("files/emotes_outgame/renamed/卡丘丘")
         requests = []
         for index, f in enumerate(p.iterdir(), 1):
+            f: Path
             if not f.is_file():
                 continue
             assert f.name.endswith(".png")
@@ -39,6 +42,7 @@ def upload_emotes():
         p = Path("files/emotes_outgame/renamed/b站")
         requests = []
         for index, f in enumerate(p.iterdir(), 1):
+            f: Path
             assert f.name.endswith(".png")
             target_file = FilePage(s, f"File:{f.name}")
             requests.append(UploadRequest(f, target_file, f"[[Category:Extra emotes]][[Category:Kanami emotes]]",
@@ -56,6 +60,7 @@ def upload_emotes():
         p = Path("files/emotes_outgame/renamed/玩法介绍")
         requests = []
         for index, f in enumerate(p.iterdir(), 1):
+            f: Path
             assert f.name.endswith(".png")
             target_file = FilePage(s, f"File:Emotes extra tutorial {index}.png")
             requests.append(UploadRequest(f, target_file, f"[[Category:Extra emotes]]",
@@ -68,7 +73,7 @@ def upload_emotes():
 def upload_local():
     p = local_file_dir / "upload"
     requests = []
-    files = list(p.glob("*.jpg")) + list(p.glob("*.png"))
+    files: list[Path] = list(p.glob("*.jpg")) + list(p.glob("*.png"))
     for f in files:
         target_file = FilePage(s, "File:" + f.name)
         # char_name = f.name.split(" ")[0]

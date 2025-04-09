@@ -4,9 +4,7 @@ import re
 import wikitextparser as wtp
 from wikitextparser import Template
 
-from audio.voice import get_voice_path_digits
-from audio.audio_utils import get_json_path
-from audio.data.conversion_table import voice_conversion_table_flat
+from audio.audio_utils import get_json_path, parse_path
 from utils.general_utils import get_char_pages
 from utils.json_utils import load_json
 from utils.lang import get_language, Language, languages_with_audio
@@ -54,7 +52,9 @@ def merge_template_with_voice(template: Template, voice: dict, lang: Language):
     for audio_lang in languages_with_audio():
         mapping[f'Text{audio_lang.code.upper()}'] = ["transcription", audio_lang.code]
         mapping[f'Trans{audio_lang.code.upper()}'] = ["translation", audio_lang.code, lang.code]
-    regular_titles = set(voice_conversion_table_flat[get_voice_path_digits(voice['path'])])
+    parsed_path = parse_path(voice['path'])
+    assert parsed_path, f"{voice['path']} cannot be parsed"
+    regular_titles = set(v for v in parsed_path.title.values() if len(v) > 0)
     for k, json_keys in mapping.items():
         arg = template.get_arg(k)
         if arg is None:
@@ -62,7 +62,7 @@ def merge_template_with_voice(template: Template, voice: dict, lang: Language):
         arg = arg.value.strip()
 
         def get_val(keys: list[str]) -> str | None:
-            temp = voice
+            temp: dict | str | None = voice
             for key in keys:
                 temp = temp.get(key, None)
                 if temp is None:

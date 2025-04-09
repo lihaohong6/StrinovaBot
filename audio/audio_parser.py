@@ -1,58 +1,19 @@
 import pickle
 import re
-from dataclasses import dataclass, fields, field
 from functools import cache
 from pathlib import Path
 
 from bs4 import BeautifulSoup
 
-from audio.audio_utils import audio_is_silent
-from audio.data.conversion_table import VoiceType, voice_conversion_table, table_languages
+from audio.audio_utils import parse_path, make_custom_triggers, Trigger, UpgradeTrigger
+from audio.data.conversion_table import VoiceType
 from audio.voice import VoiceUpgrade, Voice
-from utils.asset_utils import audio_root, audio_event_root_global, global_export_root, global_wem_root
+from utils.asset_utils import audio_root, audio_event_root_global, global_wem_root
 from utils.file_utils import cache_dir
 from utils.general_utils import get_id_by_char
 from utils.json_utils import load_json, get_all_game_json, get_table, get_table_global
 from utils.lang import CHINESE, Language, languages_with_audio
 from utils.lang_utils import get_multilanguage_dict
-
-
-@dataclass
-class Trigger:
-    id: int | str
-    type: VoiceType
-    name: dict[str, str] = field(default_factory=dict)
-    description: dict[str, str] = field(default_factory=dict)
-    voice_id: list[int] = field(default_factory=list)
-    # 0: applicable for all
-    # otherwise: applicable to a single character
-    role_id: int = 0
-    voices: list[Voice] = field(default_factory=list)
-    children: list["UpgradeTrigger"] = field(default_factory=list)
-
-    def merge(self, o: "Trigger"):
-        assert self.id == o.id and self.type == o.type
-        for f in fields(self):
-            if f.type == str:
-                a1 = getattr(self, f.name)
-                a2 = getattr(o, f.name)
-                if a1 == a2:
-                    continue
-                if a1 == "":
-                    setattr(self, f.name, a2)
-                raise RuntimeError(str(self) + "\n" + str(o))
-            elif f.type == dict:
-                raise RuntimeError("TODO: dict merge unimplemented")
-        if self.role_id != o.role_id:
-            if self.role_id == 999:
-                self.role_id = o.role_id
-
-
-@dataclass
-class UpgradeTrigger:
-    trigger: int
-    voice_id: list[int]
-    skins: list[int]
 
 
 def find_audio_file(event_file: Path, table: dict, bank_name_to_files: dict[str, list[Path]]) -> str | None:
@@ -339,7 +300,7 @@ def apply_trigger_fix(triggers: list[Trigger]) -> None:
     """
     dont_steal_list = {"HuiXing.*066_org", "Lawine.*067_red", "Fuchsia.*066_red", "Yvette.*067_red", "Maddelena.*067_red", "Kokona.*067_red"}
     for t in triggers:
-        if t.id not in [66, 67]:
+        if t.id not in ["066", "067"]:
             continue
         base_voice: dict[str, Voice] = {}
         extra_voice: dict[str, list[Voice]] = {}
@@ -368,25 +329,7 @@ def apply_trigger_fix(triggers: list[Trigger]) -> None:
 
 
 def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
-    triggers: dict[str, Trigger] = {}
-
-    def make_trigger(key, names: dict[str, str], voice_type: VoiceType):
-        trigger_id = int(key) if key.isdigit() else key
-        triggers[key] = Trigger(
-            id=trigger_id,
-            name=names,
-            description=names,
-            role_id=0,
-            type=voice_type,
-        )
-
-    for voice_type, table in voice_conversion_table.items():
-        for key, names in table.items():
-            names_dict = dict(zip(table_languages, names))
-            if voice_type == VoiceType.SYSTEM:
-                make_trigger("Communicate_Kanami_" + key, names_dict, voice_type)
-            else:
-                make_trigger(key, names_dict, voice_type)
+    triggers = make_custom_triggers()
 
     voice_found: set[tuple] = set()
 
@@ -395,24 +338,12 @@ def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
         if ids in voice_found:
             continue
         voice_found.add(ids)
-        system_voice_match = re.search(r"Communicate_Kanami_(\d+)", v.path)
-        if system_voice_match:
-            trigger_name = system_voice_match.group(0)
-            if trigger_name not in triggers:
-                print(f"Skipping {v.path} because trigger {trigger_name} is not found")
-                continue
+        parsed_path = parse_path(v.path)
+        if parsed_path is None:
+            continue
+        if parsed_path.type == VoiceType.SYSTEM:
             v.role_id = get_id_by_char("Kanami")
-            triggers[trigger_name].voices.append(v)
-            continue
-        # FIXME: temporary patch to prevent birthday lines (e.g. Vox_Audrey_Birthday_001) from interfering
-        #  with regular lines
-        if re.search(r"(_Date|Birthday_)\d{2,3}", v.path) is not None or "_TeamGuide_" in v.path:
-            continue
-        digits = v.path_digits()
-        if digits is None:
-            continue
-        if digits in triggers:
-            triggers[digits].voices.append(v)
+        triggers[parsed_path.trigger_id].voices.append(v)
 
     result = list(triggers.values())
     apply_trigger_fix(result)

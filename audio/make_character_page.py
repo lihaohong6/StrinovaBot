@@ -3,7 +3,8 @@ from pywikibot import Page
 from audio_utils import load_json_voices
 from audio.audio_uploader import upload_audio_file, ensure_audio_files_exist
 from utils.string_utils import pick_string
-from audio_parser import Trigger, match_custom_triggers
+from audio_parser import match_custom_triggers
+from audio.audio_utils import Trigger
 from data.conversion_table import VoiceType
 from global_config import char_id_mapper
 from utils.lang import JAPANESE, ENGLISH, CHINESE, Language, get_language, languages_with_audio
