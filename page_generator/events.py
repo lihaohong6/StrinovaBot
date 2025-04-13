@@ -6,7 +6,7 @@ from pywikibot.pagegenerators import GeneratorFactory
 from page_generator.items import Item
 from utils.json_utils import get_all_game_json, get_table_global
 from utils.lang import ENGLISH
-from utils.lang_utils import StringConverters, get_text
+from utils.lang_utils import StringConverters, get_text, get_english_version
 from utils.wiki_utils import s, save_json_page
 from utils.wtp_utils import get_templates_by_name
 
@@ -27,7 +27,7 @@ class EventTask:
         else:
             freq = "One-time"
         return ("|-\n"
-                f"| {self.description[ENGLISH.code]} || {freq} || {self.reward}")
+                f"| {get_english_version(self.description)} || {freq} || {self.reward}")
 
 
 @dataclass

@@ -115,6 +115,8 @@ def outbreak_upgrades() -> dict[int, OutbreakUpgrade]:
                 break
             description_params.append(v[k])
         max_level = v["MaxLevel"]
+        if max_level != len(description_params) and len(description_params) != 0:
+            print(name['en'], max_level, len(description_params))
         team_type = TeamType.HUMAN if "Human" in v["TeamType"] else TeamType.ZOMBIE
         rarity = UpgradeRarity(v["Rarity"].split(":")[-1])
         weights = [card_details[card_id][f"WeightStage{i}"] for i in range(1, 5)]

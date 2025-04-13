@@ -100,9 +100,9 @@ def print_event_tasks(event: Event):
 
 def print_event_tasks_main():
     events = parse_events()
-    event = events[10025]
+    event = events[10094]
     print_event_tasks(event)
 
 
 if __name__ == '__main__':
-    print_outbreak_event_story()
+    print_event_tasks_main()

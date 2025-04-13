@@ -72,29 +72,16 @@ def perform_story_uploads(stories: list[Story]) -> None:
 
 
 def parse_event_stories():
-    table = get_table_global("Cinematic/AVGEvent/AVGEvent_Activity")
-    event_starts, predecessors, successors = get_event_start_ids(table)
-    event_lists = event_bfs(event_starts, successors, table)
-    stories: list[Story] = []
-    out_dir = local_file_dir / "out"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    for event_list in event_lists:
-        first_event_id = list(event_list)[0]
-        if str(first_event_id).startswith("1042"):
-            raw_events = get_raw_events(event_list, predecessors)
-            story = parse_raw_events(raw_events)
-            template_string = story_to_template(story)
-            stories.append(story)
-            with open(out_dir / f"{first_event_id}.txt", "w", encoding="utf-8") as f:
-                f.write(template_string)
-    perform_story_uploads(stories)
+    parse_stories("Cinematic/AVGEvent/AVGEvent_Activity",
+                  "AVGEvent_Activity",
+                  upload=False)
 
 
 def parse_stories(table_name: str, i18n_name: str,
                   filter_function: Callable[[int], bool] = lambda x: True,
                   upload: bool = True,
                   output: Callable[[int, int], str] = None,
-                  sorter: Callable = None) -> list[Story]:
+                  sorter: Callable = lambda x: x) -> list[Story]:
     table = get_table_global(table_name)
     event_starts, predecessors, successors = get_event_start_ids(table)
     event_lists = event_bfs(event_starts, successors, table)
@@ -102,7 +89,7 @@ def parse_stories(table_name: str, i18n_name: str,
     out_dir = local_file_dir / "out"
     out_dir.mkdir(parents=True, exist_ok=True)
     event_lists = [event_list for event_list in event_lists if filter_function(list(event_list)[0])]
-    event_lists.sort(key=(lambda el: sorter(list(el)[0])) if sorter is not None else None)
+    event_lists.sort(key=(lambda el: sorter(list(el)[0])))
     for index, event_list in enumerate(event_lists, 1):
         first_event_id = list(event_list)[0]
         raw_events = get_raw_events(event_list, predecessors, i18n_name)
@@ -230,4 +217,4 @@ def make_character_stories():
 
 
 if __name__ == '__main__':
-    make_character_stories()
+    parse_event_stories()

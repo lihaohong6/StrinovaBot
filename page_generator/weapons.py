@@ -69,6 +69,9 @@ class Weapon:
     def icon(self):
         return "File:" + self.get_icon_name()
 
+    def file_page(self) -> FilePage:
+        return FilePage(s, "File:" + self.get_variant_scope_name())
+
 
 @cache
 def parse_weapons() -> dict[int, Weapon]:
@@ -183,9 +186,10 @@ def upload_weapon_variants(weapons: list[Weapon]) -> list[Weapon]:
         #         f"[[Category:Weapon screenshots]]"
         #     ))
         scope_name = w.get_variant_bwiki_scope_name()
-        if scope_name in existing:
-            fp = FilePage(s, "File:" + w.get_variant_scope_name())
+        fp = w.file_page()
+        if scope_name in existing or w.quality >= 3:
             w.file_scope = fp
+        if scope_name in existing:
             bwiki_page = existing[scope_name]
             upload_requests.append(UploadRequest(
                 bwiki_page,
