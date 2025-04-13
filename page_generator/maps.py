@@ -2,10 +2,9 @@ from dataclasses import dataclass
 from typing import Iterable
 
 from pywikibot import Page
-from pywikibot.data.api import PageGenerator
 
 from utils.asset_utils import resource_root
-from utils.json_utils import get_all_game_json, get_table, get_table_global
+from utils.json_utils import get_all_game_json, get_table_global
 from utils.lang import ENGLISH, get_language
 from utils.lang_utils import get_multilanguage_dict
 from utils.upload_utils import UploadRequest, process_uploads
@@ -72,9 +71,9 @@ def make_map_pages(maps: Iterable[Map]):
         if p.exists():
             continue
         result = ["{{MapTop|description=" + m.description[lang.code] + "}}",
-                  "Game modes: "]
+                  "{{GameModes}}"]
         gallery = [
-            "=={{translate|Gallery}}==",
+            "=={{translate|Images}}==",
             "<gallery>",
             f"{m.minimap_file}|Minimap",
             f"File:Minimap {m.name_en} annotated.png|Annotated minimap",

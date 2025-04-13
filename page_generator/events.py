@@ -4,8 +4,8 @@ import wikitextparser as wtp
 from pywikibot.pagegenerators import GeneratorFactory
 
 from page_generator.items import Item
+from utils.dict_utils import merge_dict2
 from utils.json_utils import get_all_game_json, get_table_global
-from utils.lang import ENGLISH
 from utils.lang_utils import StringConverters, get_text, get_english_version
 from utils.wiki_utils import s, save_json_page
 from utils.wtp_utils import get_templates_by_name
@@ -49,8 +49,7 @@ def manual_event_rewards(events: dict[int, Event]):
 
 
 def parse_events():
-    i18n = get_all_game_json("Activity")
-    i18n_task = get_all_game_json("ActivityTask")
+    i18n = merge_dict2(get_all_game_json("Activity"), get_all_game_json("ActivityTask"))
     activity_table = get_table_global("Activity")
     task_table = get_table_global("ActivityTask")
     result: dict[int, Event] = {}

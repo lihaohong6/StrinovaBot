@@ -26,6 +26,8 @@ def find_audio_file(event_file: Path, table: dict, bank_name_to_files: dict[str,
         json_data = json_data[0]
     data = json_data["Properties"]
     bank_name = data["RequiredBank"]["ObjectName"].split("'")[1]
+    if "ShortID" not in data:
+        raise RuntimeError(f"Short ID not found {data}")
     short_id = str(data["ShortID"])
     if short_id not in table:
         # print(f"Short ID {short_id} is not in conversion table")
