@@ -1,4 +1,5 @@
 import json
+import pickle
 import re
 from typing import Any
 
@@ -7,8 +8,9 @@ from pywikibot import Page
 from audio.audio_parser import role_voice, match_custom_triggers
 from audio.audio_utils import VoiceJson, get_json_path, Trigger
 from audio.voice import Voice, VoiceUpgrade
-from global_config import char_id_mapper
+from global_config import char_id_mapper, get_characters
 from utils.dict_utils import merge_dict
+from utils.file_utils import cache_dir
 from utils.general_utils import get_bwiki_char_pages
 from utils.json_utils import load_json
 from utils.wiki_utils import bwiki
@@ -71,13 +73,16 @@ def make_character_json(triggers: list[Trigger], char_id: int, discard: bool = F
         json.dump(result, f, ensure_ascii=False, indent=4)
 
 
-def match_role_voice_with_bwiki(voices: list[Voice]):
-    raise RuntimeError("Do not call this function: CC BY-NC-SA 4.0.")
+def get_bwiki_audio_text() -> dict[str, str]:
     import wikitextparser as wtp
+    result: dict[str, str] = {}
+    cache_file = cache_dir / "bwiki_audio_text.pickle"
+    if cache_file.exists():
+        return pickle.load(cache_file.open("rb"))
     for char_id, char_name, page in get_bwiki_char_pages():
         parsed = wtp.parse(page.text)
         for section in parsed.sections:
-            if section.title is not None and section.title == "角色台词":
+            if section.title is not None and "角色台词" in section.title:
                 break
         else:
             print("Audio section not found on " + page.title())
@@ -87,9 +92,20 @@ def match_role_voice_with_bwiki(voices: list[Voice]):
             text = page.text
         else:
             text = str(section)
+        result[char_name] = text
+    pickle.dump(result, cache_file.open("wb"))
+    return result
+
+
+def match_role_voice_with_bwiki(voices: list[Voice]):
+    bwiki_texts: dict[str, str] = get_bwiki_audio_text()
+    for char in get_characters():
+        text = bwiki_texts.get(char.name, None)
+        if text is None:
+            continue
         text_seen: set[str] = set()
         for v in voices:
-            if char_id != v.role_id:
+            if char.id != v.role_id:
                 continue
             digits = re.search(r"(\d{3})(_|$)", v.path)
             # if (digits is None or
