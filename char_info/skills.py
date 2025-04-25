@@ -219,9 +219,11 @@ def char_string_energy_network(char_id, char_name, growth_bomb, i18n, i18n_skill
         add_arg("icon", f"{char_name} Skill {skill_index + 1}.png")
 
         skill_growths = char_growth[localization_keys[skill_index]]
-        for index, skill_growth in enumerate(skill_growths):
-            add_arg(f"text{index + 1}", get_formatted_string(skill_growth))
-            add_arg(f"cost{index + 1}", 250)
+        for index, skill_growth in enumerate(skill_growths, 1):
+            if index == 3:
+                break
+            add_arg(f"text{index}", get_formatted_string(skill_growth))
+            add_arg(f"cost{index}", 250)
         t.set_arg(f"group{arg_index}", str(part) + "\n")
         arg_index += 1
     localization_keys = ["ShieldDesc", "SurviveDesc"]
@@ -232,9 +234,11 @@ def char_string_energy_network(char_id, char_name, growth_bomb, i18n, i18n_skill
         add_arg("name", shield_name)
 
         shield_growths = char_growth[localization_keys[i]]
-        for index, shield_growth in enumerate(shield_growths):
-            add_arg(f"text{index + 1}", get_formatted_string(shield_growth))
-            add_arg(f"cost{index + 1}", 250)
+        for index, shield_growth in enumerate(shield_growths, 1):
+            if index == 3:
+                break
+            add_arg(f"text{index}", get_formatted_string(shield_growth))
+            add_arg(f"cost{index}", 250)
         t.set_arg(f"group{arg_index}", str(part) + "\n")
         arg_index += 1
     # process awakenings
