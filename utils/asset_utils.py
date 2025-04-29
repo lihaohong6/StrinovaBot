@@ -16,7 +16,7 @@ ensure_exists(strinova_root)
 cn_export_root = strinova_root / "AutoUnpack/CNExport"
 json_root = strinova_root / "Strinova-data/CN"
 csv_root = json_root / "CSV"
-wem_root = cn_export_root / 'WwiseAudio' / 'Windows'
+wem_root = cn_export_root / 'WwiseAudio'
 string_table_root = json_root / "CyTable" / "StringTable"
 resource_root = cn_export_root / "DynamicResource"
 # at the very least, json files should be accessible
@@ -26,7 +26,7 @@ ensure_exists(csv_root)
 global_export_root = strinova_root / "AutoUnpack/GLExport"
 global_json_root = strinova_root / "Strinova-data/Global"
 global_csv_root = global_json_root / "CSV"
-global_wem_root = global_export_root / 'WwiseAudio' / 'Windows'
+global_wem_root = global_export_root / 'WwiseAudio'
 localization_root = global_json_root / "Localization/Game"
 global_resources_root = global_export_root / "DynamicResource"
 # at the very least, localizations should be accessible

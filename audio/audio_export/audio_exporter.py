@@ -1,4 +1,5 @@
 ﻿import concurrent.futures
+import hashlib
 import random
 import shutil
 import string
@@ -14,6 +15,9 @@ sys.path.append("../..")
 
 from audio.audio_utils import audio_is_silent
 from utils.asset_utils import wem_root, global_wem_root
+
+
+USE_CONCURRENT_EXECUTOR = True
 
 
 @dataclass
@@ -53,7 +57,7 @@ def get_configs(root: Path, root_gl: Path):
         AudioConfig(root_gl / 'Chinese', 'cn_banks.xml', 'Chinese'),
         AudioConfig(root_gl / 'Japanese', 'ja_banks.xml', 'Japanese'),
         AudioConfig(root_gl / 'English', 'en_banks.xml', 'English'),
-        AudioConfig(root_gl, 'sfx_banks.xml', 'sfx')
+        AudioConfig(root_gl, 'sfx_banks.xml', 'SFX')
     ]
 
 
@@ -82,7 +86,7 @@ def txtp_to_wav(source: Path, dest: Path):
         file_name = file.name
         out_path = dest.joinpath(file_name.replace(".txtp", ".wav"))
         processes.append(Popen(
-            ["vgmstream-cli", file, "-o", out_path.absolute()],
+            ["vgmstream-cli", file.absolute(), "-o", out_path.absolute()],
             stdout=subprocess.DEVNULL,
             cwd=source.parent
         ))
@@ -103,7 +107,7 @@ def make_bank_file(banks_dir, config):
         f.write(out_string)
     subprocess.run(['python', wwiser_location, config_file])
     config_file.unlink()
-    
+
     out_file.rename(banks_dir / config.bank_file)
 
 
@@ -124,7 +128,7 @@ def make_txtp_files(audio_dir, txtp):
 def generate_wav(audio_dir: Path, output_dir: Path):
     txtp = Path(audio_dir.absolute() / 'txtp')
     if txtp.exists():
-        shutil.rmtree(txtp, ignore_errors=True)
+        shutil.rmtree(txtp)
     make_txtp_files(audio_dir, txtp)
     txtp_to_wav(txtp, output_dir)
 
@@ -157,9 +161,42 @@ def postprocess():
             copyfile(f, Path("Chinese") / f.name)
 
 
+def files_are_same(f1: Path, f2: Path) -> bool:
+    hashes = []
+    for f in [f1, f2]:
+        hasher = hashlib.sha256()
+        with open(f, "rb") as file:
+            buf = file.read()
+            hasher.update(buf)
+            hashes.append(hasher.hexdigest())
+    return hashes[0] == hashes[1]
+
+
+def adjust_wem_files(configs: list[AudioConfig]) -> bool:
+    # Now move everything in subdirectory to their parent because otherwise vgmstream may not be able to find them
+    # based on the txtp file
+    media_path = global_wem_root / "Media"
+    for c in configs:
+        wem_path = c.audio_path / 'wem'
+        wem_path.mkdir(parents=True, exist_ok=True)
+        source_path = media_path / c.output_dir
+        for child_dir in source_path.iterdir():
+            if not child_dir.is_dir():
+                continue
+            for wem_file in child_dir.iterdir():
+                assert wem_file.is_file() and wem_file.suffix == ".wem", \
+                    f"Expected a wem file. Found: {wem_file}"
+                target = wem_path / wem_file.name
+                if target.exists():
+                    if files_are_same(wem_file, target):
+                        continue
+                    else:
+                        target.unlink()
+                shutil.copyfile(wem_file, target)
+    return True
+
 
 def main():
-
     # Set paths
     if len(sys.argv) > 1:
         audio_root = Path(sys.argv[1])
@@ -172,6 +209,10 @@ def main():
 
     configs = get_configs(audio_root, audio_root_en)
 
+    result = adjust_wem_files(configs)
+    if not result:
+        return
+
     # Convert bnk files into xml banks
     make_banks(configs)
 
@@ -182,20 +223,29 @@ def main():
         Path(dir_name).mkdir()
 
     # Generate WAV files
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+    if USE_CONCURRENT_EXECUTOR:
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            for config in configs:
+                executor.submit(generate_wav,
+                                config.audio_path, Path(config.output_dir))
+    else:
         for config in configs:
-            executor.submit(generate_wav,
-                            config.audio_path, Path(config.output_dir))
+            generate_wav(config.audio_path, Path(config.output_dir))
 
     # Remove all silent wav files
     all_wav_files = []
     for config in configs:
         out_path = Path(config.output_dir)
         all_wav_files.extend(out_path.glob('*.wav'))
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+
+    if USE_CONCURRENT_EXECUTOR:
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            for file in all_wav_files:
+                executor.submit(remove_silent_file,
+                                file)
+    else:
         for file in all_wav_files:
-            executor.submit(remove_silent_file,
-                            file)
+            remove_silent_file(file)
 
     postprocess()
 
