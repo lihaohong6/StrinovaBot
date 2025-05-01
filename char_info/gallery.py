@@ -119,7 +119,7 @@ def upload_skin_screenshot(source_url: str, target: FilePage, text: str, summary
     assert source_ext in ["jpg", "jpeg", "png", "webp"]
     target_ext = target.title().split(".")[-1]
     if source_ext == target_ext:
-        upload_file(text, target, summary, file=source_url)
+        upload_file(text, target, summary, url=source_url)
         return
     source_file = temp_download_dir / f"temp.{source_ext}"
     download_file(source_url, source_file)
