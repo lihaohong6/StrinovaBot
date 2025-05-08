@@ -27,7 +27,13 @@ def get_rating(text: str) -> tuple[float, int]:
     num_votes = soup.find('span', attrs={'class': 'rating-total'})
     if not num_votes:
         return rating, 0
-    num_votes = int(re.search(r"\d+", num_votes.text).group(0))
+    search_result = re.search(r"\d+", num_votes.text)
+    if search_result:
+        num_votes = int(search_result.group(0))
+    elif "one" in num_votes.text:
+        num_votes = 1
+    else:
+        num_votes = 0
     return rating, num_votes
 
 
