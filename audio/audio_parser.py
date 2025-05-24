@@ -16,23 +16,39 @@ from utils.lang import CHINESE, Language, languages_with_audio
 from utils.lang_utils import get_multilanguage_dict
 
 
-def find_audio_file(event_file: Path, table: dict, bank_name_to_files: dict[str, list[Path]]) -> str | None:
+def find_audio_file(event_file: Path,
+                    table: dict,
+                    bank_name_to_files: dict[str, list[Path]],
+                    lang: Language) -> str | None:
     assert len(table) > 0
     if not event_file.exists():
         # print(event_file.name + " does not exist")
         return None
     json_data = load_json(event_file)
-    if "Properties" not in json_data:
-        json_data = json_data[0]
-    data = json_data["Properties"]
-    bank_name = data["RequiredBank"]["ObjectName"].split("'")[1]
-    if "ShortID" not in data:
-        raise RuntimeError(f"Short ID not found {data}")
-    short_id = str(data["ShortID"])
-    if short_id not in table:
+    properties = json_data["Properties"]
+    bank_name = properties["RequiredBank"]["ObjectName"].split("'")[1]
+    media_id = None
+    if "EventCookedData" not in json_data:
+        return None
+    for language_map in json_data["EventCookedData"]["EventLanguageMap"]:
+        if language_map["Key"]["LanguageName"] != lang.name:
+            continue
+        medias = language_map["Value"]["Media"]
+        for media in medias:
+            if "MediaId" in media:
+                media_id = media.get("MediaId", None)
+                break
+        break
+    else:
+        # FIXME: What about Vox_Communicate? Those have SFX as their language.
+        return None
+    if media_id is None:
+        return None
+    media_id = str(media_id)
+    if media_id not in table:
         # print(f"Short ID {short_id} is not in conversion table")
         return None
-    ix = int(table[short_id])
+    ix = int(table[media_id])
     candidates = []
     if bank_name not in bank_name_to_files:
         # print(f"No file corresponding to bank name " + bank_name)
@@ -273,7 +289,7 @@ def role_voice() -> dict[int, Voice]:
             event_file = audio_event_root_global / f"{path}.json"
             # FIXME: should source CN events too (as a bonus)
             # event_file = audio_event_root / f"{path}.json"
-            audio_file = find_audio_file(event_file, tables[lang.code], bank_name_to_files[lang.code])
+            audio_file = find_audio_file(event_file, tables[lang.code], bank_name_to_files[lang.code], lang)
 
             if audio_file is None:
                 audio_file = ""
