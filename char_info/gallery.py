@@ -181,18 +181,18 @@ def generate_skins():
         skin_list.extend(skin_list2)
 
     skin_data_page = Page(s, "Module:CharacterSkins/data.json")
-    original_json = json.loads(skin_data_page.text)
-
-    for char_name, skin_list in skins.items():
-        name_cn_to_localization: dict[str, tuple[dict, dict]] = {}
-        for skin in original_json.get(char_name, []):
-            name_cn_to_localization[skin['name']['cn']] = (skin['name'], skin['description'])
-        for skin in skin_list:
-            if skin.name_cn not in name_cn_to_localization:
-                continue
-            original_names, original_descriptions = name_cn_to_localization[skin.name_cn]
-            skin.name = merge_dict2(skin.name, original_names)
-            skin.description = merge_dict2(skin.description, original_descriptions)
+    # original_json = json.loads(skin_data_page.text)
+    #
+    # for char_name, skin_list in skins.items():
+    #     name_cn_to_localization: dict[str, tuple[dict, dict]] = {}
+    #     for skin in original_json.get(char_name, []):
+    #         name_cn_to_localization[skin['name']['cn']] = (skin['name'], skin['description'])
+    #     for skin in skin_list:
+    #         if skin.name_cn not in name_cn_to_localization:
+    #             continue
+    #         original_names, original_descriptions = name_cn_to_localization[skin.name_cn]
+    #         skin.name = merge_dict2(skin.name, original_names)
+    #         skin.description = merge_dict2(skin.description, original_descriptions)
 
     save_json_page(skin_data_page, skins)
     print("Skins done")

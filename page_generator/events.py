@@ -68,6 +68,8 @@ def parse_events():
             reward_id = rewards[0]['ItemId']
         daily = v["DayFlush"]
         weekly = v["WeekFlush"]
+        if activity_id not in result:
+            continue
         result[activity_id].tasks.append(EventTask(description=desc, reward=reward, reward_id=reward_id, daily=daily, weekly=weekly))
     manual_event_rewards(result)
     return result

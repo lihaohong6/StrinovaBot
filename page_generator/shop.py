@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import cache
 
 from char_info.gallery import SkinInfo, parse_skin_tables
@@ -61,12 +61,13 @@ def reverse_skin_lookup_table() -> dict[int, str]:
     return result
 
 
-def get_role_legendary_skin(banner_id: int) -> SkinInfo:
+def get_role_legendary_skin(banner_id: int) -> str:
     for drop in parse_gacha_drops()[banner_id]:
         if drop.item.quality == 5 and isinstance(drop.item, SkinInfo):
             role_name = reverse_skin_lookup_table()[drop.item.id]
             return drop.item.get_mh_portrait_title(role_name)
-    raise RuntimeError(f"No legendary skin found for banner {banner_id}")
+    print(f"WARNING: No legendary skin found for banner {banner_id}")
+    return ""
 
 
 def banners_to_serializable(banners: list[Banner]) -> list[dict]:
@@ -85,8 +86,9 @@ def banners_to_serializable(banners: list[Banner]) -> list[dict]:
 
 def make_gacha_banners():
     banners = parse_banners(use_cn=False)
+    # Use this to remove long-running banners (e.g. targeted reconstruction, banners with gibberish dates)
     banners = [b for b in banners
-               if b.end.year >= 2024]
+               if b.end.year >= 2024 and (b.end - b.start) <= timedelta(days=90)]
     banners.sort(key=lambda b: b.start)
     obj = banners_to_serializable(banners)
     save_json_page("Module:Gacha/banners.json", obj)
@@ -118,7 +120,10 @@ def parse_gacha_drops(use_cn: bool = False) -> dict[int, list[GachaDrop]]:
         drops = v['Items']
         assert len(drops) == 1, f"More than one drop: {drops}"
         drop = drops[0]
-        item = items[drop['ItemId']]
+        item = items.get(drop['ItemId'], None)
+        if item is None:
+            print(f"ERROR: item with id {drop['ItemId']} not found")
+            continue
         quantity = drop['ItemAmount']
         result[gacha_id].append(GachaDrop(item, quantity))
     return result

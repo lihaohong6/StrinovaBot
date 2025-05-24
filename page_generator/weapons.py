@@ -259,7 +259,7 @@ def upload_weapon_white_icons():
 def main():
     process_weapon_pages()
     process_weapon_skins()
-    upload_weapon_white_icons()
+    # upload_weapon_white_icons()
 
 
 if __name__ == '__main__':

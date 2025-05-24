@@ -49,10 +49,13 @@ def upload_item_icons(items: list[int | str], text: str = "[[Category:Item icons
     fails: set[int | str] = set()
     for item in items:
         # try upload the big version if it exists, otherwise use small version
-        for big in [True, False]:
-            folder = "ItemIcon" if not big else "BigIcon"
-            file_name = "Item" if not big else "BigItem"
-            local_path = f"Item/{folder}/T_Dynamic_{file_name}_{item}.png"
+        for big in [True, False, 114514]:
+            if isinstance(item, int):
+                local_path = f"Store/T_Dynamic_ItemStore_Big_{item}.png"
+            else:
+                folder = "ItemIcon" if not big else "BigIcon"
+                file_name = "Item" if not big else "BigItem"
+                local_path = f"Item/{folder}/T_Dynamic_{file_name}_{item}.png"
             source = resource_root / local_path
             if not source.exists():
                 source = global_resources_root / local_path

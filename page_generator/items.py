@@ -7,6 +7,7 @@ from audio.voice import Voice
 from char_info.gallery import parse_skin_tables, SkinInfo
 from char_info.emote import Emote, parse_emotes
 from page_generator.badges import get_all_badges, Badge
+from page_generator.chat_bubbles import ChatBubble, parse_chat_bubbles
 from page_generator.decal import get_all_decals, Decal
 from page_generator.id_card import get_all_id_cards, IdCard
 from page_generator.weapons import Weapon, parse_weapons
@@ -96,8 +97,11 @@ def get_all_items() -> dict[int, Item | Badge | Decal | SkinInfo | Weapon | Emot
     voices: dict[int, Voice] = {}
     for vid, v in parse_role_voice().items():
         voices[vid] = v
+    chat_bubbles: dict[int, ChatBubble] = {}
+    for b in parse_chat_bubbles():
+        chat_bubbles[b.id] = b
     # increasing order of specificity
-    return items | skins | badges | decals | id_cards | weapons | emotes | voices | currencies
+    return items | skins | badges | decals | id_cards | weapons | emotes | voices | currencies | chat_bubbles
 
 
 @cache
@@ -122,7 +126,8 @@ def save_all_items():
         else:
             item_id = item.id
         name_en = item.name.get(ENGLISH.code, None)
-        result_name[name_en] = item_id
+        if name_en not in result_name:
+            result_name[name_en] = item_id
         result_id[item_id] = {
             'name': {
                 'en': name_en,
