@@ -147,19 +147,12 @@ Growth_Team
         # bwiki_page = Page(bwiki(), bwiki_base_page.title() + "/弦能增幅网络")
         # assert bwiki_page.exists(), char_name
         parsed = wtp.parse(p.text)
-        for template in parsed.templates:
-            if template.name.strip() == "StringEnergyNetwork":
-                t = template
-                break
-        else:
+        templates = get_templates_by_name(parsed, "StringEnergyNetwork")
+        if len(templates) != 1 :
             print("Template StringEnergyNetwork not found on " + char_name)
             continue
-
-        try:
-            char_string_energy_network(char_id, char_name, growth_bomb, i18n, i18n_skill, p, role_json, skill_json, t)
-        except Exception as e:
-            print(f"Failed to process string energy network for {char_name} due to {e}")
-            continue
+        t = templates[0]
+        char_string_energy_network(char_id, char_name, growth_bomb, i18n, i18n_skill, p, role_json, skill_json, t)
         if p.text.strip() == str(parsed).strip():
             continue
         p.text = str(parsed)
@@ -185,7 +178,10 @@ def char_string_energy_network(char_id, char_name, growth_bomb, i18n, i18n_skill
                 formatted = formatted.replace(f"{{{arg['Type']}}}", str(arg['Value']))
                 formatted, _ = re.subn(r"\{\d}", str(arg['Value']), formatted)
         elif 'Key' in growth_dict:
-            formatted = i18n[growth_dict['Key']]
+            key = growth_dict['Key']
+            if key not in i18n and key == 'Part_String':
+                key = "Part_Survive"
+            formatted = i18n[key]
         else:
             return "FIXME"
         return formatted
@@ -230,8 +226,8 @@ def char_string_energy_network(char_id, char_name, growth_bomb, i18n, i18n_skill
     for i, part_index in enumerate([4, 5]):
         part = wtp.Template("{{StringEnergyNetwork/group}}")
         add_arg("type", 3)
-        shield_name = i18n[char_growth['PartName'][part_index]['Key']]
-        add_arg("name", shield_name)
+        upgrade_name = get_formatted_string(char_growth['PartName'][part_index])
+        add_arg("name", upgrade_name)
 
         shield_growths = char_growth[localization_keys[i]]
         for index, shield_growth in enumerate(shield_growths, 1):
@@ -253,9 +249,10 @@ def char_string_energy_network(char_id, char_name, growth_bomb, i18n, i18n_skill
         activate_condition = char_growth[f'Arousal{wake_index}ActivateNeed']
         for cond_index, cond in enumerate(activate_condition, 1):
             add_arg(f"icon{cond_index}", cond)
-        name = i18n_skill[f'{wake_id}_Name']
+        name = i18n_skill.get(f'{wake_id}_Name', None)
         text = i18n_skill[f'{wake_id}_Intro']
-        add_arg("name", name)
+        if name is not None:
+            add_arg("name", name)
         add_arg("text", text)
         part.set_arg(" number", str(wake_index) + " ", before="name")
         t.set_arg(f"wake{wake_index}", str(part) + "\n")
