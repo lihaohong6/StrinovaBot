@@ -8,9 +8,9 @@ from pywikibot import FilePage, Page
 from wikitextparser import parse
 
 from global_config import char_id_mapper, Character, get_characters
-from utils.asset_utils import resource_root
+from utils.asset_utils import global_resources_root
 from utils.general_utils import get_char_pages2
-from utils.json_utils import get_game_json, get_all_game_json, get_table, get_table_global
+from utils.json_utils import get_game_json, get_all_game_json, get_table_global
 from utils.lang import get_language
 from utils.lang_utils import get_multilanguage_dict, get_text
 from utils.upload_utils import UploadRequest, process_uploads
@@ -48,8 +48,8 @@ class CharacterSkills:
 
 def parse_skills() -> dict[str, CharacterSkills]:
     i18n = get_all_game_json('Skill')
-    skill_table = get_table("Skill")
-    role_table = get_table("Role")
+    skill_table = get_table_global("Skill")
+    role_table = get_table_global("Role")
     growth_bomb = get_table_global("Growth_Bomb")
     result: list[CharacterSkills] = []
 
@@ -91,7 +91,7 @@ def make_skills() -> None:
 
 
 def upload_skill_icons():
-    skill_root = resource_root / "Skill"
+    skill_root = global_resources_root / "Skill"
     subprocess.run(["magick", "mogrify", "-fill", "#efcb5d", "-colorize", "100%", "*.png"],
                    shell=True, check=True, cwd=skill_root)
     requests: list[UploadRequest] = []
@@ -130,7 +130,7 @@ Growth_Team
     lang = get_language()
     i18n = get_game_json(lang)['ST_GrowthDefine']
     i18n_skill = get_game_json(lang)['Skill']
-    role_json = get_table("Role")
+    role_json = get_table_global("Role")
     skill_json = get_table_global("Skill")
     growth_bomb = get_table_global("Growth_Bomb")
     save = False

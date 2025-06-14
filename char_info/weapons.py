@@ -7,6 +7,7 @@ from utils.general_utils import get_default_weapon_id, get_weapon_name, \
 from utils.json_utils import get_game_json
 from utils.lang import ENGLISH, get_language
 from utils.lang_utils import RedirectRequest, redirect_pages
+from utils.wtp_utils import get_templates_by_name
 
 
 def generate_weapons(pages: list[tuple[Character, Page]] = None):
@@ -22,14 +23,11 @@ def generate_weapons(pages: list[tuple[Character, Page]] = None):
         char_id = char.id
         char_name = char.name
         parsed = wtp.parse(p.text)
-        t = None
-        for template in parsed.templates:
-            if template.name.strip() == "PrimaryWeapon":
-                t = template
-                break
-        else:
+        templates = get_templates_by_name(parsed, "PrimaryWeapon")
+        if len(templates) == 0:
             print(f"No template found on {p.title()}")
             continue
+        t = templates[0]
 
         weapon_id = get_default_weapon_id(char_id)
         if weapon_id == -1:

@@ -69,7 +69,7 @@ def copy_lang_pages():
                  for l in LanguageVariants
                  if l.value not in [ENGLISH]]
     gen = GeneratorFactory()
-    gen.handle_args(["-catr:Weapons", "-catr:Characters", "-catr:Character galleries"])
+    gen.handle_args(["-catr:Weapons"])
     en_pages: dict[str, Page] = dict((p.title(), p)
                                      for p in gen.getCombinedGenerator(preload=True)
                                      if "/" not in p.title())

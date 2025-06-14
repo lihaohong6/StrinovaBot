@@ -8,7 +8,7 @@ from pywikibot import Page
 from pywikibot.pagegenerators import PreloadingGenerator
 
 from global_config import name_to_en, char_id_mapper, internal_names, get_characters, Character
-from utils.json_utils import get_game_json, get_table
+from utils.json_utils import get_game_json, get_table_global
 from utils.lang import Language, ENGLISH
 from utils.wiki_utils import bwiki, s
 
@@ -77,7 +77,7 @@ def get_default_weapon_id(char_id: int | str) -> int:
     if not hasattr(get_default_weapon_id, "dict"):
         get_default_weapon_id.dict = {}
         table = get_default_weapon_id.dict
-        for k, v in get_table("Role").items():
+        for k, v in get_table_global("Role").items():
             table[int(k)] = v['DefaultWeapon1']
     return get_default_weapon_id.dict.get(char_id, -1)
 
@@ -135,7 +135,7 @@ def get_cn_wiki_skins():
 
 def get_weapon_type(weapon_id: int | str) -> str:
     weapon_id = int(weapon_id)
-    return get_table("Weapon")[weapon_id]['Type'].split("::")[1]
+    return get_table_global("Weapon")[weapon_id]['Type'].split("::")[1]
 
 
 def make_tab_group(original: str) -> str:

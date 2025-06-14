@@ -4,9 +4,9 @@ from typing import Callable
 import wikitextparser as wtp
 from pywikibot import Page
 
-from global_config import name_to_cn, Character
-from utils.general_utils import get_char_pages, get_camp, get_role_name, get_char_pages2
-from utils.json_utils import get_game_json, get_game_json_ja, get_table
+from global_config import Character
+from utils.general_utils import get_camp, get_role_name, get_char_pages2
+from utils.json_utils import get_game_json, get_table_global
 from utils.lang import get_language
 
 
@@ -39,7 +39,7 @@ infobox_args: list[tuple[list[str] | str, str, Callable[[list[str] | str], str]]
 def make_infobox(char: Character, p: Page, save=True) -> dict:
     lang = get_language()
     i18n = get_game_json(lang)['RoleProfile']
-    char_profile = get_table("RoleProfile")[char.id]
+    char_profile = get_table_global("RoleProfile")[char.id]
     data: dict[str, str] = {}
     parsed = wtp.parse(p.text)
     for template in parsed.templates:
@@ -65,7 +65,8 @@ def make_infobox(char: Character, p: Page, save=True) -> dict:
     for args, key, mapper in infobox_args:
         def get_arg(arg: str) -> str:
             k = f"{char.id}_{arg}"
-            return i18n.get(k, char_profile.get(arg, {}).get('SourceString', ''))
+            fallback = char_profile.get(arg, {}).get('SourceString', '')
+            return i18n.get(char_profile.get(arg, {}).get('Key', k), fallback)
 
         if isinstance(args, list):
             arg_list = [get_arg(arg) for arg in args]

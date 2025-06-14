@@ -121,7 +121,8 @@ if __name__ == '__main__':
 
 
 def upload_weapon(char_name: str, weapon_id: int) -> bool:
-    weapons_root = resource_root / r"Weapon\InGameGrowth"
+    weapons_root = global_resources_root / "Weapon" / "InGameGrowth"
+    assert weapons_root.exists()
     weapon_path = weapons_root / f"T_Dynamic_InGameGrowth_{weapon_id}.png"
     p = FilePage(s, f"File:{char_name} GrowthWeapon.png")
     if p.exists():
