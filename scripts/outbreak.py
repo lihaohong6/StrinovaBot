@@ -3,7 +3,7 @@ from enum import Enum
 from pathlib import Path
 
 from utils.asset_utils import resource_root
-from utils.json_utils import get_table, get_string_table, get_all_game_json
+from utils.json_utils import get_string_table, get_all_game_json, get_table_global
 from utils.lang import ENGLISH, CHINESE
 from utils.lang_utils import get_text
 from utils.upload_utils import UploadRequest, process_uploads
@@ -98,31 +98,45 @@ class OutbreakUpgrade:
 
 
 def outbreak_upgrades() -> dict[int, OutbreakUpgrade]:
-    cards = get_table("GameplayCard_Zombie")
-    card_details = get_table("GameplayCardData_Zombie")
+    cards = get_table_global("GameplayCard_Zombie")
+    card_details = get_table_global("GameplayCardData_Zombie")
     card_strings = get_string_table("ST_GameplayCard")
     i18n = get_all_game_json("ST_GameplayCard")
     result: dict[int, OutbreakUpgrade] = {}
     for card_id, v in cards.items():
         name = get_text(i18n, v['Name'])
+        # Some cards don't have a name
+        if len(name) == 0:
+            continue
         description = get_text(i18n, v['Desc'])
         description_params = []
+        prev_param = None
         for i in range(1, 10):
             k = f"DescParamLevel{i}"
             if k not in v:
                 break
             if len(v[k]) == 0:
                 break
+            if v[k] == prev_param:
+                continue
+            prev_param = v[k]
             description_params.append(v[k])
+        if "{0}" in description['cn'] and len(description_params) == 0:
+            continue
         max_level = v["MaxLevel"]
         if max_level != len(description_params) and len(description_params) != 0:
             print(name['en'], max_level, len(description_params))
         team_type = TeamType.HUMAN if "Human" in v["TeamType"] else TeamType.ZOMBIE
         rarity = UpgradeRarity(v["Rarity"].split(":")[-1])
-        weights = [card_details[card_id][f"WeightStage{i}"] for i in range(1, 5)]
+        # weights = [card_details[card_id][f"WeightStage{i}"] for i in range(1, 5)]
+        weights = []
 
         image_path = v["Icon"]["AssetPathName"].split(".")[-1] + ".png"
         image_path = resource_root / "RoguelikeCard" / image_path
+
+        # If no image, probably unreleased
+        if not image_path.exists():
+            continue
 
         result[card_id] = OutbreakUpgrade(
             card_id, name, description, description_params, max_level, team_type, rarity, weights, image_path
