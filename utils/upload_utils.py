@@ -50,7 +50,7 @@ def upload_item_icons(items: list[int | str], text: str = "[[Category:Item icons
     for item in items:
         # try upload the big version if it exists, otherwise use small version
         for big in [True, False, 114514]:
-            if isinstance(item, int):
+            if big == 114514:
                 local_path = f"Store/T_Dynamic_ItemStore_Big_{item}.png"
             else:
                 folder = "ItemIcon" if not big else "BigIcon"
