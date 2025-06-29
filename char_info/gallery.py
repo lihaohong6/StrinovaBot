@@ -9,7 +9,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 from utils.dict_utils import merge_dict2
 from utils.file_utils import temp_file_dir, temp_download_dir
 from utils.general_utils import get_char_by_id, en_name_to_zh, download_file
-from utils.json_utils import get_all_game_json, get_table
+from utils.json_utils import get_all_game_json, get_table, get_table_global
 from utils.lang import CHINESE
 from utils.lang_utils import get_multilanguage_dict
 from utils.upload_utils import upload_file, upload_item_icons
@@ -54,7 +54,7 @@ class SkinInfo:
 
 @cache
 def parse_skin_tables() -> dict[str, list[SkinInfo]]:
-    skins_table = get_table("RoleSkin")
+    skins_table = get_table_global("RoleSkin")
     skins: dict[str, list[SkinInfo]] = {}
 
     for k, v in skins_table.items():

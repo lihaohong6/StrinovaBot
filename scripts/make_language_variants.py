@@ -65,19 +65,25 @@ def make_char_pages():
 
 
 def copy_lang_pages():
+
+    def is_english_page(title: str) -> bool:
+        if "gallery" in title:
+            return "gallery/" not in title
+        return "/" not in title
+
     languages = [l.value
                  for l in LanguageVariants
                  if l.value not in [ENGLISH]]
     gen = GeneratorFactory()
-    gen.handle_args(["-catr:Weapons"])
+    gen.handle_args(["-catr:Character galleries"])
     en_pages: dict[str, Page] = dict((p.title(), p)
                                      for p in gen.getCombinedGenerator(preload=True)
-                                     if "/" not in p.title())
+                                     if is_english_page(p.title()))
     for lang in languages:
         print(f"Current language: {lang.code}")
         pages = PreloadingGenerator(Page(s, f"{p}/{lang.code}") for p in en_pages)
         for p in pages:
-            page_en = en_pages[p.title().split("/")[0]]
+            page_en = en_pages["/".join(p.title().split("/")[:-1])]
             copy_page(page_en, p, lang, translate(page_en.title(), lang))
 
 

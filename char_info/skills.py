@@ -86,7 +86,7 @@ def make_skills() -> None:
             skills[index] = skill
         skills[9] = char_skills.tactical_skill
         result[char] = skills
-    upload_skill_icons()
+    # upload_skill_icons()
     save_lua_table("Module:Skill/data", result)
 
 
