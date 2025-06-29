@@ -8,7 +8,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 from global_config import char_id_mapper
 from utils.asset_utils import global_resources_root
 from utils.general_utils import get_char_id_to_weapon_id, split_dict
-from utils.json_utils import get_all_game_json, get_table
+from utils.json_utils import get_all_game_json, get_table_global
 from utils.lang import CHINESE, ENGLISH
 from utils.lang_utils import get_multilanguage_dict, get_text
 from utils.upload_utils import upload_item_icons, UploadRequest, process_uploads
@@ -78,7 +78,7 @@ def parse_weapons() -> dict[int, Weapon]:
     i18n = get_all_game_json('Weapon')
     i18n = get_all_game_json('Goods') | i18n
     unlock_i18n = get_all_game_json("ST_ModuleName")
-    weapons = get_table("Weapon")
+    weapons = get_table_global("Weapon")
     weapon_dict: dict[int, Weapon] = {}
     parent_dict: dict[int, int] = {}
     for k, v in weapons.items():
@@ -148,6 +148,15 @@ def upload_weapon_images(weapons: list[Weapon]):
     process_uploads(requests)
 
 
+def make_char_weapons_page(weapons: list[Weapon]):
+    obj: dict[str, str] = {}
+    for w in weapons:
+        if w.char is None:
+            continue
+        obj[w.char] = w.name_en
+    save_json_page("Module:Weapon/char_to_weapon.json", obj)
+
+
 def process_weapon_pages(*args):
     weapon_list = list(parse_weapons().values())
     weapon_list = [w for w in weapon_list if w.parent is None and w.name_en is not None]
@@ -160,6 +169,7 @@ def process_weapon_pages(*args):
         weapon['type'] = w.type.value
         obj[w.name_en] = weapon
     save_json_page("Module:Weapon/data.json", obj)
+    make_char_weapons_page(weapon_list)
 
 
 def upload_weapon_variants(weapons: list[Weapon]) -> list[Weapon]:
