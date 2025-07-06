@@ -34,8 +34,8 @@ ensure_exists(localization_root)
 
 # audio
 audio_root = Path("audio/audio_export")
-audio_event_root_cn = json_root / r"WwiseAssets\AkEvent"
-audio_event_root_global = global_json_root / r"WwiseAssets\AkEvent"
+audio_event_root_cn = json_root / "WwiseAssets" / "AkEvent"
+audio_event_root_global = global_json_root / "WwiseAssets" / "AkEvent"
 wav_root_cn = audio_root / "Chinese"
 wav_root_jp = audio_root / "Japanese"
 wav_root_en = audio_root / "English"
