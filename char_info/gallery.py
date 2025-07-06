@@ -54,7 +54,7 @@ class SkinInfo:
 
 @cache
 def parse_skin_tables() -> dict[str, list[SkinInfo]]:
-    skins_table = get_table_global("RoleSkin")
+    skins_table = get_table("RoleSkin")
     skins: dict[str, list[SkinInfo]] = {}
 
     for k, v in skins_table.items():

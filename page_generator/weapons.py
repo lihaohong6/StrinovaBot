@@ -8,7 +8,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 from global_config import char_id_mapper
 from utils.asset_utils import global_resources_root
 from utils.general_utils import get_char_id_to_weapon_id, split_dict
-from utils.json_utils import get_all_game_json, get_table_global
+from utils.json_utils import get_all_game_json, get_table
 from utils.lang import CHINESE, ENGLISH
 from utils.lang_utils import get_multilanguage_dict, get_text
 from utils.upload_utils import upload_item_icons, UploadRequest, process_uploads
@@ -78,7 +78,7 @@ def parse_weapons() -> dict[int, Weapon]:
     i18n = get_all_game_json('Weapon')
     i18n = get_all_game_json('Goods') | i18n
     unlock_i18n = get_all_game_json("ST_ModuleName")
-    weapons = get_table_global("Weapon")
+    weapons = get_table("Weapon")
     weapon_dict: dict[int, Weapon] = {}
     parent_dict: dict[int, int] = {}
     for k, v in weapons.items():
