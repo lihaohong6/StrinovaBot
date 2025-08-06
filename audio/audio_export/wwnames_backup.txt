@@ -1,4 +1,0 @@
-#@sort-always
-#@sort-weight *org* 1
-#@sort-weight *red* 1
-#@sort-weight * 100
