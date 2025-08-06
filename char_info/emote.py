@@ -39,7 +39,9 @@ def get_emote_exceptions() -> dict[int, str]:
         'Mara': [60000159, 60000160, 60000171, 60000172, 60000173],
         'Celestia': [60000175, 60000176],
         'Reiichi': [60000169, 60000170],
-        'Yugiri': [60000164, 60000165]
+        'Yugiri': [60000164, 60000165],
+        'Chiyo': [60000355, 60000356],
+        "NOONEHASTHIEEMOTE": [60000000 + i for i in range(339, 355)],
     }
     result: dict[int, str] = {}
     for char_name, emote_list in exception_table.items():
