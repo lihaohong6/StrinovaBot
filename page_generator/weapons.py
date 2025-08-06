@@ -7,7 +7,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 
 from global_config import char_id_mapper
 from utils.asset_utils import global_resources_root
-from utils.general_utils import get_char_id_to_weapon_id, split_dict
+from utils.general_utils import get_char_id_to_weapon_id, split_dict, split_and_save_dict
 from utils.json_utils import get_all_game_json, get_table
 from utils.lang import CHINESE, ENGLISH
 from utils.lang_utils import get_multilanguage_dict, get_text
@@ -246,9 +246,7 @@ def process_weapon_skins(*args):
                 'scope': v.get_variant_scope_name() if v.file_scope is not None else "",
                 'parent': -1 if v.parent is None else v.parent.id
             })
-    dicts = list(split_dict(result))
-    for index, d in enumerate(dicts, 1):
-        save_json_page(f"Module:WeaponSkins/data{index}.json", d)
+    split_and_save_dict("Module:WeaponSkins/data{}.json", result)
 
 
 def upload_weapon_white_icons():

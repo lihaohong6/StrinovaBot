@@ -10,7 +10,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 from global_config import name_to_en, char_id_mapper, internal_names, get_characters, Character
 from utils.json_utils import get_game_json, get_table_global
 from utils.lang import Language, ENGLISH
-from utils.wiki_utils import bwiki, s
+from utils.wiki_utils import bwiki, s, save_json_page
 
 en_name_to_zh: dict[str, str] = dict((v, k) for k, v in name_to_en.items())
 
@@ -191,3 +191,9 @@ def split_dict(d: dict[Any, Any]) -> tuple[dict[Any, Any], dict[Any, Any]]:
     assert len(lst) >= 2, f"{len(lst)} items in dict"
     mid_index = len(lst) // 2
     return dict(lst[:mid_index]), dict(lst[mid_index:])
+
+
+def split_and_save_dict(page_template: str, d: dict[Any, Any]):
+    dicts = list(split_dict(d))
+    for index, d in enumerate(dicts, 1):
+        save_json_page(page_template.format(str(index)), d)
