@@ -21,19 +21,21 @@ def merge_results(previous: VoiceJson, current: VoiceJson, discard_non_local: bo
     Goal: use current as base and override certain attributes with previous
     :return: merged dict
     """
-    for vid, voice in previous.items():
-        if vid not in current:
+    result: dict[str, dict[str, Any]] = {}
+    for voice in current.values():
+        result[voice['path']] = voice
+    for voice in previous.values():
+        path = voice['path']
+        if path not in result:
             if not discard_non_local:
-                current[vid] = voice
+                result[path] = voice
                 voice['non_local'] = True
             else:
                 continue
-            print(f"{vid} not in current. Prev: {voice}")
+            print(f"{path} not in current. Prev: {voice}")
         for k, v in voice.items():
             if k in {'transcription', 'title', 'translation'}:
-                current[vid][k] = merge_dict(v, current[vid][k])
-        if current[vid]['path'] != voice['path']:
-            print(f"Path does not match: {current[vid]['path']} != {voice['path']}")
+                result[path][k] = merge_dict(v, result[path][k])
     return current
 
 
