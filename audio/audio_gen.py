@@ -36,7 +36,7 @@ def merge_results(previous: VoiceJson, current: VoiceJson, discard_non_local: bo
         for k, v in voice.items():
             if k in {'transcription', 'title', 'translation'}:
                 result[path][k] = merge_dict(v, result[path][k])
-    return current
+    return dict((voice['id'], voice) for voice in result.values())
 
 
 def make_character_json(triggers: list[Trigger], char_id: int, discard: bool = False) -> None:

@@ -184,25 +184,6 @@ def get_audio_text(i18n: dict[str, dict], v) -> tuple[dict[str, str], dict[str, 
     return title, transcriptions, {CHINESE.code: translations}
 
 
-def in_game_triggers() -> list[Trigger]:
-    i18n = get_all_game_json('InGameVoiceTrigger')
-    table = get_table("InGameVoiceTrigger")
-    result: list[Trigger] = []
-    for k, v in table.items():
-        description = get_audio_text(i18n, v['Desc'])
-        role_id: int = v['RoleId']
-        voice_id: list[int] = [v['VoiceId']]
-        if "RandomVoiceIds" in v:
-            lst = v["RandomVoiceIds"]
-            if len(lst) > 0:
-                assert v['IsRandom']
-                voice_id = lst
-        result.append(
-            Trigger(k, description=description, voice_id=voice_id, role_id=role_id,
-                    type=VoiceType.BATTLE))
-    return result
-
-
 def in_game_triggers_upgrade() -> list[UpgradeTrigger]:
     table = get_table("InGameVoiceUpgrade")
     result: list[UpgradeTrigger] = []
@@ -294,7 +275,12 @@ def apply_trigger_fix(triggers: list[Trigger]) -> None:
     use internal names to sort them. This function detects this situation and lets the base voice steal
     the file of the derived event.
     """
-    dont_steal_list = {"HuiXing.*066_org", "Lawine.*067_red", "Fuchsia.*066_red", "Yvette.*067_red", "Maddelena.*067_red", "Kokona.*067_red"}
+    dont_steal_list = {"HuiXing.*066_org",
+                       "Lawine.*067_red",
+                       "Fuchsia.*066_red",
+                       "Yvette.*067_red",
+                       "Maddelena.*067_red",
+                       "Kokona.*067_red"}
     for t in triggers:
         if t.id not in ["066", "067"]:
             continue
@@ -340,6 +326,16 @@ def match_custom_triggers(voices: list[Voice]) -> list[Trigger]:
         if parsed_path.type == VoiceType.SYSTEM:
             v.role_id = get_id_by_char("Kanami")
         triggers[parsed_path.trigger_id].voices.append(v)
+
+    def get_voice_priority(path: str) -> int:
+        if "org" in path:
+            return 2
+        if "red" in path:
+            return 1
+        return 0
+
+    for t in triggers.values():
+        t.voices.sort(key=lambda v: get_voice_priority(v.path))
 
     result = list(triggers.values())
     apply_trigger_fix(result)
