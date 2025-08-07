@@ -5,11 +5,11 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 
-from audio.audio_exporter import create_audio_language, AudioLanguage
+from audio.audio_exporter import get_audio_languages, AudioLanguageVariant
 from audio.audio_utils import parse_path, make_custom_triggers, Trigger, UpgradeTrigger
 from audio.data.conversion_table import VoiceType
 from audio.voice import VoiceUpgrade, Voice
-from utils.asset_utils import audio_root, audio_event_root_global, global_wem_root
+from utils.asset_utils import audio_root, global_wem_root
 from utils.file_utils import cache_dir
 from utils.general_utils import get_id_by_char
 from utils.json_utils import load_json, get_all_game_json, get_table, get_table_global
@@ -257,7 +257,7 @@ def role_voice() -> dict[int, Voice]:
         path = voice.path
         files: dict[str, str] = {}
         failed = True
-        for lang in [AudioLanguage.CHINESE, AudioLanguage.ENGLISH, AudioLanguage.JAPANESE, AudioLanguage.SFX]:
+        for lang in get_audio_languages():
             audio_file = f"{path}.wav"
             audio_path = lang.get_export_path() / audio_file
 
@@ -266,18 +266,18 @@ def role_voice() -> dict[int, Voice]:
             else:
                 audio_file = ""
 
-            if audio_file != "" and lang == AudioLanguage.SFX:
+            if audio_file != "" and lang == AudioLanguageVariant.SFX:
                 if "Communicate_Kanami_" not in path:
                     if "Communicate_" in path:
                         failed = True
                         break
                     raise RuntimeError()
                 if path.endswith("JP"):
-                    lang = AudioLanguage.JAPANESE
+                    lang = AudioLanguageVariant.JAPANESE.value
                 else:
-                    lang = AudioLanguage.CHINESE
+                    lang = AudioLanguageVariant.CHINESE.value
 
-            if lang != AudioLanguage.SFX:
+            if lang.code != AudioLanguageVariant.SFX.value.code:
                 files[lang.code] = audio_file
         if failed:
             continue

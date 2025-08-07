@@ -1,16 +1,13 @@
-import subprocess
 from pathlib import Path
 
 from pywikibot import FilePage
 from pywikibot.pagegenerators import GeneratorFactory
 
+from audio.audio_exporter import get_audio_languages
 from audio.audio_utils import audio_is_same, wav_to_ogg
 from audio.voice import Voice
-from utils.asset_utils import audio_root
 from utils.file_utils import cache_dir
 from utils.general_utils import download_file
-from utils.lang import languages_with_audio, CHINESE
-
 from utils.upload_utils import upload_file
 from utils.wiki_utils import s
 
@@ -37,12 +34,12 @@ def upload_audio_file(voices: list[Voice],
     temp_download_dir = cache_dir / "audio"
     temp_download_dir.mkdir(parents=True, exist_ok=True)
     for v in voices:
-        for lang in languages_with_audio():
+        for lang in get_audio_languages():
             file_page_title = v.file_page.get(lang.code, "")
             if file_page_title == "":
                 continue
             file_page = FilePage(s, "File:" + file_page_title)
-            local_path = audio_root / lang.audio_dir_name / v.file[lang.code]
+            local_path = lang.get_export_path() / v.file[lang.code]
             temp_wiki_file = temp_download_dir / file_page_title
             if file_page_title in existing:
                 # Compare local copy against wiki copy. If they are different, maybe we should upload a new
@@ -72,9 +69,9 @@ def upload_audio_file(voices: list[Voice],
 def ensure_audio_files_exist(voices: list[Voice]):
     for v in voices:
         has_file = False
-        for lang in languages_with_audio():
+        for lang in get_audio_languages():
             file_name = v.file.get(lang.code, '')
-            audio_path = audio_root / lang.audio_dir_name / f"{file_name}"
+            audio_path = lang.get_export_path() / f"{file_name}"
             if file_name != '':
                 if not v.non_local:
                     assert audio_path.exists(), f"{audio_path} does not exist"

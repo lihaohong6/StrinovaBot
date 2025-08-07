@@ -87,45 +87,32 @@ def extract_wem_to_wav(bnk_path: Path, wem_path: Path, output_file: Path) -> Non
     print(f"Successfully converted to: {output_file}")
 
 
-class AudioLanguage(Enum):
-    ENGLISH = "English"
-    CHINESE = "Chinese"
-    JAPANESE = "Japanese"
-    SFX = "SFX"
-
-    @property
-    def code(self):
-        if self == AudioLanguage.ENGLISH:
-            return 'en'
-        if self == AudioLanguage.CHINESE:
-            return 'zh'
-        if self == AudioLanguage.JAPANESE:
-            return 'ja'
-        if self == AudioLanguage.SFX:
-            return 'sfx'
-        raise RuntimeError(f"Unknown language: {self}")
+class AudioLanguage(Language):
 
     def get_export_path(self) -> Path:
-        return audio_root / self.value
+        return audio_root / self.name
 
     def get_bnk_path(self, bnk_name):
-        if self == AudioLanguage.SFX:
+        if self.code == 'sfx':
             root = global_bnk_root
         else:
-            root = global_bnk_root / self.value
+            root = global_bnk_root / self.name
         return root / (bnk_name + ".bnk")
 
-def create_audio_language(lang: Language) -> AudioLanguage:
-    mapper = {
-        'en': AudioLanguage.ENGLISH,
-        'zh': AudioLanguage.CHINESE,
-        'ja': AudioLanguage.JAPANESE
-    }
-    return mapper[lang.code]
+class AudioLanguageVariant(Enum):
+    ENGLISH = AudioLanguage('en', 'English')
+    CHINESE = AudioLanguage('cn', 'Chinese')
+    JAPANESE = AudioLanguage('ja', 'Japanese')
+    SFX = AudioLanguage('sfx', 'SFX')
 
+def get_audio_languages() -> list[AudioLanguage]:
+    return [AudioLanguageVariant.CHINESE.value,
+            AudioLanguageVariant.JAPANESE.value,
+            AudioLanguageVariant.ENGLISH.value,
+            AudioLanguageVariant.SFX.value]
 
 def init_language_export_directories():
-    for lang in AudioLanguage:
+    for lang in get_audio_languages():
         p = lang.get_export_path()
         p.mkdir(parents=True, exist_ok=True)
 
