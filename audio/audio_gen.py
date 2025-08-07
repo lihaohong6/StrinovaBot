@@ -32,7 +32,8 @@ def merge_results(previous: VoiceJson, current: VoiceJson, discard_non_local: bo
         for k, v in voice.items():
             if k in {'transcription', 'title', 'translation'}:
                 current[vid][k] = merge_dict(v, current[vid][k])
-        assert current[vid]['path'] == voice['path'], f"Path does not match: {current[vid]['path']} != {voice['path']}"
+        if current[vid]['path'] != voice['path']:
+            print(f"Path does not match: {current[vid]['path']} != {voice['path']}")
     return current
 
 

@@ -9,6 +9,7 @@ from pathlib import Path
 from utils.asset_utils import global_wem_root, global_bnk_root, audio_event_root_global, audio_root
 from utils.file_utils import temp_file_dir
 from utils.json_utils import load_json
+from utils.lang import Language
 
 
 def extract_wem_to_wav(bnk_path: Path, wem_path: Path, output_file: Path) -> None:
@@ -92,6 +93,18 @@ class AudioLanguage(Enum):
     JAPANESE = "Japanese"
     SFX = "SFX"
 
+    @property
+    def code(self):
+        if self == AudioLanguage.ENGLISH:
+            return 'en'
+        if self == AudioLanguage.CHINESE:
+            return 'zh'
+        if self == AudioLanguage.JAPANESE:
+            return 'ja'
+        if self == AudioLanguage.SFX:
+            return 'sfx'
+        raise RuntimeError(f"Unknown language: {self}")
+
     def get_export_path(self) -> Path:
         return audio_root / self.value
 
@@ -101,6 +114,14 @@ class AudioLanguage(Enum):
         else:
             root = global_bnk_root / self.value
         return root / (bnk_name + ".bnk")
+
+def create_audio_language(lang: Language) -> AudioLanguage:
+    mapper = {
+        'en': AudioLanguage.ENGLISH,
+        'zh': AudioLanguage.CHINESE,
+        'ja': AudioLanguage.JAPANESE
+    }
+    return mapper[lang.code]
 
 
 def init_language_export_directories():

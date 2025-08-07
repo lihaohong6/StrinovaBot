@@ -5,6 +5,7 @@ from pathlib import Path
 
 from bs4 import BeautifulSoup
 
+from audio.audio_exporter import create_audio_language, AudioLanguage
 from audio.audio_utils import parse_path, make_custom_triggers, Trigger, UpgradeTrigger
 from audio.data.conversion_table import VoiceType
 from audio.voice import VoiceUpgrade, Voice
@@ -249,62 +250,39 @@ def parse_role_voice() -> dict[int, Voice]:
     return voices
 
 
-def merge_kanami_system_role_voice(voices: dict[int, Voice]):
-    cn_voices: dict[str, Voice] = {}
-    ja_voices: list[Voice] = []
-    for k, v in voices.items():
-        if "Communicate_Kanami_" not in v.path:
-            continue
-        if "_JP" in v.path:
-            ja_voices.append(v)
-        else:
-            cn_voices[v.path] = v
-    for v in ja_voices:
-        path = v.path.replace("_JP", "")
-        if path not in cn_voices:
-            print(f"JP voice line with path {path} is not in cn_voices")
-            continue
-        cn_voices[path].lang_merge(v)
-        for voice_id in v.id:
-            if voice_id in voices:
-                del voices[voice_id]
-
-
 def role_voice() -> dict[int, Voice]:
-    tables: dict[str, dict] = {}
-    bank_name_to_files: dict[str, dict[str, list[Path]]] = {}
-    sfx_table = parse_banks_xml("sfx")
-    sfx_bank_name_to_files: dict[str, list[Path]] = map_bank_name_to_files(audio_root / "sfx")
-    for lang in languages_with_audio():
-        tables[lang.code] = parse_banks_xml(lang) | sfx_table
-        bank_name_to_files[lang.code] = map_bank_name_to_files(audio_root / lang.audio_dir_name) | sfx_bank_name_to_files
-
     voices = parse_role_voice()
     result: dict[int, Voice] = {}
     for k, voice in voices.items():
         path = voice.path
         files: dict[str, str] = {}
         failed = True
-        for lang in languages_with_audio():
-            event_file = audio_event_root_global / f"{path}.json"
-            # FIXME: should source CN events too (as a bonus)
-            # event_file = audio_event_root / f"{path}.json"
-            audio_file = find_audio_file(event_file, tables[lang.code], bank_name_to_files[lang.code], lang)
+        for lang in [AudioLanguage.CHINESE, AudioLanguage.ENGLISH, AudioLanguage.JAPANESE, AudioLanguage.SFX]:
+            audio_file = f"{path}.wav"
+            audio_path = lang.get_export_path() / audio_file
 
-            if audio_file is None:
-                audio_file = ""
+            if audio_path.exists():
+                failed = False
             else:
-                local_path = audio_root / lang.audio_dir_name / f"{audio_file}"
-                if local_path.exists():
-                    failed = False
+                audio_file = ""
+
+            if audio_file != "" and lang == AudioLanguage.SFX:
+                if "Communicate_Kanami_" not in path:
+                    if "Communicate_" in path:
+                        failed = True
+                        break
+                    raise RuntimeError()
+                if path.endswith("JP"):
+                    lang = AudioLanguage.JAPANESE
                 else:
-                    audio_file = ""
-            files[lang.code] = audio_file
+                    lang = AudioLanguage.CHINESE
+
+            if lang != AudioLanguage.SFX:
+                files[lang.code] = audio_file
         if failed:
             continue
         voice.file = files
         result[k] = voice
-    merge_kanami_system_role_voice(result)
     return result
 
 
