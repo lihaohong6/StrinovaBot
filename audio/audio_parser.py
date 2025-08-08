@@ -9,7 +9,7 @@ from audio.audio_exporter import get_audio_languages, AudioLanguageVariant
 from audio.audio_utils import parse_path, make_custom_triggers, Trigger, UpgradeTrigger
 from audio.data.conversion_table import VoiceType
 from audio.voice import VoiceUpgrade, Voice
-from utils.asset_utils import audio_root, global_wem_root
+from utils.asset_utils import audio_export_root, global_wem_root
 from utils.file_utils import cache_dir
 from utils.general_utils import get_id_by_char
 from utils.json_utils import load_json, get_all_game_json, get_table, get_table_global
@@ -85,7 +85,7 @@ def parse_banks_xml(lang: Language | str):
     if isinstance(lang, Language):
         lang = lang.code
     sid_to_ix = {}
-    bank_file = audio_root / f"banks/{lang}_banks.xml"
+    bank_file = audio_export_root / f"banks/{lang}_banks.xml"
     parse_bank(bank_file, sid_to_ix)
     return sid_to_ix
 
@@ -97,7 +97,7 @@ def parse_bgm_banks_xml():
     global cached_soup
     from bs4 import BeautifulSoup
     if cached_soup is None:
-        bank_file = audio_root / f"banks/cn_banks.xml"
+        bank_file = audio_export_root / f"banks/cn_banks.xml"
         with open(bank_file, "r", encoding="utf-8") as f:
             text = f.read()
         cached_soup = BeautifulSoup(text, "xml")

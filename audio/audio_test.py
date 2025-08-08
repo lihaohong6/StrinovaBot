@@ -8,7 +8,7 @@ from audio.audio_parser import role_voice, in_game_triggers_upgrade, \
 from audio.audio_utils import compute_audio_distance, load_json_voices, wav_to_ogg
 from audio.data.conversion_table import voice_conversion_table
 from global_config import internal_names
-from utils.asset_utils import audio_root, wav_root_cn, wav_root_jp, wav_root_en
+from utils.asset_utils import audio_export_root, wav_root_cn, wav_root_jp, wav_root_en
 from utils.file_utils import cache_dir, temp_file_dir
 from utils.general_utils import download_file
 from utils.lang import languages_with_audio, CHINESE, JAPANESE, ENGLISH
@@ -31,7 +31,7 @@ def test_audio_similarity():
             if file_page_title == "":
                 continue
             file_page = FilePage(s, "File:" + file_page_title)
-            local_path = audio_root / lang.audio_dir_name / v.file[lang.code]
+            local_path = audio_export_root / lang.audio_dir_name / v.file[lang.code]
             if any(string in file_page_title for string in targets):
                 temp_file = download_dir / file_page_title
                 if not temp_file.exists():

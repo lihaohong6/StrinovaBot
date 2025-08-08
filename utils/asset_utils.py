@@ -34,13 +34,13 @@ global_resources_root = global_export_root / "DynamicResource"
 ensure_exists(localization_root)
 
 # audio
-audio_root = Path("audio/audio_export")
+audio_export_root = Path("audio/audio_export")
 audio_event_root_cn = json_root / "WwiseAssets" / "AkEvent"
 audio_event_root_global = global_json_root / "WwiseAssets" / "AkEvent"
-wav_root_cn = audio_root / "Chinese"
-wav_root_jp = audio_root / "Japanese"
-wav_root_en = audio_root / "English"
-wav_root_sfx = audio_root / "sfx"
+wav_root_cn = audio_export_root / "Chinese"
+wav_root_jp = audio_export_root / "Japanese"
+wav_root_en = audio_export_root / "English"
+wav_root_sfx = audio_export_root / "sfx"
 
 def main():
     pass

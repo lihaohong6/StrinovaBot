@@ -7,7 +7,7 @@ from pathlib import Path
 from audio.audio_parser import parse_banks_xml, map_bank_name_to_files, find_audio_file, get_bgm_file_by_event_id
 from global_config import is_valid_char_name
 from story.story_preprocessor import RawEvent, EventType
-from utils.asset_utils import audio_root, audio_event_root_global, global_export_root, global_resources_root
+from utils.asset_utils import audio_export_root, audio_event_root_global, global_export_root, global_resources_root
 from utils.general_utils import en_name_to_cn
 from utils.json_utils import load_json
 from utils.lang_utils import get_english_version
@@ -236,7 +236,7 @@ def parse_conversation(event: RawEvent, story):
 
 
 def get_story_audio_local_path(name: str) -> Path | None:
-    sfx_dir = audio_root / "sfx"
+    sfx_dir = audio_export_root / "sfx"
     json_file = audio_event_root_global / f"{name}.json"
     if not json_file.exists():
         return None

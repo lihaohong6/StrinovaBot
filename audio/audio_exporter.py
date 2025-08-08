@@ -1,69 +1,35 @@
 import os
+import random
+import re
 import shutil
+import string
 import subprocess
 from dataclasses import dataclass
 from enum import Enum
 from functools import cache
 from pathlib import Path
 
-from utils.asset_utils import global_wem_root, global_bnk_root, audio_event_root_global, audio_root
+from utils.asset_utils import global_wem_root, global_bnk_root, audio_event_root_global, audio_export_root
 from utils.file_utils import temp_file_dir
 from utils.json_utils import load_json
 from utils.lang import Language
 
 
-def extract_wem_to_wav(bnk_path: Path, wem_path: Path, output_file: Path) -> None:
+def extract_wem_to_wav(txtp_file: Path, wem_path: Path, output_file: Path) -> None:
 
-    assert bnk_path.exists() and bnk_path.is_file()
+    assert txtp_file.exists() and txtp_file.is_file()
     assert wem_path.exists() and wem_path.is_file()
-    if output_file.exists():
-        return
-    # Get WEM file ID from filename (assuming format like "123456.wem")
-    wem_id = wem_path.stem
-    # Step 1: Convert BNK to TXTP using wwiser
-    print(f"Converting BNK file to TXTP: {bnk_path.name}")
-    txtp_dir = temp_file_dir / "txtp"
-    shutil.rmtree(txtp_dir, ignore_errors=True)
-    txtp_dir.mkdir(exist_ok=True)
 
-    # Run wwiser to extract TXTP files
-    wwiser_cmd = [
-        "python",
-        "wwiser.pyz",
-        str(bnk_path),
-        "-go", str(txtp_dir),
-        "--txtp"
-    ]
-
-    result = subprocess.run(wwiser_cmd, check=True, cwd=audio_root,
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    result.check_returncode()
-
-    # Step 2: Find the relevant TXTP file that references our WEM
-    matching_txtp = None
-    for txtp_file in txtp_dir.glob("*.txtp"):
-        with open(txtp_file, 'r', encoding='utf-8') as f:
-            content = f.read()
-            # Look for the WEM ID in the TXTP content
-            if wem_id in content or wem_path.name in content:
-                matching_txtp = txtp_file
-                break
-
-    if matching_txtp is None:
-        # Fallback: try to convert WEM directly if no TXTP match found
-        print(f"No matching TXTP found for WEM {wem_id}, trying direct conversion")
-        raise RuntimeError(f"No matching TXTP found for WEM {wem_id}")
-        # _convert_wem_directly(wem_path, output_file)
-
-    temp_wem_dir = txtp_dir / "wem"
+    temp_wem_dir = txtp_file.parent / "wem"
     temp_wem_dir.mkdir(exist_ok=True)
     temp_wem_link = temp_wem_dir / wem_path.name
-    os.symlink(wem_path, temp_wem_link)
+    if not temp_wem_link.exists():
+        os.symlink(wem_path, temp_wem_link)
 
-    print(f"Converting to WAV: {matching_txtp.name}")
+    print(f"Converting to WAV: {txtp_file.name}")
     vgmstream_cmd = [
         "vgmstream-cli",
-        matching_txtp.absolute(),
+        txtp_file.absolute(),
         "-o", output_file.absolute(),
     ]
 
@@ -72,32 +38,33 @@ def extract_wem_to_wav(bnk_path: Path, wem_path: Path, output_file: Path) -> Non
         result = subprocess.run(
             vgmstream_cmd,
             check=True,
-            cwd=txtp_dir,
+            cwd=txtp_file.parent,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL
         )
         result.check_returncode()
     except subprocess.CalledProcessError as e:
-        print(f"Failed to convert {matching_txtp.name} to WAV: {e}")
+        print(f"Failed to convert {txtp_file.name} to WAV: {e}")
         return
 
     if not output_file.exists():
         raise RuntimeError(f"WAV file was not created: {output_file}")
 
-    print(f"Successfully converted to: {output_file}")
-
 
 class AudioLanguage(Language):
 
     def get_export_path(self) -> Path:
-        return audio_root / self.name
+        return audio_export_root / self.name
 
-    def get_bnk_path(self, bnk_name):
+    def get_bnk_path(self):
         if self.code == 'sfx':
-            root = global_bnk_root
+            return global_bnk_root
         else:
-            root = global_bnk_root / self.name
-        return root / (bnk_name + ".bnk")
+            return global_bnk_root / self.name
+
+    def get_txtp_path(self):
+        path = temp_file_dir / "txtp" / self.code
+        return path
 
 class AudioLanguageVariant(Enum):
     ENGLISH = AudioLanguage('en', 'English')
@@ -142,7 +109,7 @@ def parse_audiokinetic_events() -> list[AudiokineticEvent]:
         if "EventCookedData" not in json_data:
             continue
         for language_map in json_data["EventCookedData"]["EventLanguageMap"]:
-            lang = AudioLanguage(language_from_name(language_map["Key"]["LanguageName"]))
+            lang = language_from_name(language_map["Key"]["LanguageName"])
             medias = language_map["Value"]['Media']
             if len(medias) == 0:
                 continue
@@ -154,14 +121,75 @@ def parse_audiokinetic_events() -> list[AudiokineticEvent]:
         events.append(event)
     return events
 
+def path_name_to_priority(p: str) -> int:
+    if "_original" in p:
+        return 0
+    if "org" in p or "red" in p:
+        return 2
+    return 1
+
+def sort_audio_paths(paths: list[Path]) -> None:
+    """
+    Sort audio paths to prioritize original voice lines over red and org ones.
+    See https://github.com/bnnm/wwiser/issues/49
+
+    :param paths: List of bnk files.
+    """
+    paths.sort(key=lambda p: (path_name_to_priority(p.name), p.name))
+
+def generate_txtp(bnk_path: Path, txtp_path: Path):
+    paths = list(Path(bnk_path).glob('*.bnk'))
+    sort_audio_paths(paths)
+    config_file = temp_file_dir / (''.join(random.choices(string.ascii_uppercase + string.digits, k=15)) + "wwconfig.txt")
+    with open(config_file, "w") as f:
+        f.write("-g -go ")
+        f.write(f'{txtp_path.absolute()} ')
+        f.write(" ".join(f'"{str(p.absolute())}"' for p in paths))
+    subprocess.run(['python', 'wwiser.pyz', config_file],
+                   cwd=audio_export_root,
+                   stdout=subprocess.DEVNULL,
+                   stderr=subprocess.DEVNULL)
+    config_file.unlink()
 
 def export_audiokinetic_events(events: list[AudiokineticEvent]):
+    # export txtp
+    for lang in get_audio_languages():
+        txtp_path = lang.get_txtp_path()
+        shutil.rmtree(txtp_path, ignore_errors=True)
+        txtp_path.mkdir(parents=True, exist_ok=True)
+        generate_txtp(lang.get_bnk_path(), txtp_path)
+
+    lang_and_wem_id_to_txtp = map_wem_id_to_txtp()
+
     for event in events:
         for lang, wem_path in event.wem_path.items():
-            bnk_file = lang.get_bnk_path(event.bank_name)
-            assert bnk_file.exists() and bnk_file.is_file()
+            wem_id: str = wem_path.stem
+            txtp_file = lang_and_wem_id_to_txtp[lang.code].get(wem_id, None)
+            if txtp_file is None:
+                print("No txtp file for", wem_id)
+                continue
             audio_parent_dir = lang.get_export_path()
-            extract_wem_to_wav(bnk_file, wem_path, audio_parent_dir / f"{event.event_name}.wav")
+            extract_wem_to_wav(txtp_file, wem_path, audio_parent_dir / f"{event.event_name}.wav")
+
+
+def map_wem_id_to_txtp():
+    lang_and_wem_id_to_txtp: dict[str, dict[str, Path]] = {}
+    for lang in get_audio_languages():
+        txtp_path = lang.get_txtp_path()
+        files = list(txtp_path.glob("*.txtp"))
+        files.sort(key=lambda p: p.name)
+        wem_id_to_txtp: dict[str, Path] = {}
+        for file in files:
+            with open(file, "r", encoding="utf-8") as f:
+                content = f.read()
+            matches = re.findall(r"(\d+)\.wem", content)
+            if len(matches) != 1:
+                continue
+            wem_id = matches[0]
+            if wem_id not in wem_id_to_txtp:
+                wem_id_to_txtp[wem_id] = file
+        lang_and_wem_id_to_txtp[lang.code] = wem_id_to_txtp
+    return lang_and_wem_id_to_txtp
 
 
 def main():

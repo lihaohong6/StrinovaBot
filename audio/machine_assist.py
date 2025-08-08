@@ -6,7 +6,7 @@ from audio_utils import get_json_path
 from global_config import name_to_en, char_id_mapper, get_characters
 from page_generator.translations import get_translations
 from page_generator.weapons import get_weapons_by_type, WeaponType
-from utils.asset_utils import wav_root_cn, audio_root
+from utils.asset_utils import wav_root_cn, audio_export_root
 from utils.general_utils import camp_name_cn
 from utils.json_utils import load_json
 from utils.lang import ENGLISH, CHINESE, Language, LanguageVariants
@@ -82,7 +82,7 @@ def transcribe_char(char_name: str, model = None, lang: Language = ENGLISH):
         existing = voice['transcription'].get(lang.code, None)
         if existing is not None and existing != '':
             continue
-        file = audio_root / lang.audio_dir_name / voice['file'].get(lang.code, "DOES_NOT_EXIST")
+        file = audio_export_root / lang.audio_dir_name / voice['file'].get(lang.code, "DOES_NOT_EXIST")
         if not file.exists() or file.is_dir():
             continue
         result = model.transcribe(str(file), language=lang.iso_code, patience=2, beam_size=7, prompt=prompt)
