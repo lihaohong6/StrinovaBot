@@ -105,6 +105,12 @@ class AudioLanguageVariant(Enum):
     JAPANESE = AudioLanguage('ja', 'Japanese')
     SFX = AudioLanguage('sfx', 'SFX')
 
+def language_from_name(name: str) -> AudioLanguage:
+    for variant in AudioLanguageVariant:
+        if variant.value.name == name:
+            return variant.value
+    raise RuntimeError(f"Unknown language: {name}")
+
 def get_audio_languages() -> list[AudioLanguage]:
     return [AudioLanguageVariant.CHINESE.value,
             AudioLanguageVariant.JAPANESE.value,
@@ -136,7 +142,7 @@ def parse_audiokinetic_events() -> list[AudiokineticEvent]:
         if "EventCookedData" not in json_data:
             continue
         for language_map in json_data["EventCookedData"]["EventLanguageMap"]:
-            lang = AudioLanguage(language_map["Key"]["LanguageName"])
+            lang = AudioLanguage(language_from_name(language_map["Key"]["LanguageName"]))
             medias = language_map["Value"]['Media']
             if len(medias) == 0:
                 continue
