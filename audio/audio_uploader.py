@@ -59,6 +59,8 @@ def upload_audio_file(voices: list[Voice],
                         temp_wiki_file.unlink()
                         upload_audio(local_path, file_page, text, force=True, temp_wiki_file=temp_wiki_file)
             else:
+                if v.non_local:
+                    continue
                 assert local_path.exists()
                 if dry_run:
                     print(f"Will upload {local_path.name} to {file_page_title}")

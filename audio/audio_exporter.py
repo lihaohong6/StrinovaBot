@@ -26,7 +26,6 @@ def extract_wem_to_wav(txtp_file: Path, wem_path: Path, output_file: Path) -> No
     if not temp_wem_link.exists():
         os.symlink(wem_path, temp_wem_link)
 
-    print(f"Converting to WAV: {txtp_file.name}")
     vgmstream_cmd = [
         "vgmstream-cli",
         txtp_file.absolute(),
@@ -84,11 +83,6 @@ def get_audio_languages() -> list[AudioLanguage]:
             AudioLanguageVariant.ENGLISH.value,
             AudioLanguageVariant.SFX.value]
 
-def init_language_export_directories():
-    for lang in get_audio_languages():
-        p = lang.get_export_path()
-        p.mkdir(parents=True, exist_ok=True)
-
 
 @dataclass
 class AudiokineticEvent:
@@ -122,6 +116,8 @@ def parse_audiokinetic_events() -> list[AudiokineticEvent]:
     return events
 
 def path_name_to_priority(p: str) -> int:
+    if not p.startswith('Vox'):
+        return 3
     if "_original" in p:
         return 0
     if "org" in p or "red" in p:
@@ -148,10 +144,54 @@ def generate_txtp(bnk_path: Path, txtp_path: Path):
     subprocess.run(['python', 'wwiser.pyz', config_file],
                    cwd=audio_export_root,
                    stdout=subprocess.DEVNULL,
-                   stderr=subprocess.DEVNULL)
+                   stderr=subprocess.DEVNULL,
+                   check=True)
     config_file.unlink()
 
+def wem_to_wav(wem_path: Path, wav_path: Path):
+    subprocess.run(['vgmstream-cli', wem_path.absolute(), "-o", wav_path.absolute()],
+                   cwd=audio_export_root,
+                   stdout=subprocess.DEVNULL,
+                   stderr=subprocess.DEVNULL,
+                   check=True)
+
+
 def export_audiokinetic_events(events: list[AudiokineticEvent]):
+    prep_export()
+
+    lang_and_wem_id_to_txtp = map_wem_id_to_txtp()
+
+    events.sort(key=lambda e: path_name_to_priority(e.event_name))
+    visited_wem_ids: dict[str, set[str]] = {}
+    for lang in get_audio_languages():
+        visited_wem_ids[lang.code] = set()
+
+    for event in events:
+        for lang, wem_path in event.wem_path.items():
+            wem_id: str = wem_path.stem
+            if wem_id in visited_wem_ids[lang.code]:
+                continue
+            visited_wem_ids[lang.code].add(wem_id)
+
+            audio_parent_dir = lang.get_export_path()
+            wav_file_path = audio_parent_dir / f"{event.event_name}.wav"
+
+            txtp_file = lang_and_wem_id_to_txtp[lang.code].get(wem_id, None)
+            if txtp_file is None:
+                print(f"No txtp file found. Converting {wem_path.name} straight to {wav_file_path.name}.")
+                wem_to_wav(wem_path, wav_file_path)
+                continue
+            extract_wem_to_wav(txtp_file, wem_path, wav_file_path)
+
+            # apply Kanami fix: copy from sfx to CN/JP directory
+            if lang.code == AudioLanguageVariant.SFX.value.code and "Communicate_Kanami" in event.event_name:
+                new_lang = AudioLanguageVariant.JAPANESE.value if "JP" in event.event_name else AudioLanguageVariant.CHINESE.value
+                new_wav_path = new_lang.get_export_path() / f"{event.event_name.replace('_JP', '')}.wav"
+                shutil.copy(wav_file_path, new_wav_path)
+
+
+
+def prep_export():
     # export txtp
     for lang in get_audio_languages():
         txtp_path = lang.get_txtp_path()
@@ -159,17 +199,10 @@ def export_audiokinetic_events(events: list[AudiokineticEvent]):
         txtp_path.mkdir(parents=True, exist_ok=True)
         generate_txtp(lang.get_bnk_path(), txtp_path)
 
-    lang_and_wem_id_to_txtp = map_wem_id_to_txtp()
-
-    for event in events:
-        for lang, wem_path in event.wem_path.items():
-            wem_id: str = wem_path.stem
-            txtp_file = lang_and_wem_id_to_txtp[lang.code].get(wem_id, None)
-            if txtp_file is None:
-                print("No txtp file for", wem_id)
-                continue
-            audio_parent_dir = lang.get_export_path()
-            extract_wem_to_wav(txtp_file, wem_path, audio_parent_dir / f"{event.event_name}.wav")
+    for lang in get_audio_languages():
+        p = lang.get_export_path()
+        shutil.rmtree(p, ignore_errors=True)
+        p.mkdir(parents=True, exist_ok=True)
 
 
 def map_wem_id_to_txtp():
@@ -198,5 +231,4 @@ def main():
 
 
 if __name__ == "__main__":
-    init_language_export_directories()
     main()

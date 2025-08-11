@@ -239,6 +239,8 @@ def role_voice() -> dict[int, Voice]:
         files: dict[str, str] = {}
         failed = True
         for lang in get_audio_languages():
+            if lang.code == AudioLanguageVariant.SFX.value.code:
+                continue
             audio_file = f"{path}.wav"
             audio_path = lang.get_export_path() / audio_file
 
@@ -246,20 +248,7 @@ def role_voice() -> dict[int, Voice]:
                 failed = False
             else:
                 audio_file = ""
-
-            if audio_file != "" and lang == AudioLanguageVariant.SFX:
-                if "Communicate_Kanami_" not in path:
-                    if "Communicate_" in path:
-                        failed = True
-                        break
-                    raise RuntimeError()
-                if path.endswith("JP"):
-                    lang = AudioLanguageVariant.JAPANESE.value
-                else:
-                    lang = AudioLanguageVariant.CHINESE.value
-
-            if lang.code != AudioLanguageVariant.SFX.value.code:
-                files[lang.code] = audio_file
+            files[lang.code] = audio_file
         if failed:
             continue
         voice.file = files
