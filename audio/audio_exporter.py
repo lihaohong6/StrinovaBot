@@ -88,7 +88,7 @@ def get_audio_languages() -> list[AudioLanguage]:
 class AudiokineticEvent:
     event_name: str
     bank_name: str
-    wem_path: dict[AudioLanguage, Path]
+    wem_path: dict[AudioLanguage, list[Path]]
 
 
 @cache
@@ -99,7 +99,7 @@ def parse_audiokinetic_events() -> list[AudiokineticEvent]:
         event_name = json_data["Name"]
         properties = json_data["Properties"]
         bank_name = properties["RequiredBank"]["ObjectName"].split("'")[1]
-        wem_paths: dict[AudioLanguage, Path] = {}
+        wem_paths: dict[AudioLanguage, list[Path]] = {}
         if "EventCookedData" not in json_data:
             continue
         for language_map in json_data["EventCookedData"]["EventLanguageMap"]:
@@ -107,10 +107,11 @@ def parse_audiokinetic_events() -> list[AudiokineticEvent]:
             medias = language_map["Value"]['Media']
             if len(medias) == 0:
                 continue
-            path_name = medias[0]["MediaPathName"]
-            wem_path = global_wem_root / path_name
-            assert wem_path.exists() and wem_path.is_file()
-            wem_paths[lang] = wem_path
+            path_names = [m["MediaPathName"] for m in medias]
+            paths = [global_wem_root / path_name for path_name in path_names]
+            for wem_path in paths:
+                assert wem_path.exists() and wem_path.is_file()
+            wem_paths[lang] = paths
         event = AudiokineticEvent(event_name, bank_name, wem_paths)
         events.append(event)
     return events
@@ -167,21 +168,27 @@ def export_audiokinetic_events(events: list[AudiokineticEvent]):
         visited_wem_ids[lang.code] = set()
 
     for event in events:
-        for lang, wem_path in event.wem_path.items():
-            wem_id: str = wem_path.stem
-            if wem_id in visited_wem_ids[lang.code]:
-                continue
-            visited_wem_ids[lang.code].add(wem_id)
-
+        for lang, wem_path_list in event.wem_path.items():
             audio_parent_dir = lang.get_export_path()
             wav_file_path = audio_parent_dir / f"{event.event_name}.wav"
-
-            txtp_file = lang_and_wem_id_to_txtp[lang.code].get(wem_id, None)
-            if txtp_file is None:
+            wem_path_list = [w for w in wem_path_list if w.stem not in visited_wem_ids[lang.code]]
+            if len(wem_path_list) == 0:
+                print(f"All wems exhausted for {event.event_name} ({lang.code})")
+                continue
+            for wem_path in wem_path_list:
+                wem_id = wem_path.stem
+                txtp_file = lang_and_wem_id_to_txtp[lang.code].get(wem_id, None)
+                if txtp_file is None:
+                    continue
+                visited_wem_ids[lang.code].add(wem_id)
+                extract_wem_to_wav(txtp_file, wem_path, wav_file_path)
+                break
+            else:
+                assert not wav_file_path.exists()
+                wem_path = wem_path_list[0]
+                visited_wem_ids[lang.code].add(wem_path.stem)
                 print(f"No txtp file found. Converting {wem_path.name} straight to {wav_file_path.name}.")
                 wem_to_wav(wem_path, wav_file_path)
-                continue
-            extract_wem_to_wav(txtp_file, wem_path, wav_file_path)
 
             # apply Kanami fix: copy from sfx to CN/JP directory
             if lang.code == AudioLanguageVariant.SFX.value.code and "Communicate_Kanami" in event.event_name:
