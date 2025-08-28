@@ -41,6 +41,7 @@ def obj_to_lua_string(obj):
 
     def dump_lua(data):
         if type(data) is str:
+            data = data.replace('"', '\\"')
             return f'"{data}"'
         if type(data) in (int, float):
             return f'{data}'
