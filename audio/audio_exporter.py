@@ -107,11 +107,16 @@ def parse_audiokinetic_events() -> list[AudiokineticEvent]:
             medias = language_map["Value"]['Media']
             if len(medias) == 0:
                 continue
-            path_names = [m["MediaPathName"] for m in medias]
-            paths = [global_wem_root / path_name for path_name in path_names]
-            for wem_path in paths:
+            paths = []
+            for m in medias:
+                path_name = m["MediaPathName"]
+                debug_name = m["DebugName"]
+                if "reverb" in debug_name.lower():
+                    continue
+                wem_path = global_wem_root / path_name
+                paths.append(wem_path)
                 assert wem_path.exists() and wem_path.is_file()
-            wem_paths[lang] = paths
+            wem_paths[lang] = sorted(paths, key=lambda p: int(p.stem))
         event = AudiokineticEvent(event_name, bank_name, wem_paths)
         events.append(event)
     return events
