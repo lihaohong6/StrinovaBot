@@ -41,6 +41,8 @@ def get_emote_exceptions() -> dict[int, str]:
         'Reiichi': [60000169, 60000170],
         'Yugiri': [60000164, 60000165],
         'Chiyo': [60000355, 60000356],
+        'Yvette': [60000000 + i for i in range(360, 371)],
+        'Kokona': [60000000 + i for i in range(371, 377)],
         "NOONEHASTHIEEMOTE": [60000000 + i for i in range(339, 355)],
     }
     result: dict[int, str] = {}
