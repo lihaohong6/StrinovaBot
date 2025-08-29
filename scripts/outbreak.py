@@ -158,9 +158,9 @@ def print_all_upgrades():
     human = [u for u in upgrades.values() if u.team_type == TeamType.HUMAN]
     zombie = [u for u in upgrades.values() if u.team_type == TeamType.ZOMBIE]
     print("==Upgrades==")
-    print("===Human===")
+    print("===Superstring===")
     print(print_upgrades(human))
-    print("===Zombie===")
+    print("===Crystalline===")
     print(print_upgrades(zombie))
 
 
