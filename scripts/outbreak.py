@@ -3,7 +3,7 @@ from enum import Enum
 from pathlib import Path
 
 from utils.asset_utils import resource_root
-from utils.json_utils import get_string_table, get_all_game_json, get_table_global
+from utils.json_utils import get_all_game_json, get_table, get_table_global
 from utils.lang import ENGLISH, CHINESE
 from utils.lang_utils import get_text
 from utils.upload_utils import UploadRequest, process_uploads
@@ -98,9 +98,7 @@ class OutbreakUpgrade:
 
 
 def outbreak_upgrades() -> dict[int, OutbreakUpgrade]:
-    cards = get_table_global("GameplayCard_Zombie")
-    card_details = get_table_global("GameplayCardData_Zombie")
-    card_strings = get_string_table("ST_GameplayCard")
+    cards = get_table("GameplayCard_Zombie")
     i18n = get_all_game_json("ST_GameplayCard")
     result: dict[int, OutbreakUpgrade] = {}
     for card_id, v in cards.items():
