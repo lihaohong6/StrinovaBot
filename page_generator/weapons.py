@@ -18,6 +18,7 @@ from utils.wiki_utils import bwiki, s, save_json_page
 class WeaponType(Enum):
     PRIMARY = "Primary Weapon"
     SECONDARY = "Secondary Weapon"
+    MELEE = "Melee Weapon"
     GRENADE = "Grenade"
 
     def get_string(self):
