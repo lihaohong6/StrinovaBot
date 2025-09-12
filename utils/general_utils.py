@@ -20,7 +20,7 @@ def cn_name_to_en(cn: str) -> str | None:
     return t.get(cn, None)
 
 
-def en_name_to_cn(en: str, short: str = True) -> str | None:
+def en_name_to_cn(en: str, short: bool = True) -> str | None:
     result = en_name_to_zh.get(en, None)
     if result is None:
         return None

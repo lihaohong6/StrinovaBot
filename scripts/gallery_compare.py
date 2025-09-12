@@ -17,22 +17,24 @@ def main():
         for skin in skin_list:
             skin_id = skin.id
             bwiki_title = skin.get_bwiki_portrait_title(char)
-            title = skin.get_mh_portrait_title(char)
             bwiki_page = FilePage(bwiki(), bwiki_title)
+            title = skin.get_mh_portrait_title(char)
             page = FilePage(Site(), title)
             bwiki_pages[skin_id] = bwiki_page
             pages[skin_id] = page
     gen = PreloadingGenerator(bwiki_pages.values())
-    for page in gen:
+    for _ in gen:
         pass
     gen = PreloadingGenerator(pages.values())
-    for page in gen:
+    for _ in gen:
         pass
     f1 = temp_file_dir / "gallery_file_1.png"
     f2 = temp_file_dir / "gallery_file_2.png"
     for skin_id in pages.keys():
         p1 = bwiki_pages[skin_id]
         p2 = pages[skin_id]
+        if not p1.exists() or not p2.exists():
+            continue
         download_file(p1.get_file_url(), f1)
         download_file(p2.get_file_url(), f2)
         identical = filecmp.cmp(f1, f2, shallow=False)

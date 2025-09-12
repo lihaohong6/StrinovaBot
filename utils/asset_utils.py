@@ -43,7 +43,10 @@ wav_root_en = audio_export_root / "English"
 wav_root_sfx = audio_export_root / "sfx"
 
 def main():
-    pass
+    ensure_exists(csv_root)
+    ensure_exists(global_csv_root)
+    ensure_exists(resource_root)
+    ensure_exists(global_resources_root)
 
 
 if __name__ == '__main__':

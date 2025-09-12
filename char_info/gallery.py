@@ -8,7 +8,7 @@ from pywikibot.pagegenerators import PreloadingGenerator
 
 from utils.dict_utils import merge_dict2
 from utils.file_utils import temp_file_dir, temp_download_dir
-from utils.general_utils import get_char_by_id, en_name_to_zh, download_file, split_and_save_dict
+from utils.general_utils import get_char_by_id, en_name_to_zh, download_file, split_and_save_dict, en_name_to_cn
 from utils.json_utils import get_all_game_json, get_table, get_table_global
 from utils.lang import CHINESE
 from utils.lang_utils import get_multilanguage_dict
@@ -45,7 +45,10 @@ class SkinInfo:
         return f"File:{char_name} Skin Portrait {self.name_cn}.png"
 
     def get_bwiki_portrait_title(self, char_name: str):
-        return f"File:{char_name}-{self.name_cn}立绘.png"
+        res = en_name_to_cn(char_name, short=False)
+        if res is None:
+            res = char_name
+        return f"File:{res}-{self.name_cn}立绘.png"
 
     @property
     def icon(self):
