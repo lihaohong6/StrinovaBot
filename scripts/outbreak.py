@@ -10,8 +10,8 @@ from utils.upload_utils import UploadRequest, process_uploads
 
 
 class TeamType(Enum):
-    ZOMBIE = 0
-    HUMAN = 1
+    ZOMBIE = "Crystallines"
+    HUMAN = "Superstrings"
 
 
 class UpgradeRarity(Enum):
@@ -102,7 +102,7 @@ def outbreak_upgrades() -> dict[int, OutbreakUpgrade]:
     i18n = get_all_game_json("ST_GameplayCard")
     exception_table = {"Passive Skill"}
     # Add any cards that aren't available in the list above.
-    # Will need a manual translation of CN in the table to trigger.
+    # If generating in other languages, add the translated name to the list as well.
     result: dict[int, OutbreakUpgrade] = {}
     for card_id, v in cards.items():
         name = get_text(i18n, v['Name'])
@@ -162,22 +162,12 @@ def print_all_upgrades():
     grouped = defaultdict(list)
     for u in upgrades.values():
         grouped[(u.team_type, u.rarity)].append(u)
-    team_names = {
-        TeamType.HUMAN: {"names": "Superstrings", "order": 0},
-        TeamType.ZOMBIE: {"names": "Crystallines", "order": 1}
-    }
-    rarity_names = {
-        UpgradeRarity.BLUE: {"names": "Refined", "order": 0},
-        UpgradeRarity.PURPLE: {"names": "Rare", "order": 1},
-        UpgradeRarity.GOLD: {"names": "Epic", "order": 2}
-    }
-    ordered_teams = sorted(team_names.keys(), key=lambda t: team_names[t]["order"])
-    ordered_rarities = sorted(rarity_names.keys(), key=lambda r: rarity_names[r]["order"])
+    rarity_names = {UpgradeRarity.BLUE: "Refined", UpgradeRarity.PURPLE: "Rare", UpgradeRarity.GOLD: "Epic"}
     print("==Cards==")
-    for team_type in ordered_teams:
-        print(f"==={team_names[team_type]['names']}===")
-        for rarity in ordered_rarities:
-            print(f"===={rarity_names[rarity]['names']}====")
+    for team_type in [TeamType.HUMAN, TeamType.ZOMBIE]:
+        print(f"==={team_type.value}===")
+        for rarity in [UpgradeRarity.BLUE, UpgradeRarity.PURPLE, UpgradeRarity.GOLD]:
+            print(f"===={rarity_names[rarity]}====")
             print(print_upgrades(grouped.get((team_type, rarity), [])))
 
 
