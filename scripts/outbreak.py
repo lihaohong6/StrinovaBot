@@ -102,13 +102,14 @@ def outbreak_upgrades() -> dict[int, OutbreakUpgrade]:
     i18n = get_all_game_json("ST_GameplayCard")
     exception_table = {"Passive Skill"}
     # Add any cards that aren't available in the list above.
+    # Will need a manual translation of CN in the table to trigger.
     result: dict[int, OutbreakUpgrade] = {}
     for card_id, v in cards.items():
         name = get_text(i18n, v['Name'])
         # Some cards don't have a name
         if len(name) == 0:
             continue
-        if name['en'] in exception_table:
+        if any(n in exception_table for n in name.values()):
             continue
         description = get_text(i18n, v['Desc'])
         description_params = []
@@ -155,31 +156,29 @@ def print_upgrades(upgrades: list[OutbreakUpgrade]) -> str:
     return "\n".join(result)
 
 
+from collections import defaultdict
 def print_all_upgrades():
     upgrades = outbreak_upgrades()
-    #human = [u for u in upgrades.values() if u.team_type == TeamType.HUMAN]
-    #zombie = [u for u in upgrades.values() if u.team_type == TeamType.ZOMBIE]
-    human_blue = [u for u in upgrades.values() if u.team_type == TeamType.HUMAN and u.rarity == UpgradeRarity.BLUE]
-    human_purple = [u for u in upgrades.values() if u.team_type == TeamType.HUMAN and u.rarity == UpgradeRarity.PURPLE]
-    human_gold = [u for u in upgrades.values() if u.team_type == TeamType.HUMAN and u.rarity == UpgradeRarity.GOLD]
-    zombie_blue = [u for u in upgrades.values() if u.team_type == TeamType.ZOMBIE and u.rarity == UpgradeRarity.BLUE]
-    zombie_purple = [u for u in upgrades.values() if u.team_type == TeamType.ZOMBIE and u.rarity == UpgradeRarity.PURPLE]
-    zombie_gold = [u for u in upgrades.values() if u.team_type == TeamType.ZOMBIE and u.rarity == UpgradeRarity.GOLD]
+    grouped = defaultdict(list)
+    for u in upgrades.values():
+        grouped[(u.team_type, u.rarity)].append(u)
+    team_names = {
+        TeamType.HUMAN: {"names": "Superstrings", "order": 0},
+        TeamType.ZOMBIE: {"names": "Crystallines", "order": 1}
+    }
+    rarity_names = {
+        UpgradeRarity.BLUE: {"names": "Refined", "order": 0},
+        UpgradeRarity.PURPLE: {"names": "Rare", "order": 1},
+        UpgradeRarity.GOLD: {"names": "Epic", "order": 2}
+    }
+    ordered_teams = sorted(team_names.keys(), key=lambda t: team_names[t]["order"])
+    ordered_rarities = sorted(rarity_names.keys(), key=lambda r: rarity_names[r]["order"])
     print("==Cards==")
-    print("===Superstrings===")
-    print("====Refined====")
-    print(print_upgrades(human_blue))
-    print("====Rare====")
-    print(print_upgrades(human_purple))
-    print("====Epic====")
-    print(print_upgrades(human_gold))
-    print("===Crystallines===")
-    print("====Refined====")
-    print(print_upgrades(zombie_blue))
-    print("====Rare====")
-    print(print_upgrades(zombie_purple))
-    print("====Epic====")
-    print(print_upgrades(zombie_gold))
+    for team_type in ordered_teams:
+        print(f"==={team_names[team_type]['names']}===")
+        for rarity in ordered_rarities:
+            print(f"===={rarity_names[rarity]['names']}====")
+            print(print_upgrades(grouped.get((team_type, rarity), [])))
 
 
 def upload_icons(upgrades: list[OutbreakUpgrade]):
