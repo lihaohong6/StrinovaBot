@@ -72,9 +72,9 @@ class OutbreakUpgrade:
         template.set_arg("Image", self.filename())
         desc = self.make_descriptions()
         if len(desc) == 1:
-            template.set_arg("Description", f"Description: {desc[0]}")
+            template.set_arg("Description", f"'''Description:''' {desc[0]}")
         else:
-            template.set_arg("Description", "<br/>".join(f"Level {i}: {d}" for i, d in enumerate(desc, 1)))
+            template.set_arg("Description", "<br/>".join(f"'''Level {i}:''' {d}" for i, d in enumerate(desc, 1)))
         template.set_arg("Rarity", self.rarity.value)
         return str(template)
 
@@ -100,11 +100,15 @@ class OutbreakUpgrade:
 def outbreak_upgrades() -> dict[int, OutbreakUpgrade]:
     cards = get_table("GameplayCard_Zombie")
     i18n = get_all_game_json("ST_GameplayCard")
+    exception_table = {"Passive Skill"}
+    # Add any cards that aren't available in the list above.
     result: dict[int, OutbreakUpgrade] = {}
     for card_id, v in cards.items():
         name = get_text(i18n, v['Name'])
         # Some cards don't have a name
         if len(name) == 0:
+            continue
+        if name['en'] in exception_table:
             continue
         description = get_text(i18n, v['Desc'])
         description_params = []
@@ -153,13 +157,29 @@ def print_upgrades(upgrades: list[OutbreakUpgrade]) -> str:
 
 def print_all_upgrades():
     upgrades = outbreak_upgrades()
-    human = [u for u in upgrades.values() if u.team_type == TeamType.HUMAN]
-    zombie = [u for u in upgrades.values() if u.team_type == TeamType.ZOMBIE]
-    print("==Upgrades==")
-    print("===Superstring===")
-    print(print_upgrades(human))
-    print("===Crystalline===")
-    print(print_upgrades(zombie))
+    #human = [u for u in upgrades.values() if u.team_type == TeamType.HUMAN]
+    #zombie = [u for u in upgrades.values() if u.team_type == TeamType.ZOMBIE]
+    human_blue = [u for u in upgrades.values() if u.team_type == TeamType.HUMAN and u.rarity == UpgradeRarity.BLUE]
+    human_purple = [u for u in upgrades.values() if u.team_type == TeamType.HUMAN and u.rarity == UpgradeRarity.PURPLE]
+    human_gold = [u for u in upgrades.values() if u.team_type == TeamType.HUMAN and u.rarity == UpgradeRarity.GOLD]
+    zombie_blue = [u for u in upgrades.values() if u.team_type == TeamType.ZOMBIE and u.rarity == UpgradeRarity.BLUE]
+    zombie_purple = [u for u in upgrades.values() if u.team_type == TeamType.ZOMBIE and u.rarity == UpgradeRarity.PURPLE]
+    zombie_gold = [u for u in upgrades.values() if u.team_type == TeamType.ZOMBIE and u.rarity == UpgradeRarity.GOLD]
+    print("==Cards==")
+    print("===Superstrings===")
+    print("====Refined====")
+    print(print_upgrades(human_blue))
+    print("====Rare====")
+    print(print_upgrades(human_purple))
+    print("====Epic====")
+    print(print_upgrades(human_gold))
+    print("===Crystallines===")
+    print("====Refined====")
+    print(print_upgrades(zombie_blue))
+    print("====Rare====")
+    print(print_upgrades(zombie_purple))
+    print("====Epic====")
+    print(print_upgrades(zombie_gold))
 
 
 def upload_icons(upgrades: list[OutbreakUpgrade]):
