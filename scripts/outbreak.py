@@ -10,8 +10,8 @@ from utils.upload_utils import UploadRequest, process_uploads
 
 
 class TeamType(Enum):
-    ZOMBIE = 0
-    HUMAN = 1
+    ZOMBIE = "Crystallines"
+    HUMAN = "Superstrings"
 
 
 class UpgradeRarity(Enum):
@@ -72,9 +72,9 @@ class OutbreakUpgrade:
         template.set_arg("Image", self.filename())
         desc = self.make_descriptions()
         if len(desc) == 1:
-            template.set_arg("Description", f"Description: {desc[0]}")
+            template.set_arg("Description", f"'''Description:''' {desc[0]}")
         else:
-            template.set_arg("Description", "<br/>".join(f"Level {i}: {d}" for i, d in enumerate(desc, 1)))
+            template.set_arg("Description", "<br/>".join(f"'''Level {i}:''' {d}" for i, d in enumerate(desc, 1)))
         template.set_arg("Rarity", self.rarity.value)
         return str(template)
 
@@ -100,11 +100,16 @@ class OutbreakUpgrade:
 def outbreak_upgrades() -> dict[int, OutbreakUpgrade]:
     cards = get_table("GameplayCard_Zombie")
     i18n = get_all_game_json("ST_GameplayCard")
+    exception_table = {"Passive Skill"}
+    # Add any cards that aren't available in the list above.
+    # If generating in other languages, add the translated name to the list as well.
     result: dict[int, OutbreakUpgrade] = {}
     for card_id, v in cards.items():
         name = get_text(i18n, v['Name'])
         # Some cards don't have a name
         if len(name) == 0:
+            continue
+        if any(n in exception_table for n in name.values()):
             continue
         description = get_text(i18n, v['Desc'])
         description_params = []
@@ -151,15 +156,19 @@ def print_upgrades(upgrades: list[OutbreakUpgrade]) -> str:
     return "\n".join(result)
 
 
+from collections import defaultdict
 def print_all_upgrades():
     upgrades = outbreak_upgrades()
-    human = [u for u in upgrades.values() if u.team_type == TeamType.HUMAN]
-    zombie = [u for u in upgrades.values() if u.team_type == TeamType.ZOMBIE]
-    print("==Upgrades==")
-    print("===Superstring===")
-    print(print_upgrades(human))
-    print("===Crystalline===")
-    print(print_upgrades(zombie))
+    grouped = defaultdict(list)
+    for u in upgrades.values():
+        grouped[(u.team_type, u.rarity)].append(u)
+    rarity_names = {UpgradeRarity.BLUE: "Refined", UpgradeRarity.PURPLE: "Rare", UpgradeRarity.GOLD: "Epic"}
+    print("==Cards==")
+    for team_type in [TeamType.HUMAN, TeamType.ZOMBIE]:
+        print(f"==={team_type.value}===")
+        for rarity in [UpgradeRarity.BLUE, UpgradeRarity.PURPLE, UpgradeRarity.GOLD]:
+            print(f"===={rarity_names[rarity]}====")
+            print(print_upgrades(grouped.get((team_type, rarity), [])))
 
 
 def upload_icons(upgrades: list[OutbreakUpgrade]):
