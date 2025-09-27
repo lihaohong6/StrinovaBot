@@ -174,12 +174,13 @@ def parse_main_stories():
 
 def make_character_stories():
     internal_names: dict[str, str] = {
-        "Michele": "Michel",
-        "Celestia": "XingHui",
-        "Audrey": "Audrey",
-        "Maddelena": "Maddelena",
-        "Lawine": "Lawine",
-        "Kokona": "KokonaShiki",
+        # "Michele": "Michel",
+        # "Celestia": "XingHui",
+        # "Audrey": "Audrey",
+        # "Maddelena": "Maddelena",
+        # "Lawine": "Lawine",
+        # "Kokona": "KokonaShiki",
+        "Yvette": "Yvette",
     }
     intro_stories: set[int] = set()
     final_stories: set[int] = {146101000}
@@ -217,4 +218,4 @@ def make_character_stories():
 
 
 if __name__ == '__main__':
-    parse_event_stories()
+    make_character_stories()

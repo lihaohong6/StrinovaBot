@@ -252,26 +252,29 @@ def get_story_audio_local_path(name: str) -> Path | None:
 
 
 def parse_bgm(event: RawEvent, story: Story):
-    if event.bgm:
-        bgm = event.bgm.split(".")[-1]
-        if bgm.lower() == "bgm_date_play":
-            return
-        if bgm.lower() == "bgm_date_stop" or bgm.lower().endswith("_stop"):
-            story.rows.append(BGMStop(event.id))
-            return
-        bgm_name = re.sub(r"^Bgm[_ ]", "", bgm)
-        bgm_name = bgm_name.replace("_", " ")
-        wiki_file = f"BGM {bgm_name}.ogg"
-        local_path = get_story_audio_local_path(bgm)
-        if local_path is None:
-            print(f"Could not find bgm {bgm}")
+    if not event.bgm:
+        return
+    bgm = event.bgm.split(".")[-1]
+    if bgm.lower() == "bgm_date_play":
+        return
+    if bgm.lower() == "bgm_date_stop" or bgm.lower().endswith("_stop"):
+        story.rows.append(BGMStop(event.id))
+        return
+    bgm_name = re.sub(r"^Bgm[_ ]", "", bgm)
+    bgm_name = bgm_name.replace("_", " ")
+    wiki_file = f"BGM {bgm_name}.ogg"
+    # FIXME: this is broken due to audio updates
+    local_path = None # get_story_audio_local_path(bgm)
+    if local_path is None:
+        print(f"Could not find bgm {bgm}")
+        return
+    else:
+        story.bgm.append(UploadRequest(local_path, wiki_file, "[[Category:Story BGMs]]"))
+        is_bgm = bgm_name.startswith("Date")
+        if is_bgm:
+            story.rows.append(BGMChange(event.id, wiki_file, name=bgm_name))
         else:
-            story.bgm.append(UploadRequest(local_path, wiki_file, "[[Category:Story BGMs]]"))
-            is_bgm = bgm_name.startswith("Date")
-            if is_bgm:
-                story.rows.append(BGMChange(event.id, wiki_file, name=bgm_name))
-            else:
-                story.rows.append(SoundEffectChange(event.id, wiki_file, name=bgm_name))
+            story.rows.append(SoundEffectChange(event.id, wiki_file, name=bgm_name))
     # Sound effects cannot be found. Skip for now.
     # if event.sound_effect:
     #     se = event.sound_effect.split(".")[-1]
