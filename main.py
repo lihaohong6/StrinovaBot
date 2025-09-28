@@ -12,6 +12,7 @@ from page_generator.chat_bubbles import process_chat_bubbles
 from page_generator.decal import make_all_decals
 from page_generator.events import save_wiki_events
 from page_generator.id_card import make_id_cards
+from page_generator.interactive_props import process_interactive_props
 from page_generator.items import save_all_items
 from page_generator.shop import make_gacha_drop_data, make_gacha_banners
 from page_generator.strinova_comms import strinova_comms_main
@@ -25,6 +26,7 @@ def misc_uploads():
     upload_all_badges()
     make_all_decals()
     make_id_cards()
+    process_interactive_props()
     upload_weapon_white_icons()
 
 

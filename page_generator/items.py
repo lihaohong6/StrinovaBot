@@ -10,6 +10,7 @@ from page_generator.badges import get_all_badges, Badge
 from page_generator.chat_bubbles import ChatBubble, parse_chat_bubbles
 from page_generator.decal import get_all_decals, Decal
 from page_generator.id_card import get_all_id_cards, IdCard
+from page_generator.interactive_props import InteractiveProp, parse_interactive_props
 from page_generator.weapons import Weapon, parse_weapons
 from utils.dict_utils import merge_dict2
 from utils.json_utils import get_all_game_json, get_table, get_table_global
@@ -100,8 +101,11 @@ def get_all_items() -> dict[int, Item | Badge | Decal | SkinInfo | Weapon | Emot
     chat_bubbles: dict[int, ChatBubble] = {}
     for b in parse_chat_bubbles():
         chat_bubbles[b.id] = b
+    interactive_props: dict[int, InteractiveProp] = {}
+    for p in parse_interactive_props():
+        interactive_props[p.id] = p
     # increasing order of specificity
-    return items | skins | badges | decals | id_cards | weapons | emotes | voices | currencies | chat_bubbles
+    return items | skins | badges | decals | id_cards | weapons | emotes | voices | currencies | chat_bubbles | interactive_props
 
 
 @cache
