@@ -77,20 +77,20 @@ def upload_all_id_cards(id_cards: dict[int, IdCard], use_cn: bool = True):
         suffix = "" if d.type == IdCardType.AVATAR else "_L"
         source_full = cur_root / f"T_Dynamic_IdCard_{d.id}{suffix}.png"
 
-        if not source_icon.exists() or not source_full.exists():
-            continue
-        requests.append(UploadRequest(source_icon,
-                                      d.icon,
-                                      '[[Category:Item icons]]'))
-        requests.append(UploadRequest(source_full,
-                                      d.full_file,
-                                      '[[Category:IdCard images]]'))
+        if source_icon.exists():
+            requests.append(UploadRequest(source_icon,
+                                          d.icon,
+                                          '[[Category:Item icons]]'))
+        if source_full.exists():
+            requests.append(UploadRequest(source_full,
+                                          d.full_file,
+                                          '[[Category:IdCard images]]'))
     process_uploads(requests)
 
 
 def make_id_cards():
-    id_cards = get_all_id_cards()
-    upload_all_id_cards(id_cards)
+    # id_cards = get_all_id_cards()
+    # upload_all_id_cards(id_cards)
     id_cards = get_all_id_cards(use_cn=False)
     upload_all_id_cards(id_cards, use_cn=False)
     avatars = dict((k, v) for k, v in id_cards.items() if v.type == IdCardType.AVATAR)
