@@ -47,8 +47,12 @@ def upload_chat_bubbles():
     process_uploads(uploads)
 
 
-def main():
+def process_chat_bubbles():
     upload_chat_bubbles()
+
+
+def main():
+    process_chat_bubbles()
 
 
 if __name__ == '__main__':

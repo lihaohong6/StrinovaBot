@@ -8,6 +8,7 @@ from char_info.weapons import generate_weapons
 from page_generator.achievements import generate_all_achievements
 from page_generator.badges import upload_all_badges
 from page_generator.battle_pass import make_battle_pass_seasons
+from page_generator.chat_bubbles import process_chat_bubbles
 from page_generator.decal import make_all_decals
 from page_generator.events import save_wiki_events
 from page_generator.id_card import make_id_cards
@@ -63,6 +64,7 @@ def make_all_character_info():
 
 def make_everything():
     make_all_character_info()
+    process_chat_bubbles()
     generate_translations()
     save_all_items()
     save_wiki_events()
