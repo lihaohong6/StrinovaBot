@@ -5,10 +5,16 @@ def ensure_exists(path: Path):
     assert path.exists(), (f"Please ensure that {path} exists. If you are running this program on a different machine,"
                            f"consider changing hard-coded paths to ones that fit your own machine.")
 
-strinova_root = Path(r"D:\Strinova")
+is_bulb_machine = False
 
 if platform.system() != "Windows":
     strinova_root = Path("/mnt/ssd1/Strinova")
+else:
+    strinova_root = Path(r"D:\Strinova")
+    if not strinova_root.exists():
+        # On Bulb's machine
+        is_bulb_machine = True
+        strinova_root = Path(r"C:\StrinovaUnpack")
 
 ensure_exists(strinova_root)
 
@@ -24,7 +30,7 @@ ensure_exists(csv_root)
 
 # global export
 global_export_root = strinova_root / "AutoUnpack/GLExport"
-global_json_root = strinova_root / "Strinova-data/Global"
+global_json_root = strinova_root / "Strinova-data/GL"
 global_csv_root = global_json_root / "CSV"
 global_wem_root = global_export_root / 'WwiseAudio'
 global_bnk_root = global_wem_root

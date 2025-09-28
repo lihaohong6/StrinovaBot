@@ -15,7 +15,7 @@ class InteractiveProp:
 
     @property
     def file(self):
-        return f"File:Item icon {self.id}.png"
+        return f"File:Item Icon {self.id}.png"
 
     @property
     def icon(self):
