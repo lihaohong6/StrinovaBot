@@ -65,6 +65,7 @@ def download_wallpapers():
 
 def category_downloader(cat: str, target: str):
     target_dir = local_file_dir / target
+    print(f"Downloading files from category {cat} to {target_dir}")
     target_dir.mkdir(exist_ok=True)
     gen = GeneratorFactory(bwiki)
     gen.handle_args([f'-catr:{cat}'])
@@ -78,8 +79,10 @@ def category_downloader(cat: str, target: str):
         download_file(url, local_file_name)
 
 
-def bwiki_downloader_main(*args):
-    category_downloader("表情包", "emotes_outgame")
+def bwiki_downloader_main():
+    from sys import argv
+    # Category and target dir
+    category_downloader(argv[1], argv[2])
 
 
 if __name__ == "__main__":
