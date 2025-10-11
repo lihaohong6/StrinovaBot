@@ -10,7 +10,7 @@ from utils.dict_utils import merge_dict2
 from utils.file_utils import temp_file_dir, temp_download_dir
 from utils.general_utils import get_char_by_id, en_name_to_zh, download_file, split_and_save_dict, en_name_to_cn
 from utils.json_utils import get_all_game_json, get_table, get_table_global
-from utils.lang import CHINESE
+from utils.lang import CHINESE, ENGLISH
 from utils.lang_utils import get_multilanguage_dict
 from utils.upload_utils import upload_file, upload_item_icons
 from utils.wiki_utils import bwiki, s, save_json_page
@@ -85,6 +85,7 @@ class SkinUpload:
 
 
 def upload_skins(char_name: str, skin_list: list[SkinInfo]) -> list[SkinInfo]:
+    original_skins = list(skin_list)
     name_zh = en_name_to_zh[char_name]
     skin_uploads = [SkinUpload(FilePage(bwiki(), skin.get_bwiki_screenshot_front_title(name_zh)),
                                FilePage(s, skin.get_mh_screenshot_front_title(char_name)),
@@ -108,6 +109,17 @@ def upload_skins(char_name: str, skin_list: list[SkinInfo]) -> list[SkinInfo]:
     for skin in process_skin_upload_requests(char_name, skin_uploads,
                                              cat="Skin portraits"):
         skin.portrait = skin.name_cn
+
+    skins_with_images = set(skin.id for skin in skin_list)
+    # Add back some skins without images
+    for skin in original_skins:
+        if skin.id in skins_with_images:
+            continue
+        if skin.quality == 2:
+            continue
+        if ENGLISH.code not in skin.name:
+            continue
+        skin_list.append(skin)
 
     icons: list[int] = []
     for skin in skin_list:
@@ -178,8 +190,8 @@ def localize_skins(skin_list: list[SkinInfo]):
 def generate_skins():
     skins = parse_skin_tables()
     for char_name, skin_list in skins.items():
-        skin_list.sort(key=lambda x: x.quality if x.quality != 0 else 100, reverse=True)
         skin_list2: list[SkinInfo] = upload_skins(char_name, skin_list)
+        skin_list2.sort(key=lambda x: x.quality if x.quality != 0 else 100, reverse=True)
         skin_list.clear()
         skin_list.extend(skin_list2)
     split_and_save_dict("Module:CharacterSkins/data{}.json", skins)
