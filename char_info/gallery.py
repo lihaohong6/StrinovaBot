@@ -117,6 +117,8 @@ def upload_skins(char_name: str, skin_list: list[SkinInfo]) -> list[SkinInfo]:
             continue
         if skin.quality == 2:
             continue
+        if skin.quality == 0:
+            continue
         if ENGLISH.code not in skin.name:
             continue
         skin_list.append(skin)
