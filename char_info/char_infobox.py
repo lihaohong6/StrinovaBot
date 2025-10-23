@@ -32,6 +32,9 @@ infobox_args: list[tuple[list[str] | str, str, Callable[[list[str] | str], str]]
     ("Apartment", "Home", nop),
     ("Title", "Title", nop),
     ("Desc", "Description", nop),
+    ("HobbiesPc", "Hobby", nop),
+    ("HabitsDiet", "Diet", nop),
+    ("PersonalityQuotesPc", "Quote", nop),
     # (["Cv", "CvCn"], "VA", lambda x: f"JP: {x[0]}<br/>CN: {x[1]}"),
 ]
 
