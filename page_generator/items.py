@@ -113,7 +113,8 @@ def get_en_items() -> list[Item]:
     items = get_all_items()
     result = []
     for item in items.values():
-        name_en = item.name.get(ENGLISH.code, None)
+        name = item.name or {}
+        name_en = name.get(ENGLISH.code, None)
         if name_en is None:
             continue
         result.append(item)
