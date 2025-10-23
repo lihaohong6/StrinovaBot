@@ -117,6 +117,11 @@ def get_translations() -> dict[str, dict[str, str]]:
     result['Legs'] = get_multilanguage_dict(i18n, "LowerBody")
 
     # Infobox
+    i18n = get_all_game_json("")
+    result['Hobbies'] = get_multilanguage_dict(i18n, "HobbiesPc")
+    result['Diet'] = get_multilanguage_dict(i18n, "HabitsDiet")
+    result['Quote'] = get_multilanguage_dict(i18n, "PersonalityQuotes")
+    
     i18n = get_all_game_json("ST_UIApartmentInformation")
     for string in ["Camp", "Weight", "Height"]:
         result[string] = get_multilanguage_dict(i18n, string, converter=remove_trailing_info)
