@@ -64,6 +64,9 @@ def parse_battle_pass_seasons() -> list[BattlePassSeason]:
     result: list[BattlePassSeason] = []
     for k, v in get_table_global("BattlePassSeason").items():
         image_id = re.search(r"BattlePassLogo_(\d+)", v['SeasonLogo']['AssetPathName']).group(1)
+        # Hardcode a correction for image id of season 2
+        if v['Id'] == 2:
+            image_id = 8
         result.append(
             BattlePassSeason(
                 v['Id'],
