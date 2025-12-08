@@ -135,6 +135,8 @@ def get_cn_wiki_skins():
 
 def get_weapon_type(weapon_id: int | str) -> str:
     weapon_id = int(weapon_id)
+    if weapon_id == 10305001:
+        return "DMR"
     return get_table_global("Weapon")[weapon_id]['Type'].split("::")[1]
 
 
