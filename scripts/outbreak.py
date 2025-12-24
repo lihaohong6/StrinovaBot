@@ -7,6 +7,7 @@ from utils.json_utils import get_all_game_json, get_table, get_table_global
 from utils.lang import ENGLISH, CHINESE
 from utils.lang_utils import get_text
 from utils.upload_utils import UploadRequest, process_uploads
+from utils.wiki_utils import s, save_json_page
 
 
 class TeamType(Enum):
@@ -60,7 +61,28 @@ class OutbreakUpgrade:
                 original = original.replace("{" + str(index) + "}", str(param))
             levels.append(original)
 
-        return levels
+        return self.trim_descriptions(levels)
+    
+    def trim_descriptions(self, desc: list[str]) -> list[str]:
+        rarity_limits = {
+            UpgradeRarity.BLUE: 2,    # Blue can have 1 or 2
+            UpgradeRarity.PURPLE: 3,  # Purple can have 1 or 3
+            UpgradeRarity.GOLD: 4,    # Gold can have 1 or 4
+        }
+
+        limit = rarity_limits[self.rarity]
+
+        # Special rules:
+        # Purple: if 2 → keep only 1
+        if self.rarity == UpgradeRarity.PURPLE and len(desc) == 2:
+           return desc[:1]
+
+        # Gold: if 2 or 3 → keep only 1
+        if self.rarity == UpgradeRarity.GOLD and 2 <= len(desc) <= 3:
+            return desc[:1]
+
+        # Default: trim to max allowed
+        return desc[:limit]
 
     def filename(self):
         return f"File:Outbreak icon {self.id}.png"
@@ -183,20 +205,21 @@ def save_upgrades():
     upgrades = list(upgrades.values())
     upgrades.sort(key=lambda x: x.rarity.sort_weight())
     upload_icons(upgrades)
-    # result = []
-    # for u in upgrades:
-    #     result.append({
-    #         "id": u.id,
-    #         "name": u.name,
-    #         "descriptions": u.make_descriptions(),
-    #         "team_type": u.team_type.value,
-    #         "rarity": u.rarity.value,
+     result = []
+     for u in upgrades:
+         result.append({
+             "id": u.id,
+             "name": u.name,
+             "descriptions": u.make_descriptions(),
+             "team_type": u.team_type.value,
+             "rarity": u.rarity.value,
     #         "weights": u.weights,
     #         "file": u.filename()
-    #     })
-    # save_json_page("Module:Outbreak/data.json", result)
+         })
+     save_json_page("Module:Outbreak/data.json", result)
 
 
 if __name__ == '__main__':
     print_all_upgrades()
     upload_icons(list(outbreak_upgrades().values()))
+    save_upgrades()
