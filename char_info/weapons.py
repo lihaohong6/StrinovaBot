@@ -7,6 +7,7 @@ from utils.general_utils import get_default_weapon_id, get_weapon_name, \
 from utils.json_utils import get_game_json
 from utils.lang import ENGLISH, get_language
 from utils.lang_utils import RedirectRequest, redirect_pages
+from utils.wiki_utils import save_json_page
 from utils.wtp_utils import get_templates_by_name
 
 
@@ -16,6 +17,7 @@ def generate_weapons(pages: list[tuple[Character, Page]] = None):
     i18n = get_game_json(lang)['Weapon']
     redirect_requests: list[RedirectRequest] = []
     save = False
+    data: dict = {}
     if pages is None:
         pages = get_char_pages2(lang=lang)
         save = True
@@ -58,11 +60,20 @@ def generate_weapons(pages: list[tuple[Character, Page]] = None):
         add_arg("Description", weapon_description)
         add_arg("Type", weapon_type)
 
+        data[char_name] = {
+            "name": weapon_name,
+            "description": weapon_description,
+            "type": weapon_type,
+        }
+
         if p.text.strip() == str(parsed).strip():
             continue
         p.text = str(parsed)
         if save:
             p.save(summary="generate weapon", minor=True)
+
+    if lang == ENGLISH:
+        save_json_page("Module:CharWeapon/data.json", data)
 
     # Do NOT redirect: weapon pages are not yet ready
     # redirect_pages(redirect_requests)
