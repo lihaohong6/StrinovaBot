@@ -49,15 +49,16 @@ def upload_audio_file(voices: list[Voice],
                     continue
                 if not temp_wiki_file.exists():
                     download_file(file_page.get_file_url(), temp_wiki_file)
-                is_same = audio_is_same(local_path, temp_wiki_file)
-                if not is_same:
-                    if dry_run:
-                        print(f"{file_page_title} is different from local copy")
-                    elif force_replace:
-                        # Only replace the old copy if this is not a dry run AND force replace is explicitly enabled
-                        # Need to invalidate the local cache
-                        temp_wiki_file.unlink()
-                        upload_audio(local_path, file_page, text, force=True, temp_wiki_file=temp_wiki_file)
+                if dry_run or force_replace:
+                    is_same = audio_is_same(local_path, temp_wiki_file)
+                    if not is_same:
+                        if dry_run:
+                            print(f"{file_page_title} is different from local copy")
+                        elif force_replace:
+                            # Only replace the old copy if this is not a dry run AND force replace is explicitly enabled
+                            # Need to invalidate the local cache
+                            temp_wiki_file.unlink()
+                            upload_audio(local_path, file_page, text, force=True, temp_wiki_file=temp_wiki_file)
             else:
                 if v.non_local:
                     continue

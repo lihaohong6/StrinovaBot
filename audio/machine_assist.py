@@ -97,8 +97,9 @@ def transcribe_char(char_name: str, model = None, lang: Language = ENGLISH):
 
 def transcribe():
     model = load_whisper_model()
-    for c in char_id_mapper.values():
-        transcribe_char(c, model)
+    for c in get_characters():
+        if c.name:
+            transcribe_char(c.name, model)
 
 
 def translate():
