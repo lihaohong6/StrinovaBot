@@ -205,18 +205,18 @@ def save_upgrades():
     upgrades = list(upgrades.values())
     upgrades.sort(key=lambda x: x.rarity.sort_weight())
     upload_icons(upgrades)
-     result = []
-     for u in upgrades:
-         result.append({
-             "id": u.id,
-             "name": u.name,
-             "descriptions": u.make_descriptions(),
-             "team_type": u.team_type.value,
-             "rarity": u.rarity.value,
-    #         "weights": u.weights,
-    #         "file": u.filename()
-         })
-     save_json_page("Module:Outbreak/data.json", result)
+    result = []
+    for u in upgrades:
+        result.append({
+            "id": u.id,
+            "name": u.name,
+            "descriptions": u.make_descriptions(),
+            "team_type": u.team_type.value,
+            "rarity": u.rarity.value,
+            #         "weights": u.weights,
+            #         "file": u.filename()
+        })
+    save_json_page("Module:Outbreak/data.json", result)
 
 
 if __name__ == '__main__':
