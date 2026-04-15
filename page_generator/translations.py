@@ -60,7 +60,10 @@ def get_translations() -> dict[str, dict[str, str]]:
     # faction names
     i18n = get_all_game_json("RoleTeam")
     for camp_id, camp_name in camp_id_to_string.items():
-        result[camp_name] = get_multilanguage_dict(i18n, f"{camp_id}_NameCn", default=camp_name)
+        if camp_id == 0:
+            result[camp_name] = get_multilanguage_dict(get_all_game_json("FunctionUnlock"), f"119_Name", default=camp_name)
+        else:
+            result[camp_name] = get_multilanguage_dict(i18n, f"{camp_id}_NameCn", default=camp_name)
 
     i18n = get_all_game_json("ST_UIRoomCustomRoomRule")
     d = get_multilanguage_dict(i18n, "Weapon")

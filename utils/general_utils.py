@@ -41,6 +41,7 @@ def get_id_by_char(char_name: str) -> int | None:
 
 
 camp_id_to_string = {
+    0: "Crystallines",
     1: "Painting Utopia Security",
     2: "The Scissors",
     3: "Urbino",
@@ -48,38 +49,47 @@ camp_id_to_string = {
 
 
 def get_camp(camp_id: int, lang: Language = ENGLISH) -> str:
-    if camp_id == 1 and lang == ENGLISH:
+    if camp_id == 0:
+        return get_game_json(lang)['FunctionUnlock'][f'119_Name']
+    elif camp_id == 1 and lang == ENGLISH:
         return "Painting Utopia Security"
-    return get_game_json(lang)['RoleTeam'][f'{camp_id}_NameCn']
+    else:
+        return get_game_json(lang)['RoleTeam'][f'{camp_id}_NameCn']
 
 
 camp_name_cn = {
+    "无": "Crystalline",
     "欧泊": "Painting Utopia Security",
     "剪刀手": "The Scissors",
-    "乌尔比诺": "Urbino"
+    "乌尔比诺": "Urbino",
 }
 
 role_id_to_string = {
+    0: "",
     1: "Duelist",
     2: "Sentinel",
     3: "Support",
     4: "Initiator",
-    5: "Controller"
+    5: "Controller",
 }
 
 
 def get_role_name(role_id: int, lang: Language = ENGLISH) -> str:
-    return get_game_json(lang)['RoleProfession'][f'{role_id}_NameCn']
+    if role_id == 0:
+        return ""
+    else:
+        return get_game_json(lang)['RoleProfession'][f'{role_id}_NameCn']
 
 
 def get_default_weapon_id(char_id: int | str) -> int:
     char_id = int(char_id)
-    if not hasattr(get_default_weapon_id, "dict"):
-        get_default_weapon_id.dict = {}
-        table = get_default_weapon_id.dict
-        for k, v in get_table_global("Role").items():
-            table[int(k)] = v['DefaultWeapon1']
-    return get_default_weapon_id.dict.get(char_id, -1)
+    if char_id < 300:
+        if not hasattr(get_default_weapon_id, "dict"):
+            get_default_weapon_id.dict = {}
+            table = get_default_weapon_id.dict
+            for k, v in get_table_global("Role").items():
+                table[int(k)] = v['DefaultWeapon1']
+        return get_default_weapon_id.dict.get(char_id, -1)
 
 
 def get_char_id_to_weapon_id() -> dict[int, int]:
