@@ -46,6 +46,8 @@ class CharacterSkills:
     awakening3: Awakening
 
 
+from dataclasses import asdict # Required to fix the wiki_utils TypeError
+
 def parse_skills() -> dict[str, CharacterSkills]:
     i18n = get_all_game_json('Skill')
     skill_table = get_table_global("Skill")
@@ -55,38 +57,65 @@ def parse_skills() -> dict[str, CharacterSkills]:
 
     for char in get_characters():
         skills = []
-        # Active, passive, tactical, and ultimate skills
+        # 1. Handle standard skills
         for skill_num in [1, 2, 9, 3]:
             key = char.id * 10 + skill_num
-            v = skill_table[key]
-            name = get_text(i18n, v['Name'])
-            skill_type = get_text(i18n, v['DisplayName'])
-            description = get_text(i18n, v['Intro'])
-            skills.append(Skill(id=key, name=name, type=skill_type, description=description))
-        # Awakenings
-        wake_ids = role_table[char.id]["SkillWake"]
-        for wake_index, wake_id in enumerate(wake_ids, 1):
-            char_growth = growth_bomb[char.id]
-            activate_condition = tuple[int, int, int](char_growth[f'Arousal{wake_index}ActivateNeed'])
-            name = get_multilanguage_dict(i18n , f'{wake_id}_Name')
-            text = get_multilanguage_dict(i18n, f'{wake_id}_Intro')
-            skills.append(Awakening(id=wake_id, name=name, description=text, cond=activate_condition))
+            v = skill_table.get(key) # Use .get() to return None if missing
+            if v:
+                name = get_text(i18n, v.get('Name'))
+                skill_type = get_text(i18n, v.get('DisplayName'))
+                description = get_text(i18n, v.get('Intro'))
+                skills.append(Skill(id=key, name=name, type=skill_type, description=description))
+            else:
+                skills.append(None) # Keep the list length consistent for the dataclass
+
+        # 2. Handle Awakenings
+        char_role = role_table.get(char.id, {})
+        wake_ids = char_role.get("SkillWake", [])
+        char_growth = growth_bomb.get(char.id, {})
+
+        # We always process 3 slots to satisfy the CharacterSkills dataclass
+        for wake_index in range(1, 4):
+            if len(wake_ids) >= wake_index:
+                wake_id = wake_ids[wake_index - 1]
+                cond = tuple(char_growth.get(f'Arousal{wake_index}ActivateNeed', (0,0,0)))
+                name = get_multilanguage_dict(i18n, f'{wake_id}_Name')
+                text = get_multilanguage_dict(i18n, f'{wake_id}_Intro')
+                skills.append(Awakening(id=wake_id, name=name, description=text, cond=cond))
+            else:
+                skills.append(None)
+        
         result.append(CharacterSkills(char, *skills))
     return dict((r.char.name, r) for r in result)
 
 
 def make_skills() -> None:
     all_skills = parse_skills()
-    result: dict[str, dict[int, Skill]] = {}
-    for char, char_skills in all_skills.items():
-        skills: dict[int, Skill] = {}
-        skill_list = [char_skills.active_skill, char_skills.passive_skill, char_skills.ultimate_skill,
-                      char_skills.awakening1, char_skills.awakening2, char_skills.awakening3]
-        for index, skill in enumerate(skill_list, 1):
-            skills[index] = skill
-        skills[9] = char_skills.tactical_skill
-        result[char] = skills
-    # upload_skill_icons()
+    result: dict[str, dict[int, dict]] = {}
+    
+    for char_name, char_skills in all_skills.items():
+        skills: dict[int, dict] = {}
+        
+        # Mapping skill objects to their intended Lua table indices
+        # Index 1,2,3 for Act/Pas/Ult, Index 4,5,6 for Awakenings, Index 9 for Tactical
+        raw_list = [
+            (1, char_skills.active_skill),
+            (2, char_skills.passive_skill),
+            (3, char_skills.ultimate_skill),
+            (4, char_skills.awakening1),
+            (5, char_skills.awakening2),
+            (6, char_skills.awakening3),
+            (9, char_skills.tactical_skill)
+        ]
+        
+        for index, skill_obj in raw_list:
+            # Check if skill_obj is not None (prevents including missing skills)
+            if skill_obj:
+                # Convert dataclass to dict so wiki_utils doesn't throw TypeError
+                skills[index] = asdict(skill_obj)
+        
+        result[char_name] = skills
+
     save_lua_table("Module:Skill/data", result)
 
 
@@ -146,18 +175,19 @@ Growth_Team
         #     bwiki_base_page = bwiki_base_page.getRedirectTarget()
         # bwiki_page = Page(bwiki(), bwiki_base_page.title() + "/弦能增幅网络")
         # assert bwiki_page.exists(), char_name
-        parsed = wtp.parse(p.text)
-        templates = get_templates_by_name(parsed, "StringEnergyNetwork")
-        if len(templates) != 1 :
-            print("Template StringEnergyNetwork not found on " + char_name)
-            continue
-        t = templates[0]
-        char_string_energy_network(char_id, char_name, growth_bomb, i18n, i18n_skill, p, role_json, skill_json, t)
-        if p.text.strip() == str(parsed).strip():
-            continue
-        p.text = str(parsed)
-        if save:
-            p.save(summary="generate string energy network", minor=True)
+        if char.id < 300:
+            parsed = wtp.parse(p.text)
+            templates = get_templates_by_name(parsed, "StringEnergyNetwork")
+            if len(templates) != 1 :
+                print("Template StringEnergyNetwork not found on " + char_name)
+                continue
+            t = templates[0]
+            char_string_energy_network(char_id, char_name, growth_bomb, i18n, i18n_skill, p, role_json, skill_json, t)
+            if p.text.strip() == str(parsed).strip():
+                continue
+            p.text = str(parsed)
+            if save:
+                p.save(summary="generate string energy network", minor=True)
 
 
 def char_string_energy_network(char_id, char_name, growth_bomb, i18n, i18n_skill, p, role_json, skill_json, t):
